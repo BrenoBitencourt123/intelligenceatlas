@@ -2,6 +2,14 @@
 
 export type BlockType = 'introduction' | 'development' | 'conclusion';
 
+// Token usage tracking for cost analysis
+export interface TokenUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  estimated_cost_usd: number;
+}
+
 export type BlockStatus = 'empty' | 'draft' | 'analyzed' | 'unavailable';
 
 export interface BlockAnalysis {

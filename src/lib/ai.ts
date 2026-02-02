@@ -1,14 +1,25 @@
 // AI integration for Atlas - Real API calls to edge functions
-import { BlockType, BlockAnalysis } from '@/types/atlas';
+import { BlockType, BlockAnalysis, TokenUsage } from '@/types/atlas';
 import { hashText } from './storage';
 import { supabase } from '@/integrations/supabase/client';
+
+// Response type including token usage
+export interface AnalyzeBlockResponse {
+  analysis: BlockAnalysis;
+  usage: TokenUsage | null;
+}
+
+export interface ImproveEssayResponse {
+  improvedText: string;
+  usage: TokenUsage | null;
+}
 
 // Analyze a single block using AI
 export const analyzeBlock = async (
   blockType: BlockType,
   text: string,
   theme?: string
-): Promise<BlockAnalysis> => {
+): Promise<AnalyzeBlockResponse> => {
   const { data, error } = await supabase.functions.invoke('analyze-block', {
     body: { blockType, text, theme },
   });
@@ -26,9 +37,12 @@ export const analyzeBlock = async (
   
   // Add timestamp and hash for caching
   return {
-    ...analysis,
-    timestamp: Date.now(),
-    textHash: hashText(text),
+    analysis: {
+      ...analysis,
+      timestamp: Date.now(),
+      textHash: hashText(text),
+    },
+    usage: data.usage || null,
   };
 };
 
@@ -36,7 +50,7 @@ export const analyzeBlock = async (
 export const generateImprovedVersion = async (
   blocks: { type: BlockType; text: string; analysis?: BlockAnalysis }[],
   theme?: string
-): Promise<string> => {
+): Promise<ImproveEssayResponse> => {
   // Prepare blocks with analysis data for the API
   const blocksWithAnalysis = blocks.map(block => ({
     type: block.type,
@@ -61,7 +75,10 @@ export const generateImprovedVersion = async (
     throw new Error(data.error);
   }
 
-  return data.improvedText;
+  return {
+    improvedText: data.improvedText,
+    usage: data.usage || null,
+  };
 };
 
 // Calculate competencies based on block analyses

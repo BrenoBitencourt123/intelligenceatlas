@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +28,15 @@ interface Block {
   text: string;
   analysis?: BlockAnalysis;
 }
+
+// GPT-4.1-mini pricing per 1M tokens
+const INPUT_COST_PER_MILLION = 0.40;
+const OUTPUT_COST_PER_MILLION = 1.60;
+
+const calculateCost = (promptTokens: number, completionTokens: number): number => {
+  return (promptTokens * INPUT_COST_PER_MILLION / 1_000_000) + 
+         (completionTokens * OUTPUT_COST_PER_MILLION / 1_000_000);
+};
 
 // Build the problems section for the prompt
 const buildProblemsSection = (blocks: Block[]): string => {
@@ -171,13 +181,49 @@ Reescreva a redação completa, corrigindo TODOS os problemas listados acima. Ma
 
     const data = await response.json();
     const improvedText = data.choices?.[0]?.message?.content;
+    const usage = data.usage;
     
     if (!improvedText) {
       throw new Error("Resposta vazia da IA");
     }
 
+    // Calculate cost and log token usage
+    let tokenUsage = null;
+    if (usage) {
+      const estimatedCost = calculateCost(usage.prompt_tokens, usage.completion_tokens);
+      
+      tokenUsage = {
+        prompt_tokens: usage.prompt_tokens,
+        completion_tokens: usage.completion_tokens,
+        total_tokens: usage.total_tokens,
+        estimated_cost_usd: estimatedCost,
+      };
+
+      // Log to database using service role
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL");
+        const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        
+        if (supabaseUrl && supabaseServiceKey) {
+          const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+          
+          await supabaseClient.from('token_usage').insert({
+            operation_type: 'improve-essay',
+            block_type: null,
+            prompt_tokens: usage.prompt_tokens,
+            completion_tokens: usage.completion_tokens,
+            total_tokens: usage.total_tokens,
+            estimated_cost_usd: estimatedCost,
+          });
+        }
+      } catch (dbError) {
+        console.error("Failed to log token usage:", dbError);
+        // Don't fail the request if logging fails
+      }
+    }
+
     return new Response(
-      JSON.stringify({ improvedText: improvedText.trim() }),
+      JSON.stringify({ improvedText: improvedText.trim(), usage: tokenUsage }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

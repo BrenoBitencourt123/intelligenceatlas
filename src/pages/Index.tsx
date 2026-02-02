@@ -52,12 +52,17 @@ const Index = () => {
     setAnalyzingBlocks(prev => new Set(prev).add(blockId));
     
     try {
-      const analysis = await analyzeBlock(block.type, block.text, state.theme);
-      setBlockAnalysis(blockId, analysis, 'analyzed');
+      const response = await analyzeBlock(block.type, block.text, state.theme);
+      setBlockAnalysis(blockId, response.analysis, 'analyzed');
+      
+      // Log usage if available (for testing/debugging)
+      if (response.usage) {
+        console.log(`[Token Usage] ${block.title}:`, response.usage);
+      }
       
       // Update competencies (now synchronous)
       const updatedBlocks = state.blocks.map(b => 
-        b.id === blockId ? { ...b, analysis } : b
+        b.id === blockId ? { ...b, analysis: response.analysis } : b
       );
       const competencies = calculateCompetencies(updatedBlocks);
       setCompetencies(competencies);
@@ -109,8 +114,14 @@ const Index = () => {
     setIsGeneratingImproved(true);
     
     try {
-      const improved = await generateImprovedVersion(state.blocks, state.theme);
-      setImprovedVersion(improved);
+      const response = await generateImprovedVersion(state.blocks, state.theme);
+      setImprovedVersion(response.improvedText);
+      
+      // Log usage if available (for testing/debugging)
+      if (response.usage) {
+        console.log('[Token Usage] Versão melhorada:', response.usage);
+      }
+      
       toast.success('Versão melhorada gerada!');
     } catch (error) {
       toast.error('Não foi possível gerar a versão melhorada. Tente novamente.');
