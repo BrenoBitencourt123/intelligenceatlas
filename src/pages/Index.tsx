@@ -5,8 +5,7 @@ import { BlockCard } from '@/components/atlas/BlockCard';
 import { ResultPanel } from '@/components/atlas/ResultPanel';
 import { PasteDivideModal } from '@/components/atlas/PasteDivideModal';
 import { MobileResultsBar } from '@/components/atlas/MobileResultsBar';
-import { analyzeBlock, calculateCompetencies, evaluateCompetencies, generateImprovedVersion } from '@/lib/ai';
-import { hashText } from '@/lib/storage';
+import { analyzeEssay, generateImprovedVersion } from '@/lib/ai';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -30,62 +29,26 @@ const Index = () => {
   } = useEssayState();
   
   const [pasteModalOpen, setPasteModalOpen] = useState(false);
-  const [analyzingBlocks, setAnalyzingBlocks] = useState<Set<string>>(new Set());
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
-  const [isEvaluatingCompetencies, setIsEvaluatingCompetencies] = useState(false);
   const [isGeneratingImproved, setIsGeneratingImproved] = useState(false);
   
   // Check if can analyze (any block has content)
   const canAnalyze = state.blocks.some(b => b.text.trim().length > 0);
   
-  // Analyze single block (doesn't update competencies - that's done in handleAnalyzeAll)
-  const handleAnalyzeBlock = useCallback(async (blockId: string) => {
-    const block = state.blocks.find(b => b.id === blockId);
-    if (!block || !block.text.trim()) return;
-    
-    // Check cache
-    const currentHash = hashText(block.text);
-    if (block.analysis?.textHash === currentHash) {
-      toast.info('Este bloco já foi analisado');
-      return;
-    }
-    
-    setAnalyzingBlocks(prev => new Set(prev).add(blockId));
-    
-    try {
-      const response = await analyzeBlock(block.type, block.text, state.theme);
-      setBlockAnalysis(blockId, response.analysis, 'analyzed');
-      
-      // Log usage if available (for testing/debugging)
-      if (response.usage) {
-        console.log(`[Token Usage] ${block.title}:`, response.usage);
-      }
-      
-      // Note: Competencies are evaluated via AI in handleAnalyzeAll, not here
-      // This allows individual block analysis without recalculating the whole score
-      
-      toast.success(`${block.title} analisado com sucesso`);
-    } catch (error) {
-      setBlockAnalysis(blockId, null, 'unavailable');
-      toast.error('Correção indisponível. Tente novamente.');
-    } finally {
-      setAnalyzingBlocks(prev => {
-        const next = new Set(prev);
-        next.delete(blockId);
-        return next;
-      });
-    }
-  }, [state.blocks, state.theme, setBlockAnalysis]);
+  // Helper function for competency descriptions
+  const getCompetencyDescription = (id: string): string => {
+    const descriptions: Record<string, string> = {
+      c1: 'Domínio da norma culta da língua escrita',
+      c2: 'Compreensão da proposta e aplicação de conceitos',
+      c3: 'Seleção e organização de argumentos',
+      c4: 'Conhecimento dos mecanismos linguísticos',
+      c5: 'Proposta de intervenção detalhada',
+    };
+    return descriptions[id] || '';
+  };
   
-  // Analyze all blocks and evaluate competencies with AI
+  // Unified analysis: analyzes all blocks + evaluates competencies in ONE AI call
   const handleAnalyzeAll = useCallback(async () => {
-    const blocksToAnalyze = state.blocks.filter(b => {
-      if (!b.text.trim()) return false;
-      const currentHash = hashText(b.text);
-      return b.analysis?.textHash !== currentHash;
-    });
-    
-    // Get blocks with content for competency evaluation
     const blocksWithContent = state.blocks.filter(b => b.text.trim().length > 0);
     
     if (blocksWithContent.length === 0) {
@@ -95,19 +58,23 @@ const Index = () => {
     
     setIsAnalyzingAll(true);
     
-    // First, analyze individual blocks that need analysis
-    if (blocksToAnalyze.length > 0) {
-      for (const block of blocksToAnalyze) {
-        await handleAnalyzeBlock(block.id);
-      }
-    }
-    
-    // Then, evaluate competencies with AI using full essay
-    setIsEvaluatingCompetencies(true);
     try {
-      console.log('[Competencies] Calling evaluateCompetencies with blocks:', blocksWithContent.length);
-      const response = await evaluateCompetencies(blocksWithContent, state.theme);
-      console.log('[Competencies] Response:', response);
+      console.log('[Analyze Essay] Calling unified analyzeEssay with blocks:', blocksWithContent.length);
+      
+      const response = await analyzeEssay(
+        blocksWithContent.map(b => ({ id: b.id, type: b.type, text: b.text })),
+        state.theme
+      );
+      
+      console.log('[Analyze Essay] Response:', response);
+      
+      // Update each block with its analysis
+      for (const block of blocksWithContent) {
+        const analysis = response.blockAnalyses[block.id];
+        if (analysis) {
+          setBlockAnalysis(block.id, analysis, 'analyzed');
+        }
+      }
       
       // Update competencies with AI evaluation
       const updatedCompetencies = response.competencies.map(c => ({
@@ -122,31 +89,23 @@ const Index = () => {
       setTotalScore(response.totalScore);
       
       if (response.usage) {
-        console.log('[Token Usage] Avaliação de competências:', response.usage);
+        console.log('[Token Usage] Análise unificada:', response.usage);
       }
       
       toast.success('Análise completa!');
     } catch (error) {
-      console.error('Competency evaluation error:', error);
-      toast.error('Erro ao avaliar competências. Tente novamente.');
+      console.error('Analyze essay error:', error);
+      
+      // Mark blocks as unavailable on error
+      for (const block of blocksWithContent) {
+        setBlockAnalysis(block.id, null, 'unavailable');
+      }
+      
+      toast.error('Erro ao analisar redação. Tente novamente.');
     } finally {
-      setIsEvaluatingCompetencies(false);
+      setIsAnalyzingAll(false);
     }
-    
-    setIsAnalyzingAll(false);
-  }, [state.blocks, state.theme, handleAnalyzeBlock, setCompetencies, setTotalScore]);
-  
-  // Helper function for competency descriptions
-  const getCompetencyDescription = (id: string): string => {
-    const descriptions: Record<string, string> = {
-      c1: 'Domínio da norma culta da língua escrita',
-      c2: 'Compreensão da proposta e aplicação de conceitos',
-      c3: 'Seleção e organização de argumentos',
-      c4: 'Conhecimento dos mecanismos linguísticos',
-      c5: 'Proposta de intervenção detalhada',
-    };
-    return descriptions[id] || '';
-  };
+  }, [state.blocks, state.theme, setBlockAnalysis, setCompetencies, setTotalScore]);
   
   // Generate improved version
   const handleGenerateImproved = useCallback(async () => {
@@ -172,7 +131,7 @@ const Index = () => {
     } finally {
       setIsGeneratingImproved(false);
     }
-  }, [canGenerateImproved, state.blocks, setImprovedVersion]);
+  }, [canGenerateImproved, state.blocks, state.theme, setImprovedVersion]);
   
   // Get development blocks count for remove logic
   const devBlocksCount = state.blocks.filter(b => b.type === 'development').length;
@@ -199,10 +158,9 @@ const Index = () => {
                 block={block}
                 onTextChange={(text) => updateBlockText(block.id, text)}
                 onClear={() => clearBlock(block.id)}
-                onAnalyze={() => handleAnalyzeBlock(block.id)}
                 onRemove={block.type === 'development' ? () => removeDevelopment(block.id) : undefined}
                 canRemove={block.type === 'development' && devBlocksCount > 1}
-                isAnalyzing={analyzingBlocks.has(block.id)}
+                isAnalyzing={isAnalyzingAll}
               />
             ))}
           </div>
