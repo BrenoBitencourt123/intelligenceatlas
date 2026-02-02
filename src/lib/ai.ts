@@ -32,13 +32,24 @@ export const analyzeBlock = async (
   };
 };
 
-// Generate improved version of the essay
+// Generate improved version of the essay with analysis context
 export const generateImprovedVersion = async (
-  blocks: { type: BlockType; text: string }[],
+  blocks: { type: BlockType; text: string; analysis?: BlockAnalysis }[],
   theme?: string
 ): Promise<string> => {
+  // Prepare blocks with analysis data for the API
+  const blocksWithAnalysis = blocks.map(block => ({
+    type: block.type,
+    text: block.text,
+    analysis: block.analysis ? {
+      checklist: block.analysis.checklist,
+      howToImprove: block.analysis.howToImprove,
+      textEvidence: block.analysis.textEvidence,
+    } : undefined,
+  }));
+
   const { data, error } = await supabase.functions.invoke('improve-essay', {
-    body: { blocks, theme },
+    body: { blocks: blocksWithAnalysis, theme },
   });
 
   if (error) {

@@ -5,24 +5,90 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Você é um professor especialista em redação ENEM. Sua tarefa é reescrever a redação do aluno mantendo TODAS as ideias originais, mas melhorando:
+interface ChecklistItem {
+  label: string;
+  checked: boolean;
+}
 
-1. COMPETÊNCIA 1: Gramática, ortografia, pontuação
-2. COMPETÊNCIA 2: Compreensão do tema e uso de repertório
-3. COMPETÊNCIA 3: Organização e progressão dos argumentos
-4. COMPETÊNCIA 4: Coesão (conectivos, referências, articulação)
-5. COMPETÊNCIA 5: Proposta de intervenção completa (agente + ação + meio + finalidade + detalhamento)
+interface TextEvidence {
+  quote: string;
+  issue: string;
+  suggestion: string;
+}
 
-REGRAS IMPORTANTES:
-- MANTENHA o mesmo número de parágrafos
-- MANTENHA as ideias e argumentos do aluno
-- NÃO adicione informações que o aluno não mencionou
-- Melhore a estrutura, conectivos e clareza
-- Na conclusão, garanta os 5 elementos da proposta de intervenção
-- Use linguagem formal adequada ao ENEM
-- Separe cada parágrafo com uma linha em branco
+interface BlockAnalysis {
+  checklist?: ChecklistItem[];
+  howToImprove?: string[];
+  textEvidence?: TextEvidence[];
+}
 
-Retorne APENAS o texto melhorado, sem explicações ou comentários.`;
+interface Block {
+  type: string;
+  text: string;
+  analysis?: BlockAnalysis;
+}
+
+// Build the problems section for the prompt
+const buildProblemsSection = (blocks: Block[]): string => {
+  const sections: string[] = [];
+  
+  for (const block of blocks) {
+    const typeLabel = block.type === 'introduction' ? 'INTRODUÇÃO' : 
+                     block.type === 'conclusion' ? 'CONCLUSÃO' : 
+                     'DESENVOLVIMENTO';
+    
+    const problems: string[] = [];
+    
+    // Add unchecked items from checklist
+    if (block.analysis?.checklist) {
+      const unchecked = block.analysis.checklist
+        .filter(item => !item.checked)
+        .map(item => `- ${item.label}: NÃO ATENDIDO`);
+      problems.push(...unchecked);
+    }
+    
+    // Add howToImprove suggestions
+    if (block.analysis?.howToImprove && block.analysis.howToImprove.length > 0) {
+      problems.push(...block.analysis.howToImprove.map(tip => `- ${tip}`));
+    }
+    
+    // Add text evidence issues
+    if (block.analysis?.textEvidence && block.analysis.textEvidence.length > 0) {
+      for (const evidence of block.analysis.textEvidence) {
+        problems.push(`- Trecho "${evidence.quote}": ${evidence.issue}. Sugestão: ${evidence.suggestion}`);
+      }
+    }
+    
+    if (problems.length > 0) {
+      sections.push(`[${typeLabel}]\n${problems.join('\n')}`);
+    }
+  }
+  
+  return sections.length > 0 ? sections.join('\n\n') : 'Nenhum problema específico identificado. Melhore a clareza e coesão geral.';
+};
+
+const SYSTEM_PROMPT = `Você é um professor especialista em redação ENEM. Sua tarefa é reescrever a redação do aluno corrigindo ESPECIFICAMENTE os problemas listados.
+
+REGRAS CRÍTICAS:
+1. CORRIJA cada problema listado na seção "PROBLEMAS A CORRIGIR"
+2. MANTENHA as ideias e argumentos originais do aluno
+3. NÃO adicione informações que o aluno não mencionou
+4. MANTENHA o mesmo número de parágrafos
+5. Melhore conectivos, coesão e clareza
+
+PARA A CONCLUSÃO (Competência 5):
+A proposta de intervenção DEVE conter os 5 elementos:
+- AGENTE: quem vai executar (ex: "O governo federal", "O MEC", "As escolas")
+- AÇÃO: o que será feito (verbo no infinitivo ou forma verbal clara)
+- MEIO: como será feito (instrumentos, métodos, recursos)
+- FINALIDADE: para que será feito (objetivo final)
+- DETALHAMENTO: especificação de pelo menos um dos elementos acima
+
+Se algum desses 5 elementos estiver faltando ou implícito, torne-o EXPLÍCITO na reescrita.
+
+FORMATO DE SAÍDA:
+Retorne APENAS o texto melhorado, separando cada parágrafo com uma linha em branco.
+NÃO inclua explicações, comentários ou marcadores como [INTRODUÇÃO].`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -30,7 +96,7 @@ serve(async (req) => {
   }
 
   try {
-    const { blocks, theme } = await req.json();
+    const { blocks, theme } = await req.json() as { blocks: Block[]; theme?: string };
     
     if (!blocks || blocks.length === 0) {
       return new Response(
@@ -44,19 +110,30 @@ serve(async (req) => {
       throw new Error("OPENAI_API_KEY is not configured");
     }
 
-    // Format blocks for the prompt
-    const formattedBlocks = blocks.map((block: { type: string; text: string }, index: number) => {
+    // Build problems section from analysis
+    const problemsSection = buildProblemsSection(blocks);
+    
+    // Format original text
+    const originalText = blocks.map((block, index) => {
       const typeLabel = block.type === 'introduction' ? 'INTRODUÇÃO' : 
                        block.type === 'conclusion' ? 'CONCLUSÃO' : 
                        `DESENVOLVIMENTO ${index}`;
       return `[${typeLabel}]\n${block.text}`;
     }).join('\n\n');
 
-    const userPrompt = `${theme ? `TEMA: ${theme}\n\n` : ''}REDAÇÃO ORIGINAL:
+    const userPrompt = `${theme ? `TEMA: ${theme}\n\n` : ''}PROBLEMAS A CORRIGIR:
 
-${formattedBlocks}
+${problemsSection}
 
-Reescreva a redação completa, mantendo o mesmo número de parágrafos e as mesmas ideias do aluno, mas com melhorias de escrita para atingir nota alta no ENEM.`;
+---
+
+REDAÇÃO ORIGINAL:
+
+${originalText}
+
+---
+
+Reescreva a redação completa, corrigindo TODOS os problemas listados acima. Mantenha as ideias do aluno, mas garanta que a versão melhorada atenda aos critérios do ENEM.`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
