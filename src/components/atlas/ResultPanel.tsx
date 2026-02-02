@@ -7,7 +7,6 @@ import {
   Copy, 
   Eye, 
   EyeOff,
-  CheckCircle2,
   ArrowRight,
   FileText,
   Award,
@@ -69,13 +68,6 @@ export const ResultPanel = ({
             <Award className="h-4 w-4 mr-2" />
             Competências
           </TabsTrigger>
-          <TabsTrigger 
-            value="improved"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3 text-sm"
-          >
-            <Wand2 className="h-4 w-4 mr-2" />
-            Versão melhorada
-          </TabsTrigger>
         </TabsList>
         
         {/* Summary Tab */}
@@ -104,8 +96,8 @@ export const ResultPanel = ({
             </div>
           </div>
           
-          {/* Next steps */}
-          {nextSteps.length > 0 && (
+          {/* Next steps - only show if no improved version yet */}
+          {!hasImproved && nextSteps.length > 0 && (
             <div className="space-y-3">
               <h4 className="font-medium text-sm text-foreground">Próximos passos</h4>
               <ul className="space-y-2">
@@ -119,30 +111,102 @@ export const ResultPanel = ({
             </div>
           )}
           
-          {/* Generate improved button */}
-          <div className="pt-2 space-y-3">
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={onGenerateImproved}
-              disabled={!canGenerateImproved || isGenerating}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Gerando...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Gerar versão melhorada
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-muted-foreground text-center leading-relaxed">
-              Gere a versão melhorada para aprender com uma escrita mais clara mantendo suas ideias.
-            </p>
-          </div>
+          {/* Generate improved button - show when no improved version */}
+          {!hasImproved && (
+            <div className="pt-2 space-y-3">
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={onGenerateImproved}
+                disabled={!canGenerateImproved || isGenerating}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Gerar versão melhorada
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground text-center leading-relaxed">
+                Gere a versão melhorada para aprender com uma escrita mais clara mantendo suas ideias.
+              </p>
+            </div>
+          )}
+          
+          {/* Improved version inline - shows after generation */}
+          {hasImproved && (
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-sm text-foreground flex items-center gap-2">
+                  <Wand2 className="h-4 w-4 text-primary" />
+                  Versão melhorada
+                </h4>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onToggleOriginal}
+                  >
+                    {state.showOriginal ? (
+                      <>
+                        <EyeOff className="h-4 w-4 mr-1.5" />
+                        Ver melhorada
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4 mr-1.5" />
+                        Ver original
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={copyImproved}
+                  >
+                    <Copy className="h-4 w-4 mr-1.5" />
+                    Copiar
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="bg-muted/30 rounded-lg p-4 max-h-[350px] overflow-y-auto">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {state.showOriginal ? fullText : state.improvedVersion}
+                </p>
+              </div>
+              
+              <p className="text-xs text-muted-foreground text-center bg-warning/10 text-warning-foreground p-3 rounded-lg">
+                Use como referência para aprender, não para copiar.
+              </p>
+              
+              {/* Regenerate button */}
+              <Button
+                variant="outline"
+                className="w-full"
+                size="sm"
+                onClick={onGenerateImproved}
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Gerar nova versão
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </TabsContent>
         
         {/* Competencies Tab */}
@@ -155,71 +219,6 @@ export const ResultPanel = ({
             <p className="text-sm text-muted-foreground text-center py-4">
               Analise ao menos um bloco para ver as competências.
             </p>
-          )}
-        </TabsContent>
-        
-        {/* Improved Version Tab */}
-        <TabsContent value="improved" className="mt-0">
-          {hasImproved ? (
-            <div className="space-y-4">
-              {/* Toggle */}
-              <div className="flex items-center justify-between px-5 pt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onToggleOriginal}
-                >
-                  {state.showOriginal ? (
-                    <>
-                      <EyeOff className="h-4 w-4 mr-1.5" />
-                      Ver melhorada
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="h-4 w-4 mr-1.5" />
-                      Ver original
-                    </>
-                  )}
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={copyImproved}
-                >
-                  <Copy className="h-4 w-4 mr-1.5" />
-                  Copiar
-                </Button>
-              </div>
-              
-              {/* Text */}
-              <div className="px-5 pb-5">
-                <div className="bg-muted/30 rounded-lg p-4 max-h-[400px] overflow-y-auto">
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {state.showOriginal ? fullText : state.improvedVersion}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Warning */}
-              <div className="px-5 pb-5">
-                <p className="text-xs text-muted-foreground text-center bg-amber-50 text-amber-700 p-3 rounded-lg">
-                  Use como referência para aprender, não para copiar.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 px-5 text-center">
-              <div className="p-4 bg-muted rounded-full mb-4">
-                <Wand2 className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h4 className="font-medium text-foreground mb-2">
-                Nenhuma versão melhorada ainda
-              </h4>
-              <p className="text-sm text-muted-foreground max-w-xs">
-                Analise os blocos essenciais (introdução, desenvolvimento e conclusão) para gerar uma versão melhorada.
-              </p>
-            </div>
           )}
         </TabsContent>
       </Tabs>
@@ -238,9 +237,9 @@ const CompetencyCard = ({ competency }: { competency: Competency }) => {
         </span>
         <span className={cn(
           'font-bold text-sm',
-          scoreLevel === 'high' && 'text-emerald-600',
-          scoreLevel === 'mid' && 'text-amber-600',
-          scoreLevel === 'low' && 'text-red-600',
+          scoreLevel === 'high' && 'text-primary',
+          scoreLevel === 'mid' && 'text-warning',
+          scoreLevel === 'low' && 'text-destructive',
         )}>
           {competency.score}/200
         </span>

@@ -30,7 +30,7 @@ export const Header = ({
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-bold text-foreground">
-                  Redação ENEM
+                  Atlas Intelligence
                 </h1>
                 <span className="text-xs font-medium px-2.5 py-1 bg-primary/10 text-primary rounded-full">
                   ENEM
