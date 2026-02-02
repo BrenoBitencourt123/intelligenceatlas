@@ -17,20 +17,20 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 20% 12%;
 
-    /* Primary: Warm amber/gold - educational, premium */
-    --primary: 35 92% 50%;
+    /* Primary: Black - sophisticated, minimal */
+    --primary: 0 0% 9%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Soft slate */
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 20% 25%;
+    /* Secondary: Soft gray */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 20%;
 
     /* Muted: Warm gray */
-    --muted: 40 10% 94%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 45%;
 
-    /* Accent: Soft teal for trust */
-    --accent: 175 60% 45%;
+    /* Accent: Dark gray for subtle emphasis */
+    --accent: 0 0% 20%;
     --accent-foreground: 0 0% 100%;
 
     /* Destructive */
@@ -38,9 +38,9 @@
     --destructive-foreground: 0 0% 100%;
 
     /* Borders and inputs */
-    --border: 220 13% 90%;
-    --input: 220 13% 90%;
-    --ring: 35 92% 50%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 9%;
 
     --radius: 0.75rem;
 
@@ -50,64 +50,64 @@
     --status-analyzed: 150 60% 45%;
     --status-unavailable: 0 60% 55%;
 
-    /* Score gradient */
-    --score-low: 0 72% 51%;
-    --score-mid: 35 92% 50%;
-    --score-high: 150 60% 45%;
+    /* Score gradient - monochrome */
+    --score-low: 0 0% 30%;
+    --score-mid: 0 0% 15%;
+    --score-high: 0 0% 9%;
 
     /* Sidebar (not used but keeping for compatibility) */
-    --sidebar-background: 40 20% 98%;
-    --sidebar-foreground: 220 20% 25%;
-    --sidebar-primary: 35 92% 50%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-primary: 0 0% 9%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 40 10% 94%;
-    --sidebar-accent-foreground: 220 20% 25%;
-    --sidebar-border: 220 13% 90%;
-    --sidebar-ring: 35 92% 50%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 20%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 0 0% 9%;
   }
 
   .dark {
-    --background: 220 20% 8%;
-    --foreground: 40 20% 96%;
+    --background: 0 0% 6%;
+    --foreground: 0 0% 96%;
 
-    --card: 220 18% 12%;
-    --card-foreground: 40 20% 96%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 220 18% 12%;
-    --popover-foreground: 40 20% 96%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 35 92% 55%;
-    --primary-foreground: 220 20% 8%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 9%;
 
-    --secondary: 220 14% 18%;
-    --secondary-foreground: 40 15% 85%;
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 85%;
 
-    --muted: 220 14% 18%;
-    --muted-foreground: 220 10% 55%;
+    --muted: 0 0% 16%;
+    --muted-foreground: 0 0% 55%;
 
-    --accent: 175 60% 45%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 80%;
+    --accent-foreground: 0 0% 9%;
 
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 14% 20%;
-    --input: 220 14% 20%;
-    --ring: 35 92% 55%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 100%;
 
     --status-empty: 220 10% 50%;
     --status-draft: 35 80% 55%;
     --status-analyzed: 150 60% 45%;
     --status-unavailable: 0 60% 55%;
 
-    --sidebar-background: 220 20% 8%;
-    --sidebar-foreground: 40 15% 85%;
-    --sidebar-primary: 35 92% 55%;
-    --sidebar-primary-foreground: 220 20% 8%;
-    --sidebar-accent: 220 14% 18%;
-    --sidebar-accent-foreground: 40 15% 85%;
-    --sidebar-border: 220 14% 20%;
-    --sidebar-ring: 35 92% 55%;
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 0 0% 16%;
+    --sidebar-accent-foreground: 0 0% 85%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 0 0% 100%;
   }
 }
 
@@ -162,23 +162,18 @@
     @apply ring-2 ring-primary/20 border-primary/30;
   }
 
-  /* Score display */
+  /* Score display - solid black for elegance */
   .score-display {
-    @apply text-5xl font-bold tracking-tight;
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    @apply text-5xl font-bold tracking-tight text-foreground;
   }
 
-  /* Progress bar */
+  /* Progress bar - monochrome gradient */
   .progress-bar {
     @apply h-2 rounded-full bg-muted overflow-hidden;
   }
 
   .progress-bar-fill {
-    @apply h-full rounded-full transition-all duration-500 ease-out;
-    background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    @apply h-full rounded-full transition-all duration-500 ease-out bg-primary;
   }
 
   /* Textarea styling */
@@ -233,11 +228,8 @@
     display: none;
   }
 
-  /* Gradient text */
+  /* Gradient text - now solid for monochrome theme */
   .text-gradient-primary {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    @apply text-primary;
   }
 }
