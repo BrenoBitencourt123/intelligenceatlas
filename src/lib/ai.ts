@@ -113,16 +113,45 @@ export const calculateCompetencies = (
   }
   
   // Calculate scores based on analysis completeness
-  const introScore = introTotal > 0 ? (introChecks / introTotal) : 0.5;
-  const devScore = devTotal > 0 ? (devChecks / devTotal) : 0.5;
-  const conclusionScore = conclusionTotal > 0 ? (conclusionChecks / conclusionTotal) : 0.5;
+  // Minimum score of 0.6 for analyzed blocks (AI may undermark checklist items)
+  const introScore = introTotal > 0 
+    ? Math.max(0.6, introChecks / introTotal) 
+    : 0.5;
+  const devScore = devTotal > 0 
+    ? Math.max(0.6, devChecks / devTotal) 
+    : 0.5;
+  const conclusionScore = conclusionTotal > 0 
+    ? Math.max(0.6, conclusionChecks / conclusionTotal) 
+    : 0.5;
   
-  // Base + analysis bonus
-  const c1 = Math.min(200, Math.round(80 + (hasIntro ? 40 : 0) + (hasDev ? 40 : 0) + (introScore * 40)));
-  const c2 = Math.min(200, Math.round(60 + (hasIntro ? 60 : 0) + (introScore * 80)));
-  const c3 = Math.min(200, Math.round(60 + (hasDev ? 60 : 0) + (devScore * 80)));
-  const c4 = Math.min(200, Math.round(60 + (hasDev ? 60 : 0) + (devScore * 80)));
-  const c5 = Math.min(200, Math.round(40 + (hasConclusion ? 80 : 0) + (conclusionScore * 80)));
+  // Combined score from all blocks for general competencies
+  const avgScore = (introScore + devScore + conclusionScore) / 3;
+  
+  // Fairer formulas: structured essays deserve higher base scores
+  // C1: Language mastery - evaluated across all blocks
+  const c1 = Math.min(200, Math.round(
+    100 + (hasIntro ? 25 : 0) + (hasDev ? 25 : 0) + (hasConclusion ? 25 : 0) + (avgScore * 25)
+  ));
+  
+  // C2: Theme comprehension - mainly from introduction
+  const c2 = Math.min(200, Math.round(
+    80 + (hasIntro ? 60 : 0) + (introScore * 60)
+  ));
+  
+  // C3: Argument organization - mainly from development
+  const c3 = Math.min(200, Math.round(
+    80 + (hasDev ? 60 : 0) + (devScore * 60)
+  ));
+  
+  // C4: Cohesion mechanisms - evaluated across all blocks
+  const c4 = Math.min(200, Math.round(
+    80 + (hasDev ? 40 : 0) + (hasIntro ? 20 : 0) + (avgScore * 60)
+  ));
+  
+  // C5: Intervention proposal - mainly from conclusion
+  const c5 = Math.min(200, Math.round(
+    60 + (hasConclusion ? 80 : 0) + (conclusionScore * 60)
+  ));
   
   return [
     {
