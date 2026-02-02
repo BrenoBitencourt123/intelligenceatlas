@@ -1,118 +1,155 @@
 
-# Plano: Corrigir Sistema de Pontuacao ENEM
+# Plano: Corrigir Sistema de Checklist ENEM
 
-## Diagnostico
+## Diagnostico Completo
 
-Encontrei **tres problemas** no calculo de notas:
+Identifiquei **quatro problemas** no sistema de checklist:
 
-### Problema 1: `estimateScore` retorna 0 para blocos analisados
+### Problema 1: O checklist da IA nao esta sendo exibido
 
-No arquivo `src/lib/precheck.ts`, linha 276:
+O componente `BlockCard.tsx` exibe apenas o **precheck local** (heuristicas), ignorando completamente o checklist gerado pela IA apos a analise.
 
+**Codigo atual (linha 175):**
+```tsx
+({precheck.checklist.filter(i => i.checked).length}/{precheck.checklist.length})
 ```
-// With analyzed blocks, we'd use AI scores
-// This is a placeholder - actual implementation would use AI results
-return 0;
-```
 
-Isso e um bug! Quando os blocos sao analisados pela IA, a funcao retorna 0 ao inves de usar os dados reais.
+Isso significa que mesmo apos clicar em "Analisar bloco" e a IA retornar seu checklist, o usuario continua vendo o checklist das heuristicas locais.
 
-### Problema 2: Formulas de competencias muito conservadoras
+### Problema 2: Lista de conectivos incompleta no precheck local
 
-O calculo atual em `calculateCompetencies` e muito restritivo. Uma redacao com 75% dos checks marcados recebe notas na faixa de 180-190 por competencia, mas se a IA marcar menos checks (ex: 50%), a nota cai muito.
+A lista em `src/lib/precheck.ts` nao inclui expressoes validas como:
+- "Diante desse cenario" / "Diante disso"
+- "Esse cenario"
+- "Nesse panorama"
+- Outras expressoes contextuais
 
-### Problema 3: Dependencia excessiva do checklist
+### Problema 3: Deteccao de causa-efeito muito restritiva
 
-O sistema depende muito da proporcao de checks marcados pela IA, mas a IA pode ser inconsistente na quantidade de itens que marca como `true`.
+A lista `CAUSE_EFFECT` em `precheck.ts` busca palavras explicitas como "causa", "efeito", mas nao detecta relacoes implicitas como:
+- "o que dificulta" (consequencia)
+- "contribui para" (causa)
+- "limitando" (efeito)
+
+### Problema 4: Prompt da IA sem criterios claros
+
+O prompt na edge function `analyze-block` lista os criterios de forma generica sem explicar **como identificar** cada elemento. A IA pode interpretar de forma inconsistente.
 
 ---
 
 ## Solucao Proposta
 
-### 1. Corrigir `estimateScore` para usar dados de analise
+### 1. Exibir checklist da IA quando disponivel
+
+**Arquivo:** `src/components/atlas/BlockCard.tsx`
+
+Alterar a logica para:
+- Se bloco foi analisado pela IA: mostrar `block.analysis.checklist`
+- Caso contrario: mostrar `precheck.checklist`
+
+### 2. Expandir lista de conectivos
 
 **Arquivo:** `src/lib/precheck.ts`
 
-Quando houver blocos analisados, usar os scores das competencias ja calculadas ao inves de retornar 0.
+Adicionar expressoes contextuais e de transicao:
+- "diante desse cenario"
+- "diante disso"
+- "nesse panorama"
+- "esse cenario"
+- "tal situacao"
+- "frente a isso"
+- "considerando isso"
 
-### 2. Ajustar formulas de `calculateCompetencies`
+### 3. Expandir deteccao de causa-efeito
 
-**Arquivo:** `src/lib/ai.ts`
+**Arquivo:** `src/lib/precheck.ts`
 
-Novas formulas mais justas que:
-- Dao mais peso a presenca de blocos completos
-- Sao menos punitivas para pequenos problemas
-- Consideram que uma redacao estruturada ja merece nota base alta
+Adicionar padroes implicitos:
+- "o que"
+- "contribui para"
+- "limitando"
+- "dificultando"
+- "prejudicando"
+- "favorecendo"
+- "permitindo"
+- "impossibilitando"
 
-Formulas propostas:
+### 4. Melhorar prompt da IA
 
-| Competencia | Formula Atual | Formula Proposta |
-|-------------|---------------|------------------|
-| C1 | 80 + 40 + 40 + (score * 40) | 100 + 50 + (score * 50) |
-| C2 | 60 + 60 + (score * 80) | 80 + 60 + (score * 60) |
-| C3 | 60 + 60 + (score * 80) | 80 + 60 + (score * 60) |
-| C4 | 60 + 60 + (score * 80) | 80 + 60 + (score * 60) |
-| C5 | 40 + 80 + (score * 80) | 60 + 80 + (score * 60) |
+**Arquivo:** `supabase/functions/analyze-block/index.ts`
 
-Isso garante que uma redacao completa com checks razoaveis (60-80%) alcance 900+.
+Adicionar instrucoes explicitas sobre **como identificar** cada elemento:
 
-### 3. Adicionar peso minimo para blocos analisados
+**Para Conectivos:**
+```
+CONECTIVOS incluem expressoes como: "Diante desse cenario", "Nesse sentido", "Dessa forma", alem dos classicos "Portanto", "Alem disso", etc. Qualquer expressao que faca transicao logica entre ideias e um conectivo.
+```
 
-Se um bloco foi analisado com sucesso (sem erros graves), garantir um score minimo de 0.6 (60%) mesmo se a IA marcar poucos checks.
+**Para Causa-Efeito:**
+```
+RELACAO CAUSA-EFEITO inclui construcoes como "o que provoca", "o que dificulta", "contribui para", "limitando", "em razao de", mesmo que nao usem as palavras "causa" ou "efeito" explicitamente.
+```
 
 ---
 
 ## Mudancas Tecnicas Detalhadas
 
-### Arquivo: `src/lib/precheck.ts`
+### Arquivo: `src/components/atlas/BlockCard.tsx`
 
-Atualizar a funcao `estimateScore` para nao retornar 0 quando houver blocos analisados. Usar os dados de competencias do state.
+```tsx
+// Determinar qual checklist exibir
+const displayChecklist = useMemo(() => {
+  if (hasAnalysis && block.analysis?.checklist && block.analysis.checklist.length > 0) {
+    return block.analysis.checklist;
+  }
+  return precheck.checklist;
+}, [hasAnalysis, block.analysis, precheck.checklist]);
 
-### Arquivo: `src/lib/ai.ts`
-
-Atualizar `calculateCompetencies`:
-
-```typescript
-// Garantir score minimo de 0.6 para blocos analisados
-const introScore = introTotal > 0 
-  ? Math.max(0.6, introChecks / introTotal) 
-  : 0.5;
-
-// Formulas mais justas
-const c1 = Math.min(200, Math.round(
-  100 + (hasIntro ? 50 : 0) + (hasDev ? 0 : 0) + (introScore * 50)
-));
-const c2 = Math.min(200, Math.round(
-  80 + (hasIntro ? 60 : 0) + (introScore * 60)
-));
-// ... etc
+// No render, usar displayChecklist ao inves de precheck.checklist
 ```
 
----
+### Arquivo: `src/lib/precheck.ts`
 
-## Exemplo de Resultado Esperado
+Adicionar na lista CONNECTIVES:
+```typescript
+'diante desse cenário', 'diante disso', 'frente a isso', 
+'nesse panorama', 'ante o exposto', 'considerando isso',
+'diante dessa realidade', 'esse cenário', 'tal situação'
+```
 
-### Redacao Completa com 80% dos checks:
+Adicionar na lista CAUSE_EFFECT:
+```typescript
+'o que', 'contribui para', 'limitando', 'dificultando',
+'prejudicando', 'favorecendo', 'permitindo', 'impossibilitando',
+'comprometendo', 'afetando', 'impactando', 'refletindo em'
+```
 
-| Competencia | Atual | Proposta |
-|-------------|-------|----------|
-| C1 | 192 | 200 |
-| C2 | 184 | 200 |
-| C3 | 184 | 188 |
-| C4 | 184 | 188 |
-| C5 | 184 | 188 |
-| **Total** | **928** | **964** |
+### Arquivo: `supabase/functions/analyze-block/index.ts`
 
-### Redacao Completa com 60% dos checks (minimo garantido):
+Atualizar SYSTEM_PROMPT com criterios mais explicitos:
 
-| Competencia | Atual | Proposta |
-|-------------|-------|----------|
-| C1 | 184 | 180 |
-| C2 | 168 | 176 |
-| C3 | 168 | 176 |
-| C4 | 168 | 176 |
-| C5 | 168 | 176 |
-| **Total** | **856** | **884** |
+```typescript
+CRITÉRIOS POR TIPO DE BLOCO:
+
+INTRODUÇÃO:
+- Contextualização do tema (histórica, social, cultural)
+- Tese clara e assertiva
+- Repertório sociocultural (citação, dado, referência)
+- Gancho inicial que prende atenção
+- CONECTIVO: Qualquer expressão que faça transição lógica (ex: "Diante desse cenário", "Nesse contexto", "Sob essa perspectiva")
+
+DESENVOLVIMENTO:
+- Conectivo inicial que liga ao parágrafo anterior
+- Argumento central claro
+- Evidências/exemplos concretos (dados, citações, casos)
+- RELAÇÃO CAUSA-EFEITO: Identificar construções como "o que provoca", "contribui para", "limitando", "em decorrência de" - não precisa usar as palavras "causa" ou "efeito" explicitamente
+- Conexão com a tese
+
+IMPORTANTE PARA O CHECKLIST:
+- Marque como TRUE se o elemento estiver PRESENTE, mesmo que de forma implícita
+- Expressões como "Diante desse cenário" SÃO conectivos válidos
+- Construções como "o que dificulta X, limitando Y" CONTÊM relação causa-efeito
+```
 
 ---
 
@@ -120,15 +157,21 @@ const c2 = Math.min(200, Math.round(
 
 | Arquivo | Mudanca |
 |---------|---------|
-| `src/lib/ai.ts` | Ajustar formulas de `calculateCompetencies` |
-| `src/lib/precheck.ts` | Corrigir `estimateScore` para usar dados reais |
+| `src/components/atlas/BlockCard.tsx` | Exibir checklist da IA quando disponivel |
+| `src/lib/precheck.ts` | Expandir listas de conectivos e causa-efeito |
+| `supabase/functions/analyze-block/index.ts` | Melhorar prompt com criterios explicitos |
 
 ---
 
-## Alternativa: Pedir Score Direto para a IA
+## Resultado Esperado
 
-Se preferir, posso também modificar a edge function `analyze-block` para que a propria IA retorne um score sugerido (0-200) para cada competencia relacionada ao bloco. Isso seria mais preciso, porem aumentaria o uso de tokens.
+### Antes da correcao:
+- Introducao com "Diante desse cenario": **Conectivo NAO detectado**
+- Desenvolvimento com "o que dificulta... limitando": **Causa-efeito NAO detectado**
+- Checklist exibido: sempre o local (heuristicas)
 
-Qual abordagem voce prefere?
-1. **Ajustar formulas locais** (mais rapido, sem custo adicional)
-2. **IA retornar scores** (mais preciso, custo adicional de tokens)
+### Depois da correcao:
+- Introducao com "Diante desse cenario": **Conectivo DETECTADO**
+- Desenvolvimento com "o que dificulta... limitando": **Causa-efeito DETECTADO**
+- Checklist exibido: da IA apos analise, local antes
+- Notas mais justas baseadas em deteccao correta
