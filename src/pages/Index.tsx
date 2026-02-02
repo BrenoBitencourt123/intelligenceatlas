@@ -5,7 +5,7 @@ import { BlockCard } from '@/components/atlas/BlockCard';
 import { ResultPanel } from '@/components/atlas/ResultPanel';
 import { PasteDivideModal } from '@/components/atlas/PasteDivideModal';
 import { MobileResultsBar } from '@/components/atlas/MobileResultsBar';
-import { analyzeBlock, calculateCompetencies, generateImprovedVersion } from '@/lib/mockAI';
+import { analyzeBlock, calculateCompetencies, generateImprovedVersion } from '@/lib/ai';
 import { hashText } from '@/lib/storage';
 import { toast } from 'sonner';
 
@@ -55,11 +55,11 @@ const Index = () => {
       const analysis = await analyzeBlock(block.type, block.text, state.theme);
       setBlockAnalysis(blockId, analysis, 'analyzed');
       
-      // Update competencies
+      // Update competencies (now synchronous)
       const updatedBlocks = state.blocks.map(b => 
         b.id === blockId ? { ...b, analysis } : b
       );
-      const competencies = await calculateCompetencies(updatedBlocks);
+      const competencies = calculateCompetencies(updatedBlocks);
       setCompetencies(competencies);
       setTotalScore(competencies.reduce((sum, c) => sum + c.score, 0));
       
@@ -109,7 +109,7 @@ const Index = () => {
     setIsGeneratingImproved(true);
     
     try {
-      const improved = await generateImprovedVersion(state.blocks);
+      const improved = await generateImprovedVersion(state.blocks, state.theme);
       setImprovedVersion(improved);
       toast.success('Versão melhorada gerada!');
     } catch (error) {
