@@ -45,7 +45,7 @@ DESENVOLVIMENTO:
 - Argumento central claro
 - Evidências/exemplos concretos (dados, citações, casos)
 - RELAÇÃO CAUSA-EFEITO: Identificar construções que expressem causa e consequência, mesmo que implícitas. Exemplos válidos: "o que provoca", "o que dificulta", "contribui para", "limitando", "em decorrência de", "resultando em". NÃO precisa usar as palavras "causa" ou "efeito" explicitamente.
-- Conexão com a tese
+- CONEXÃO COM A TESE: Se o parágrafo discute o tema central, apresenta argumentos relacionados ao problema e usa dados/evidências para sustentar um ponto de vista, CONSIDERE que há conexão com a tese. Como você não tem acesso à introdução, seja GENEROSO neste critério - se o texto argumenta de forma coerente sobre o tema, marque como TRUE.
 
 CONCLUSÃO:
 - Retomada da tese
@@ -60,6 +60,7 @@ IMPORTANTE PARA O CHECKLIST:
 - Marque como TRUE (checked: true) se o elemento estiver PRESENTE, mesmo que de forma implícita
 - Expressões como "Diante desse cenário", "Nesse panorama", "Ante o exposto" SÃO conectivos válidos - marque como TRUE
 - Construções como "o que dificulta X, limitando Y" ou "contribui para Z" CONTÊM relação causa-efeito - marque como TRUE
+- Para "Conexão com a tese": se o parágrafo aborda o tema, apresenta argumentos coerentes e usa evidências, marque como TRUE
 - Seja criterioso mas justo: o objetivo é avaliar se o aluno demonstrou a competência, não exigir formato específico`;
 
 // GPT-4.1-mini pricing per 1M tokens
