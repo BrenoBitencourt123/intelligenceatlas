@@ -1,177 +1,80 @@
 
-# Plano: Corrigir Sistema de Checklist ENEM
+# Plano: Unificar Análise para Reduzir Custos
 
-## Diagnostico Completo
+## Problema Identificado
+Atualmente, o ciclo completo de análise envia o texto da redação para a IA **duas vezes**:
+1. **analyze-block**: Analisa cada bloco individualmente (~3 chamadas)
+2. **evaluate-competencies**: Envia a redação completa novamente para avaliar competências
 
-Identifiquei **quatro problemas** no sistema de checklist:
+Isso resulta em custo duplicado de tokens de entrada, pois o mesmo texto é processado duas vezes.
 
-### Problema 1: O checklist da IA nao esta sendo exibido
+## Solução Proposta
+Unificar a análise de blocos e a avaliação de competências em uma **única chamada de IA** que retorna ambos os resultados de uma vez só.
 
-O componente `BlockCard.tsx` exibe apenas o **precheck local** (heuristicas), ignorando completamente o checklist gerado pela IA apos a analise.
+## Como vai funcionar
 
-**Codigo atual (linha 175):**
-```tsx
-({precheck.checklist.filter(i => i.checked).length}/{precheck.checklist.length})
+### Nova Edge Function: `analyze-essay` (substitui as duas anteriores)
+Uma única função que:
+- Recebe **toda a redação** de uma vez
+- Analisa **cada bloco** (checklist, sugestões, evidências)
+- Avalia as **5 competências do ENEM**
+- Retorna tudo em uma única resposta JSON
+
+### Fluxo Simplificado
+```text
+ANTES (3-4 chamadas):
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│  analyze-block   │     │  analyze-block   │     │  analyze-block   │     │   evaluate-     │
+│  (introdução)    │ --> │ (desenvolvimento)│ --> │   (conclusão)    │ --> │  competencies   │
+└──────────────────┘     └──────────────────┘     └──────────────────┘     └──────────────────┘
+     ~1000 tokens             ~1200 tokens            ~1000 tokens             ~2000 tokens
+                                                                          
+DEPOIS (1 chamada):
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│                              analyze-essay                                                  │
+│  • Analisa todos os blocos + Avalia 5 competências em uma única chamada                    │
+└────────────────────────────────────────────────────────────────────────────────────────────┘
+     ~2500 tokens (economia de ~50-60% em tokens de entrada)
 ```
 
-Isso significa que mesmo apos clicar em "Analisar bloco" e a IA retornar seu checklist, o usuario continua vendo o checklist das heuristicas locais.
+### Economia Estimada
+- **Antes**: ~5200 tokens de input (3 blocos + competências)
+- **Depois**: ~2500 tokens de input (uma chamada unificada)
+- **Economia**: ~50-60% nos custos de análise
 
-### Problema 2: Lista de conectivos incompleta no precheck local
-
-A lista em `src/lib/precheck.ts` nao inclui expressoes validas como:
-- "Diante desse cenario" / "Diante disso"
-- "Esse cenario"
-- "Nesse panorama"
-- Outras expressoes contextuais
-
-### Problema 3: Deteccao de causa-efeito muito restritiva
-
-A lista `CAUSE_EFFECT` em `precheck.ts` busca palavras explicitas como "causa", "efeito", mas nao detecta relacoes implicitas como:
-- "o que dificulta" (consequencia)
-- "contribui para" (causa)
-- "limitando" (efeito)
-
-### Problema 4: Prompt da IA sem criterios claros
-
-O prompt na edge function `analyze-block` lista os criterios de forma generica sem explicar **como identificar** cada elemento. A IA pode interpretar de forma inconsistente.
+## O que muda para o usuário
+- **Nada muda na interface** - o botão "Analisar todos" continua funcionando igual
+- A análise será mais rápida (1 chamada ao invés de 4)
+- A análise individual de blocos deixará de existir (pois era redundante)
 
 ---
 
-## Solucao Proposta
+## Detalhes Técnicos
 
-### 1. Exibir checklist da IA quando disponivel
+### 1. Nova Edge Function `analyze-essay`
+Criar função que combina os prompts de `analyze-block` e `evaluate-competencies`:
+- Recebe: `{ blocks: [...], theme?: string }`
+- Retorna: `{ blockAnalyses: [...], competencies: [...], totalScore, usage }`
+- O prompt instruirá a IA a analisar cada bloco E avaliar competências em um único JSON
 
-**Arquivo:** `src/components/atlas/BlockCard.tsx`
+### 2. Atualizar `src/lib/ai.ts`
+- Remover `analyzeBlock()` e `evaluateCompetencies()` 
+- Criar `analyzeEssay()` que chama a nova função unificada
+- Manter `generateImprovedVersion()` separado (esse faz sentido ser independente)
 
-Alterar a logica para:
-- Se bloco foi analisado pela IA: mostrar `block.analysis.checklist`
-- Caso contrario: mostrar `precheck.checklist`
+### 3. Atualizar `src/pages/Index.tsx`
+- Simplificar `handleAnalyzeAll()` para chamar apenas `analyzeEssay()`
+- Remover `handleAnalyzeBlock()` (análise individual)
+- Os botões de analisar bloco individual serão removidos dos cards
 
-### 2. Expandir lista de conectivos
+### 4. Atualizar `src/components/atlas/BlockCard.tsx`
+- Remover botão "Analisar" individual de cada bloco
+- O bloco mostra análise quando disponível (após "Analisar todos")
 
-**Arquivo:** `src/lib/precheck.ts`
+### 5. Limpar funções antigas
+- Manter `analyze-block` e `evaluate-competencies` temporariamente para compatibilidade
+- Futuramente podem ser removidas do `config.toml`
 
-Adicionar expressoes contextuais e de transicao:
-- "diante desse cenario"
-- "diante disso"
-- "nesse panorama"
-- "esse cenario"
-- "tal situacao"
-- "frente a isso"
-- "considerando isso"
-
-### 3. Expandir deteccao de causa-efeito
-
-**Arquivo:** `src/lib/precheck.ts`
-
-Adicionar padroes implicitos:
-- "o que"
-- "contribui para"
-- "limitando"
-- "dificultando"
-- "prejudicando"
-- "favorecendo"
-- "permitindo"
-- "impossibilitando"
-
-### 4. Melhorar prompt da IA
-
-**Arquivo:** `supabase/functions/analyze-block/index.ts`
-
-Adicionar instrucoes explicitas sobre **como identificar** cada elemento:
-
-**Para Conectivos:**
-```
-CONECTIVOS incluem expressoes como: "Diante desse cenario", "Nesse sentido", "Dessa forma", alem dos classicos "Portanto", "Alem disso", etc. Qualquer expressao que faca transicao logica entre ideias e um conectivo.
-```
-
-**Para Causa-Efeito:**
-```
-RELACAO CAUSA-EFEITO inclui construcoes como "o que provoca", "o que dificulta", "contribui para", "limitando", "em razao de", mesmo que nao usem as palavras "causa" ou "efeito" explicitamente.
-```
-
----
-
-## Mudancas Tecnicas Detalhadas
-
-### Arquivo: `src/components/atlas/BlockCard.tsx`
-
-```tsx
-// Determinar qual checklist exibir
-const displayChecklist = useMemo(() => {
-  if (hasAnalysis && block.analysis?.checklist && block.analysis.checklist.length > 0) {
-    return block.analysis.checklist;
-  }
-  return precheck.checklist;
-}, [hasAnalysis, block.analysis, precheck.checklist]);
-
-// No render, usar displayChecklist ao inves de precheck.checklist
-```
-
-### Arquivo: `src/lib/precheck.ts`
-
-Adicionar na lista CONNECTIVES:
-```typescript
-'diante desse cenário', 'diante disso', 'frente a isso', 
-'nesse panorama', 'ante o exposto', 'considerando isso',
-'diante dessa realidade', 'esse cenário', 'tal situação'
-```
-
-Adicionar na lista CAUSE_EFFECT:
-```typescript
-'o que', 'contribui para', 'limitando', 'dificultando',
-'prejudicando', 'favorecendo', 'permitindo', 'impossibilitando',
-'comprometendo', 'afetando', 'impactando', 'refletindo em'
-```
-
-### Arquivo: `supabase/functions/analyze-block/index.ts`
-
-Atualizar SYSTEM_PROMPT com criterios mais explicitos:
-
-```typescript
-CRITÉRIOS POR TIPO DE BLOCO:
-
-INTRODUÇÃO:
-- Contextualização do tema (histórica, social, cultural)
-- Tese clara e assertiva
-- Repertório sociocultural (citação, dado, referência)
-- Gancho inicial que prende atenção
-- CONECTIVO: Qualquer expressão que faça transição lógica (ex: "Diante desse cenário", "Nesse contexto", "Sob essa perspectiva")
-
-DESENVOLVIMENTO:
-- Conectivo inicial que liga ao parágrafo anterior
-- Argumento central claro
-- Evidências/exemplos concretos (dados, citações, casos)
-- RELAÇÃO CAUSA-EFEITO: Identificar construções como "o que provoca", "contribui para", "limitando", "em decorrência de" - não precisa usar as palavras "causa" ou "efeito" explicitamente
-- Conexão com a tese
-
-IMPORTANTE PARA O CHECKLIST:
-- Marque como TRUE se o elemento estiver PRESENTE, mesmo que de forma implícita
-- Expressões como "Diante desse cenário" SÃO conectivos válidos
-- Construções como "o que dificulta X, limitando Y" CONTÊM relação causa-efeito
-```
-
----
-
-## Arquivos a Modificar
-
-| Arquivo | Mudanca |
-|---------|---------|
-| `src/components/atlas/BlockCard.tsx` | Exibir checklist da IA quando disponivel |
-| `src/lib/precheck.ts` | Expandir listas de conectivos e causa-efeito |
-| `supabase/functions/analyze-block/index.ts` | Melhorar prompt com criterios explicitos |
-
----
-
-## Resultado Esperado
-
-### Antes da correcao:
-- Introducao com "Diante desse cenario": **Conectivo NAO detectado**
-- Desenvolvimento com "o que dificulta... limitando": **Causa-efeito NAO detectado**
-- Checklist exibido: sempre o local (heuristicas)
-
-### Depois da correcao:
-- Introducao com "Diante desse cenario": **Conectivo DETECTADO**
-- Desenvolvimento com "o que dificulta... limitando": **Causa-efeito DETECTADO**
-- Checklist exibido: da IA apos analise, local antes
-- Notas mais justas baseadas em deteccao correta
+### 6. Registro de uso no banco
+- A nova função registrará como `operation_type: 'analyze-essay'`
+- Facilitará comparação de custos no dashboard admin
