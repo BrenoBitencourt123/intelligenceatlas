@@ -1,0 +1,7 @@
+project_id = "elqbgbcoyocxgtcswyyh"
+
+[functions.analyze-block]
+verify_jwt = false
+
+[functions.improve-essay]
+verify_jwt = false
