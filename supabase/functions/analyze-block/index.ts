@@ -38,12 +38,13 @@ INTRODUÇÃO:
 - Tese clara e assertiva
 - Repertório sociocultural (citação, dado, referência)
 - Gancho inicial que prende atenção
+- CONECTIVO: Qualquer expressão que faça transição lógica entre ideias. Exemplos válidos: "Diante desse cenário", "Nesse contexto", "Sob essa perspectiva", "Frente a isso", além dos clássicos "Portanto", "Além disso", etc.
 
 DESENVOLVIMENTO:
-- Conectivo inicial que liga ao parágrafo anterior
+- Conectivo inicial que liga ao parágrafo anterior (mesmos exemplos acima)
 - Argumento central claro
 - Evidências/exemplos concretos (dados, citações, casos)
-- Relação causa-consequência
+- RELAÇÃO CAUSA-EFEITO: Identificar construções que expressem causa e consequência, mesmo que implícitas. Exemplos válidos: "o que provoca", "o que dificulta", "contribui para", "limitando", "em decorrência de", "resultando em". NÃO precisa usar as palavras "causa" ou "efeito" explicitamente.
 - Conexão com a tese
 
 CONCLUSÃO:
@@ -53,7 +54,13 @@ CONCLUSÃO:
   2. AÇÃO: o que deve ser feito
   3. MEIO: como será feito
   4. FINALIDADE: para que/objetivo
-  5. DETALHAMENTO: especificação de pelo menos um elemento`;
+  5. DETALHAMENTO: especificação de pelo menos um elemento
+
+IMPORTANTE PARA O CHECKLIST:
+- Marque como TRUE (checked: true) se o elemento estiver PRESENTE, mesmo que de forma implícita
+- Expressões como "Diante desse cenário", "Nesse panorama", "Ante o exposto" SÃO conectivos válidos - marque como TRUE
+- Construções como "o que dificulta X, limitando Y" ou "contribui para Z" CONTÊM relação causa-efeito - marque como TRUE
+- Seja criterioso mas justo: o objetivo é avaliar se o aluno demonstrou a competência, não exigir formato específico`;
 
 // GPT-4.1-mini pricing per 1M tokens
 const INPUT_COST_PER_MILLION = 0.40;
