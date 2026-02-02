@@ -81,123 +81,91 @@ export const generateImprovedVersion = async (
   };
 };
 
-// Calculate competencies based on block analyses
+// Response type for competency evaluation
+export interface EvaluateCompetenciesResponse {
+  competencies: Array<{
+    id: 'c1' | 'c2' | 'c3' | 'c4' | 'c5';
+    score: number;
+    explanation: string;
+  }>;
+  totalScore: number;
+  overallFeedback: string;
+  usage: TokenUsage | null;
+}
+
+// Evaluate competencies using AI - analyzes the full essay
+export const evaluateCompetencies = async (
+  blocks: { type: BlockType; text: string }[],
+  theme?: string
+): Promise<EvaluateCompetenciesResponse> => {
+  const { data, error } = await supabase.functions.invoke('evaluate-competencies', {
+    body: { blocks, theme },
+  });
+
+  if (error) {
+    console.error('Evaluate competencies error:', error);
+    throw new Error(error.message || 'Erro ao avaliar competências');
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return {
+    competencies: data.competencies.map((c: { id: string; score: number; explanation: string }) => ({
+      id: c.id as 'c1' | 'c2' | 'c3' | 'c4' | 'c5',
+      score: c.score,
+      explanation: c.explanation,
+    })),
+    totalScore: data.totalScore,
+    overallFeedback: data.overallFeedback,
+    usage: data.usage || null,
+  };
+};
+
+// Legacy function - kept for backwards compatibility but now just returns placeholder
+// Use evaluateCompetencies instead for AI-based evaluation
 export const calculateCompetencies = (
   blocks: { type: BlockType; text: string; analysis?: BlockAnalysis }[]
 ) => {
-  const analyzedBlocks = blocks.filter(b => b.analysis);
-  const hasIntro = analyzedBlocks.some(b => b.type === 'introduction');
-  const hasDev = analyzedBlocks.some(b => b.type === 'development');
-  const hasConclusion = analyzedBlocks.some(b => b.type === 'conclusion');
+  const hasContent = blocks.some(b => b.text.trim().length > 0);
   
-  // Aggregate checklist data from analyses
-  let introChecks = 0, devChecks = 0, conclusionChecks = 0;
-  let introTotal = 0, devTotal = 0, conclusionTotal = 0;
-  
-  for (const block of analyzedBlocks) {
-    if (!block.analysis?.checklist) continue;
-    
-    const checked = block.analysis.checklist.filter(c => c.checked).length;
-    const total = block.analysis.checklist.length;
-    
-    if (block.type === 'introduction') {
-      introChecks += checked;
-      introTotal += total;
-    } else if (block.type === 'development') {
-      devChecks += checked;
-      devTotal += total;
-    } else if (block.type === 'conclusion') {
-      conclusionChecks += checked;
-      conclusionTotal += total;
-    }
-  }
-  
-  // Calculate scores based on analysis completeness
-  // Minimum score of 0.6 for analyzed blocks (AI may undermark checklist items)
-  const introScore = introTotal > 0 
-    ? Math.max(0.6, introChecks / introTotal) 
-    : 0.5;
-  const devScore = devTotal > 0 
-    ? Math.max(0.6, devChecks / devTotal) 
-    : 0.5;
-  const conclusionScore = conclusionTotal > 0 
-    ? Math.max(0.6, conclusionChecks / conclusionTotal) 
-    : 0.5;
-  
-  // Combined score from all blocks for general competencies
-  const avgScore = (introScore + devScore + conclusionScore) / 3;
-  
-  // Fairer formulas: structured essays deserve higher base scores
-  // C1: Language mastery - evaluated across all blocks
-  const c1 = Math.min(200, Math.round(
-    100 + (hasIntro ? 25 : 0) + (hasDev ? 25 : 0) + (hasConclusion ? 25 : 0) + (avgScore * 25)
-  ));
-  
-  // C2: Theme comprehension - mainly from introduction
-  const c2 = Math.min(200, Math.round(
-    80 + (hasIntro ? 60 : 0) + (introScore * 60)
-  ));
-  
-  // C3: Argument organization - mainly from development
-  const c3 = Math.min(200, Math.round(
-    80 + (hasDev ? 60 : 0) + (devScore * 60)
-  ));
-  
-  // C4: Cohesion mechanisms - evaluated across all blocks
-  const c4 = Math.min(200, Math.round(
-    80 + (hasDev ? 40 : 0) + (hasIntro ? 20 : 0) + (avgScore * 60)
-  ));
-  
-  // C5: Intervention proposal - mainly from conclusion
-  const c5 = Math.min(200, Math.round(
-    60 + (hasConclusion ? 80 : 0) + (conclusionScore * 60)
-  ));
-  
+  // Return placeholder competencies - actual scores come from evaluateCompetencies
   return [
     {
       id: 'c1' as const,
       name: 'Competência 1',
       description: 'Domínio da norma culta da língua escrita',
-      score: c1,
-      explanation: hasIntro && hasDev 
-        ? 'Análise baseada na estrutura e uso da língua identificados nos blocos.'
-        : 'Analise mais blocos para uma avaliação mais precisa.',
+      score: 0,
+      explanation: hasContent ? 'Clique em "Analisar todos" para avaliação por IA.' : 'Aguardando texto.',
     },
     {
       id: 'c2' as const,
       name: 'Competência 2',
       description: 'Compreensão da proposta e aplicação de conceitos',
-      score: c2,
-      explanation: hasIntro 
-        ? 'Avaliada pela contextualização e repertório na introdução.'
-        : 'Analise a introdução para avaliação mais precisa.',
+      score: 0,
+      explanation: hasContent ? 'Clique em "Analisar todos" para avaliação por IA.' : 'Aguardando texto.',
     },
     {
       id: 'c3' as const,
       name: 'Competência 3',
       description: 'Seleção e organização de argumentos',
-      score: c3,
-      explanation: hasDev 
-        ? 'Avaliada pela estrutura argumentativa dos desenvolvimentos.'
-        : 'Analise os desenvolvimentos para avaliação mais precisa.',
+      score: 0,
+      explanation: hasContent ? 'Clique em "Analisar todos" para avaliação por IA.' : 'Aguardando texto.',
     },
     {
       id: 'c4' as const,
       name: 'Competência 4',
       description: 'Conhecimento dos mecanismos linguísticos',
-      score: c4,
-      explanation: hasDev 
-        ? 'Avaliada pelo uso de conectivos e coesão textual.'
-        : 'Analise os desenvolvimentos para avaliação mais precisa.',
+      score: 0,
+      explanation: hasContent ? 'Clique em "Analisar todos" para avaliação por IA.' : 'Aguardando texto.',
     },
     {
       id: 'c5' as const,
       name: 'Competência 5',
       description: 'Proposta de intervenção detalhada',
-      score: c5,
-      explanation: hasConclusion 
-        ? 'Avaliada pela presença dos 5 elementos na proposta de intervenção.'
-        : 'Analise a conclusão para avaliação da proposta.',
+      score: 0,
+      explanation: hasContent ? 'Clique em "Analisar todos" para avaliação por IA.' : 'Aguardando texto.',
     },
   ];
 };
