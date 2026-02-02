@@ -49,13 +49,13 @@ export const BlockCard = ({
   const hasAnalysis = block.status === 'analyzed' && block.analysis;
   const isUnavailable = block.status === 'unavailable';
   
-  // Use AI checklist when available, otherwise fall back to local precheck
+  // Only show AI checklist after analysis - no local precheck displayed
   const displayChecklist = useMemo(() => {
     if (hasAnalysis && block.analysis?.checklist && block.analysis.checklist.length > 0) {
       return block.analysis.checklist;
     }
-    return precheck.checklist;
-  }, [hasAnalysis, block.analysis, precheck.checklist]);
+    return []; // Don't show checklist before AI analysis
+  }, [hasAnalysis, block.analysis]);
   
   return (
     <div className="block-card animate-fade-in">
@@ -172,13 +172,13 @@ export const BlockCard = ({
               </AccordionItem>
             )}
             
-            {/* Checklist */}
-            {hasContent && displayChecklist.length > 0 && (
+            {/* Checklist - only shown after AI analysis */}
+            {hasAnalysis && displayChecklist.length > 0 && (
               <AccordionItem value="checklist" className="border-none">
                 <AccordionTrigger className="accordion-trigger-atlas">
                   <span className="flex items-center gap-2">
                     <ClipboardList className="h-4 w-4 text-primary" />
-                    {hasAnalysis ? 'Checklist do corretor' : 'Checklist automático'}
+                    Checklist do corretor
                     <span className="ml-2 text-xs text-muted-foreground">
                       ({displayChecklist.filter(i => i.checked).length}/{displayChecklist.length})
                     </span>
