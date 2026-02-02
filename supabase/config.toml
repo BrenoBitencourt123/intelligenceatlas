@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.improve-essay]
 verify_jwt = false
+
+[functions.evaluate-competencies]
+verify_jwt = false

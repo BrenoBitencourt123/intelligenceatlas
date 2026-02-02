@@ -5,7 +5,7 @@ import { BlockCard } from '@/components/atlas/BlockCard';
 import { ResultPanel } from '@/components/atlas/ResultPanel';
 import { PasteDivideModal } from '@/components/atlas/PasteDivideModal';
 import { MobileResultsBar } from '@/components/atlas/MobileResultsBar';
-import { analyzeBlock, calculateCompetencies, generateImprovedVersion } from '@/lib/ai';
+import { analyzeBlock, calculateCompetencies, evaluateCompetencies, generateImprovedVersion } from '@/lib/ai';
 import { hashText } from '@/lib/storage';
 import { toast } from 'sonner';
 
@@ -32,12 +32,13 @@ const Index = () => {
   const [pasteModalOpen, setPasteModalOpen] = useState(false);
   const [analyzingBlocks, setAnalyzingBlocks] = useState<Set<string>>(new Set());
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
+  const [isEvaluatingCompetencies, setIsEvaluatingCompetencies] = useState(false);
   const [isGeneratingImproved, setIsGeneratingImproved] = useState(false);
   
   // Check if can analyze (any block has content)
   const canAnalyze = state.blocks.some(b => b.text.trim().length > 0);
   
-  // Analyze single block
+  // Analyze single block (doesn't update competencies - that's done in handleAnalyzeAll)
   const handleAnalyzeBlock = useCallback(async (blockId: string) => {
     const block = state.blocks.find(b => b.id === blockId);
     if (!block || !block.text.trim()) return;
@@ -60,13 +61,8 @@ const Index = () => {
         console.log(`[Token Usage] ${block.title}:`, response.usage);
       }
       
-      // Update competencies (now synchronous)
-      const updatedBlocks = state.blocks.map(b => 
-        b.id === blockId ? { ...b, analysis: response.analysis } : b
-      );
-      const competencies = calculateCompetencies(updatedBlocks);
-      setCompetencies(competencies);
-      setTotalScore(competencies.reduce((sum, c) => sum + c.score, 0));
+      // Note: Competencies are evaluated via AI in handleAnalyzeAll, not here
+      // This allows individual block analysis without recalculating the whole score
       
       toast.success(`${block.title} analisado com sucesso`);
     } catch (error) {
@@ -79,9 +75,9 @@ const Index = () => {
         return next;
       });
     }
-  }, [state.blocks, state.theme, setBlockAnalysis, setCompetencies, setTotalScore]);
+  }, [state.blocks, state.theme, setBlockAnalysis]);
   
-  // Analyze all blocks
+  // Analyze all blocks and evaluate competencies with AI
   const handleAnalyzeAll = useCallback(async () => {
     const blocksToAnalyze = state.blocks.filter(b => {
       if (!b.text.trim()) return false;
@@ -96,13 +92,59 @@ const Index = () => {
     
     setIsAnalyzingAll(true);
     
+    // First, analyze individual blocks
     for (const block of blocksToAnalyze) {
       await handleAnalyzeBlock(block.id);
     }
     
+    // Then, evaluate competencies with AI using full essay
+    setIsEvaluatingCompetencies(true);
+    try {
+      const blocksWithContent = state.blocks.filter(b => b.text.trim().length > 0);
+      const response = await evaluateCompetencies(blocksWithContent, state.theme);
+      
+      // Update competencies with AI evaluation
+      const updatedCompetencies = response.competencies.map(c => ({
+        id: c.id,
+        name: `Competência ${c.id.charAt(1)}`,
+        description: getCompetencyDescription(c.id),
+        score: c.score,
+        explanation: c.explanation,
+      }));
+      
+      setCompetencies(updatedCompetencies);
+      setTotalScore(response.totalScore);
+      
+      if (response.usage) {
+        console.log('[Token Usage] Avaliação de competências:', response.usage);
+      }
+      
+      toast.success('Análise completa!');
+    } catch (error) {
+      console.error('Competency evaluation error:', error);
+      toast.error('Erro ao avaliar competências. Usando estimativa local.');
+      // Fallback to local calculation
+      const competencies = calculateCompetencies(state.blocks);
+      setCompetencies(competencies);
+      setTotalScore(competencies.reduce((sum, c) => sum + c.score, 0));
+    } finally {
+      setIsEvaluatingCompetencies(false);
+    }
+    
     setIsAnalyzingAll(false);
-    toast.success('Análise completa!');
-  }, [state.blocks, handleAnalyzeBlock]);
+  }, [state.blocks, state.theme, handleAnalyzeBlock, setCompetencies, setTotalScore]);
+  
+  // Helper function for competency descriptions
+  const getCompetencyDescription = (id: string): string => {
+    const descriptions: Record<string, string> = {
+      c1: 'Domínio da norma culta da língua escrita',
+      c2: 'Compreensão da proposta e aplicação de conceitos',
+      c3: 'Seleção e organização de argumentos',
+      c4: 'Conhecimento dos mecanismos linguísticos',
+      c5: 'Proposta de intervenção detalhada',
+    };
+    return descriptions[id] || '';
+  };
   
   // Generate improved version
   const handleGenerateImproved = useCallback(async () => {
