@@ -69,9 +69,9 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
     const userPrompt = `Analise este bloco de ${blockType === 'introduction' ? 'INTRODUÇÃO' : blockType === 'development' ? 'DESENVOLVIMENTO' : 'CONCLUSÃO'} de uma redação ENEM.
@@ -84,14 +84,14 @@ ${text}
 
 Retorne APENAS o JSON no formato especificado, sem texto adicional.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "gpt-4.1-mini",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
@@ -102,20 +102,20 @@ Retorne APENAS o JSON no formato especificado, sem texto adicional.`;
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("OpenAI API error:", response.status, errorText);
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns segundos." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
+      if (response.status === 401) {
         return new Response(
-          JSON.stringify({ error: "Créditos de IA esgotados. Adicione créditos para continuar." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Chave da API OpenAI inválida." }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
       throw new Error("Erro ao processar análise");
     }
 
