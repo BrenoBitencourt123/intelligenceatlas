@@ -14,7 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      token_usage: {
+        Row: {
+          block_type: string | null
+          completion_tokens: number
+          created_at: string | null
+          estimated_cost_usd: number
+          id: string
+          operation_type: string
+          prompt_tokens: number
+          total_tokens: number
+        }
+        Insert: {
+          block_type?: string | null
+          completion_tokens: number
+          created_at?: string | null
+          estimated_cost_usd: number
+          id?: string
+          operation_type: string
+          prompt_tokens: number
+          total_tokens: number
+        }
+        Update: {
+          block_type?: string | null
+          completion_tokens?: number
+          created_at?: string | null
+          estimated_cost_usd?: number
+          id?: string
+          operation_type?: string
+          prompt_tokens?: number
+          total_tokens?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
