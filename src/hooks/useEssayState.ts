@@ -258,8 +258,8 @@ export const useEssayState = () => {
   }, [state.blocks]);
   
   const estimatedScore = useMemo(() => {
-    return estimateScore(state.blocks);
-  }, [state.blocks]);
+    return estimateScore(state.blocks, state.competencies);
+  }, [state.blocks, state.competencies]);
   
   const fullText = useMemo(() => {
     return state.blocks.map(b => b.text).join('\n\n');

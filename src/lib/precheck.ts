@@ -247,9 +247,20 @@ export const runPrecheck = (type: BlockType, text: string): PrecheckResult => {
   }
 };
 
-// Estimate total score based on precheck results
-export const estimateScore = (blocks: { type: BlockType; text: string; status: string }[]): number => {
+// Estimate total score based on precheck results and competencies
+export const estimateScore = (
+  blocks: { type: BlockType; text: string; status: string }[],
+  competencies?: { score: number }[]
+): number => {
   const analyzed = blocks.filter(b => b.status === 'analyzed');
+  
+  // If we have competency scores from AI analysis, use them
+  if (competencies && competencies.length > 0) {
+    const totalFromCompetencies = competencies.reduce((sum, c) => sum + c.score, 0);
+    if (totalFromCompetencies > 0) {
+      return totalFromCompetencies;
+    }
+  }
   
   if (analyzed.length === 0) {
     // Only precheck scores
@@ -271,7 +282,16 @@ export const estimateScore = (blocks: { type: BlockType; text: string; status: s
     return Math.round((avgPrecheck / 100) * 600); // Max 600 without AI analysis
   }
   
-  // With analyzed blocks, we'd use AI scores
-  // This is a placeholder - actual implementation would use AI results
-  return 0;
+  // Fallback for analyzed blocks without competency data
+  // This shouldn't happen in normal flow, but provides a reasonable default
+  const hasIntro = analyzed.some(b => b.type === 'introduction');
+  const hasDev = analyzed.some(b => b.type === 'development');
+  const hasConclusion = analyzed.some(b => b.type === 'conclusion');
+  
+  let baseScore = 400; // Base for having content
+  if (hasIntro) baseScore += 150;
+  if (hasDev) baseScore += 200;
+  if (hasConclusion) baseScore += 150;
+  
+  return Math.min(900, baseScore); // Cap at 900 without full competency calc
 };
