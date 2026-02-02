@@ -1,191 +1,134 @@
 
-# Plano: Rastreamento de Tokens com Dashboard Admin
+# Plano: Corrigir Sistema de Pontuacao ENEM
 
-## Resumo
+## Diagnostico
 
-Implementar rastreamento completo de tokens usados em cada chamada a API OpenAI, com armazenamento no banco de dados e dashboard para visualizacao.
+Encontrei **tres problemas** no calculo de notas:
 
-**Fase 1 (agora):** Mostrar tokens no frontend para testes
-**Fase 2 (futuro):** Adicionar autenticacao para restringir acesso ao admin
+### Problema 1: `estimateScore` retorna 0 para blocos analisados
+
+No arquivo `src/lib/precheck.ts`, linha 276:
+
+```
+// With analyzed blocks, we'd use AI scores
+// This is a placeholder - actual implementation would use AI results
+return 0;
+```
+
+Isso e um bug! Quando os blocos sao analisados pela IA, a funcao retorna 0 ao inves de usar os dados reais.
+
+### Problema 2: Formulas de competencias muito conservadoras
+
+O calculo atual em `calculateCompetencies` e muito restritivo. Uma redacao com 75% dos checks marcados recebe notas na faixa de 180-190 por competencia, mas se a IA marcar menos checks (ex: 50%), a nota cai muito.
+
+### Problema 3: Dependencia excessiva do checklist
+
+O sistema depende muito da proporcao de checks marcados pela IA, mas a IA pode ser inconsistente na quantidade de itens que marca como `true`.
 
 ---
 
-## Custos de Referencia - GPT-4.1-mini
+## Solucao Proposta
 
-| Tipo | Preco por 1M tokens |
-|------|---------------------|
-| Input | $0.40 |
-| Output | $1.60 |
+### 1. Corrigir `estimateScore` para usar dados de analise
 
----
+**Arquivo:** `src/lib/precheck.ts`
 
-## Arquitetura
+Quando houver blocos analisados, usar os scores das competencias ja calculadas ao inves de retornar 0.
 
-```text
-+-------------------+      +-------------------+      +------------------+
-|   Edge Functions  | ---> |   token_usage     | ---> |  /admin page     |
-|  analyze-block    |      |   (tabela)        |      |  (dashboard)     |
-|  improve-essay    |      +-------------------+      +------------------+
-+-------------------+
-        |
-        v
-   Retorna usage no
-   response JSON
-```
-
----
-
-## Mudancas Tecnicas
-
-### 1. Criar Tabela token_usage
-
-**SQL Migration:**
-
-```sql
-CREATE TABLE public.token_usage (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMPTZ DEFAULT now(),
-  operation_type TEXT NOT NULL, -- 'analyze-block' ou 'improve-essay'
-  block_type TEXT, -- 'introduction', 'development', 'conclusion' ou null
-  prompt_tokens INTEGER NOT NULL,
-  completion_tokens INTEGER NOT NULL,
-  total_tokens INTEGER NOT NULL,
-  estimated_cost_usd NUMERIC(10, 6) NOT NULL
-);
-
--- RLS desabilitado por enquanto (fase de testes)
--- Depois adicionamos politica para admin only
-```
-
-### 2. Atualizar Edge Function analyze-block
-
-**Arquivo:** `supabase/functions/analyze-block/index.ts`
-
-**Mudancas:**
-- Importar cliente Supabase
-- Extrair `usage` da resposta OpenAI
-- Calcular custo estimado
-- Inserir registro na tabela `token_usage`
-- Retornar dados de uso na resposta
-
-**Trecho relevante:**
-
-```typescript
-const data = await response.json();
-const usage = data.usage;
-
-// Calcular custo (GPT-4.1-mini: input $0.40/1M, output $1.60/1M)
-const estimatedCost = 
-  (usage.prompt_tokens * 0.40 / 1_000_000) + 
-  (usage.completion_tokens * 1.60 / 1_000_000);
-
-// Salvar no banco
-await supabaseClient.from('token_usage').insert({
-  operation_type: 'analyze-block',
-  block_type: blockType,
-  prompt_tokens: usage.prompt_tokens,
-  completion_tokens: usage.completion_tokens,
-  total_tokens: usage.total_tokens,
-  estimated_cost_usd: estimatedCost,
-});
-
-// Retornar com dados de uso
-return new Response(JSON.stringify({ 
-  analysis, 
-  usage: { ...usage, estimated_cost_usd: estimatedCost } 
-}));
-```
-
-### 3. Atualizar Edge Function improve-essay
-
-**Arquivo:** `supabase/functions/improve-essay/index.ts`
-
-**Mudancas identicas:** extrair usage, calcular custo, salvar, retornar.
-
-### 4. Atualizar Frontend para Receber Dados
+### 2. Ajustar formulas de `calculateCompetencies`
 
 **Arquivo:** `src/lib/ai.ts`
 
-Retornar os dados de uso junto com a analise/texto melhorado.
+Novas formulas mais justas que:
+- Dao mais peso a presenca de blocos completos
+- Sao menos punitivas para pequenos problemas
+- Consideram que uma redacao estruturada ja merece nota base alta
 
-**Arquivo:** `src/types/atlas.ts`
+Formulas propostas:
 
-Adicionar interface para TokenUsage:
+| Competencia | Formula Atual | Formula Proposta |
+|-------------|---------------|------------------|
+| C1 | 80 + 40 + 40 + (score * 40) | 100 + 50 + (score * 50) |
+| C2 | 60 + 60 + (score * 80) | 80 + 60 + (score * 60) |
+| C3 | 60 + 60 + (score * 80) | 80 + 60 + (score * 60) |
+| C4 | 60 + 60 + (score * 80) | 80 + 60 + (score * 60) |
+| C5 | 40 + 80 + (score * 80) | 60 + 80 + (score * 60) |
+
+Isso garante que uma redacao completa com checks razoaveis (60-80%) alcance 900+.
+
+### 3. Adicionar peso minimo para blocos analisados
+
+Se um bloco foi analisado com sucesso (sem erros graves), garantir um score minimo de 0.6 (60%) mesmo se a IA marcar poucos checks.
+
+---
+
+## Mudancas Tecnicas Detalhadas
+
+### Arquivo: `src/lib/precheck.ts`
+
+Atualizar a funcao `estimateScore` para nao retornar 0 quando houver blocos analisados. Usar os dados de competencias do state.
+
+### Arquivo: `src/lib/ai.ts`
+
+Atualizar `calculateCompetencies`:
 
 ```typescript
-export interface TokenUsage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-  estimated_cost_usd: number;
-}
-```
+// Garantir score minimo de 0.6 para blocos analisados
+const introScore = introTotal > 0 
+  ? Math.max(0.6, introChecks / introTotal) 
+  : 0.5;
 
-### 5. Criar Pagina Admin
-
-**Novo arquivo:** `src/pages/Admin.tsx`
-
-Dashboard com:
-- Tabela de historico de operacoes
-- Totais agregados (hoje, semana, mes)
-- Custo total estimado em USD
-- Grafico de uso ao longo do tempo (opcional)
-
-**Rota:** `/admin` (sem autenticacao na fase 1)
-
-### 6. Adicionar Rota no App
-
-**Arquivo:** `src/App.tsx`
-
-```typescript
-import Admin from "./pages/Admin";
-// ...
-<Route path="/admin" element={<Admin />} />
+// Formulas mais justas
+const c1 = Math.min(200, Math.round(
+  100 + (hasIntro ? 50 : 0) + (hasDev ? 0 : 0) + (introScore * 50)
+));
+const c2 = Math.min(200, Math.round(
+  80 + (hasIntro ? 60 : 0) + (introScore * 60)
+));
+// ... etc
 ```
 
 ---
 
-## Dados que Serao Exibidos no Dashboard
+## Exemplo de Resultado Esperado
 
-| Coluna | Exemplo |
-|--------|---------|
-| Data/Hora | 02/02/2026 20:39 |
-| Operacao | analyze-block |
-| Bloco | introduction |
-| Tokens Input | 890 |
-| Tokens Output | 412 |
-| Custo USD | $0.00102 |
+### Redacao Completa com 80% dos checks:
 
-**Agregacoes:**
-- Total de operacoes hoje
-- Total de tokens (input + output)
-- Custo total estimado
-- Custo medio por analise vs por melhoria
+| Competencia | Atual | Proposta |
+|-------------|-------|----------|
+| C1 | 192 | 200 |
+| C2 | 184 | 200 |
+| C3 | 184 | 188 |
+| C4 | 184 | 188 |
+| C5 | 184 | 188 |
+| **Total** | **928** | **964** |
 
----
+### Redacao Completa com 60% dos checks (minimo garantido):
 
-## Arquivos a Criar/Modificar
-
-| Arquivo | Acao |
-|---------|------|
-| Tabela `token_usage` | Criar via migracao SQL |
-| `supabase/functions/analyze-block/index.ts` | Adicionar logging de tokens |
-| `supabase/functions/improve-essay/index.ts` | Adicionar logging de tokens |
-| `src/types/atlas.ts` | Adicionar interface TokenUsage |
-| `src/lib/ai.ts` | Retornar dados de uso |
-| `src/pages/Admin.tsx` | Criar dashboard (novo) |
-| `src/App.tsx` | Adicionar rota /admin |
+| Competencia | Atual | Proposta |
+|-------------|-------|----------|
+| C1 | 184 | 180 |
+| C2 | 168 | 176 |
+| C3 | 168 | 176 |
+| C4 | 168 | 176 |
+| C5 | 168 | 176 |
+| **Total** | **856** | **884** |
 
 ---
 
-## Fase 2 (Futuro) - Restricao de Acesso
+## Arquivos a Modificar
 
-Quando quiser restringir o acesso ao dashboard:
+| Arquivo | Mudanca |
+|---------|---------|
+| `src/lib/ai.ts` | Ajustar formulas de `calculateCompetencies` |
+| `src/lib/precheck.ts` | Corrigir `estimateScore` para usar dados reais |
 
-1. Criar tabela `user_roles` com enum `app_role`
-2. Adicionar seu usuario como admin
-3. Criar funcao `has_role()` com SECURITY DEFINER
-4. Adicionar RLS na tabela `token_usage`
-5. Proteger rota `/admin` com autenticacao
+---
 
-Isso sera implementado em um segundo momento, quando voce quiser que apenas voce tenha acesso.
+## Alternativa: Pedir Score Direto para a IA
+
+Se preferir, posso também modificar a edge function `analyze-block` para que a propria IA retorne um score sugerido (0-200) para cada competencia relacionada ao bloco. Isso seria mais preciso, porem aumentaria o uso de tokens.
+
+Qual abordagem voce prefere?
+1. **Ajustar formulas locais** (mais rapido, sem custo adicional)
+2. **IA retornar scores** (mais preciso, custo adicional de tokens)
