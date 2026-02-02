@@ -85,23 +85,29 @@ const Index = () => {
       return b.analysis?.textHash !== currentHash;
     });
     
-    if (blocksToAnalyze.length === 0) {
-      toast.info('Todos os blocos já estão analisados');
+    // Get blocks with content for competency evaluation
+    const blocksWithContent = state.blocks.filter(b => b.text.trim().length > 0);
+    
+    if (blocksWithContent.length === 0) {
+      toast.info('Adicione texto antes de analisar');
       return;
     }
     
     setIsAnalyzingAll(true);
     
-    // First, analyze individual blocks
-    for (const block of blocksToAnalyze) {
-      await handleAnalyzeBlock(block.id);
+    // First, analyze individual blocks that need analysis
+    if (blocksToAnalyze.length > 0) {
+      for (const block of blocksToAnalyze) {
+        await handleAnalyzeBlock(block.id);
+      }
     }
     
     // Then, evaluate competencies with AI using full essay
     setIsEvaluatingCompetencies(true);
     try {
-      const blocksWithContent = state.blocks.filter(b => b.text.trim().length > 0);
+      console.log('[Competencies] Calling evaluateCompetencies with blocks:', blocksWithContent.length);
       const response = await evaluateCompetencies(blocksWithContent, state.theme);
+      console.log('[Competencies] Response:', response);
       
       // Update competencies with AI evaluation
       const updatedCompetencies = response.competencies.map(c => ({
@@ -122,11 +128,7 @@ const Index = () => {
       toast.success('Análise completa!');
     } catch (error) {
       console.error('Competency evaluation error:', error);
-      toast.error('Erro ao avaliar competências. Usando estimativa local.');
-      // Fallback to local calculation
-      const competencies = calculateCompetencies(state.blocks);
-      setCompetencies(competencies);
-      setTotalScore(competencies.reduce((sum, c) => sum + c.score, 0));
+      toast.error('Erro ao avaliar competências. Tente novamente.');
     } finally {
       setIsEvaluatingCompetencies(false);
     }
