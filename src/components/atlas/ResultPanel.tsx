@@ -76,11 +76,13 @@ export const ResultPanel = ({
           <div className="text-center space-y-3 py-6 border-b border-border">
             <div className="inline-flex items-center justify-center">
               <div className="score-display text-5xl font-bold">
-                {state.totalScore || estimatedScore || '—'}
+                {state.totalScore > 0 ? state.totalScore : '—'}
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              {state.totalScore ? 'Nota estimada (ENEM)' : 'Estimativa parcial'}
+              {state.totalScore > 0 
+                ? 'Nota estimada (ENEM)' 
+                : 'Clique em "Analisar todos" para ver a nota'}
             </p>
           </div>
           
