@@ -49,6 +49,14 @@ export const BlockCard = ({
   const hasAnalysis = block.status === 'analyzed' && block.analysis;
   const isUnavailable = block.status === 'unavailable';
   
+  // Use AI checklist when available, otherwise fall back to local precheck
+  const displayChecklist = useMemo(() => {
+    if (hasAnalysis && block.analysis?.checklist && block.analysis.checklist.length > 0) {
+      return block.analysis.checklist;
+    }
+    return precheck.checklist;
+  }, [hasAnalysis, block.analysis, precheck.checklist]);
+  
   return (
     <div className="block-card animate-fade-in">
       {/* Header */}
@@ -165,20 +173,20 @@ export const BlockCard = ({
             )}
             
             {/* Checklist */}
-            {hasContent && (
+            {hasContent && displayChecklist.length > 0 && (
               <AccordionItem value="checklist" className="border-none">
                 <AccordionTrigger className="accordion-trigger-atlas">
                   <span className="flex items-center gap-2">
                     <ClipboardList className="h-4 w-4 text-primary" />
-                    Checklist automático
+                    {hasAnalysis ? 'Checklist do corretor' : 'Checklist automático'}
                     <span className="ml-2 text-xs text-muted-foreground">
-                      ({precheck.checklist.filter(i => i.checked).length}/{precheck.checklist.length})
+                      ({displayChecklist.filter(i => i.checked).length}/{displayChecklist.length})
                     </span>
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4 pt-1">
                   <ul className="space-y-2">
-                    {precheck.checklist.map((item) => (
+                    {displayChecklist.map((item) => (
                       <li key={item.id} className="flex items-start gap-2.5">
                         {item.checked ? (
                           <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />

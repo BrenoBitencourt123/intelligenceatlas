@@ -3,6 +3,7 @@ import { BlockType, ChecklistItem } from '@/types/atlas';
 
 // Common connectives in Portuguese
 const CONNECTIVES = [
+  // Conectivos clássicos
   'portanto', 'além disso', 'contudo', 'entretanto', 'todavia', 'no entanto',
   'por conseguinte', 'assim', 'dessa forma', 'desse modo', 'nesse sentido',
   'em suma', 'por fim', 'logo', 'então', 'consequentemente', 'outrossim',
@@ -11,14 +12,31 @@ const CONNECTIVES = [
   'haja vista', 'com efeito', 'de fato', 'certamente', 'indubitavelmente',
   'primeiramente', 'em primeiro lugar', 'em segundo lugar', 'por outro lado',
   'sob essa perspectiva', 'sob essa ótica', 'diante disso', 'nesse contexto',
+  // Conectivos contextuais (expressões que fazem transição lógica)
+  'diante desse cenário', 'diante dessa realidade', 'diante do exposto',
+  'frente a isso', 'frente a esse cenário', 'ante o exposto', 'ante isso',
+  'considerando isso', 'considerando esse cenário', 'considerando essa realidade',
+  'nesse panorama', 'nesse viés', 'nessa perspectiva', 'nessa conjuntura',
+  'esse cenário', 'essa realidade', 'tal situação', 'tal cenário',
+  'tendo em vista', 'à luz disso', 'em face disso', 'em virtude disso',
+  'sob esse viés', 'sob tal perspectiva', 'sob tal ótica',
 ];
 
 // Cause-effect indicators
 const CAUSE_EFFECT = [
+  // Indicadores explícitos
   'causa', 'efeito', 'consequência', 'resultado', 'provoca', 'gera', 'leva a',
   'acarreta', 'implica', 'desencadeia', 'origina', 'motiva', 'ocasiona',
   'por causa de', 'em razão de', 'devido a', 'em virtude de', 'graças a',
   'em decorrência', 'como resultado', 'como consequência',
+  // Indicadores implícitos (gerúndios e construções causais)
+  'o que dificulta', 'o que provoca', 'o que gera', 'o que causa', 'o que leva',
+  'o que impede', 'o que compromete', 'o que afeta', 'o que impacta',
+  'contribui para', 'contribuindo para',
+  'limitando', 'dificultando', 'prejudicando', 'comprometendo',
+  'favorecendo', 'permitindo', 'possibilitando', 'impossibilitando',
+  'afetando', 'impactando', 'refletindo em', 'resultando em',
+  'agravando', 'intensificando', 'ampliando', 'reduzindo',
 ];
 
 // Example indicators
