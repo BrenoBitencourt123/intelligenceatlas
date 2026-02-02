@@ -1,140 +1,191 @@
 
-# Plano: Corrigir Versao Melhorada para Atender os Criterios de Analise
+# Plano: Rastreamento de Tokens com Dashboard Admin
 
-## Resumo do Problema
+## Resumo
 
-A funcao "Gerar versao melhorada" esta desconectada das analises feitas. A IA que reescreve nao recebe:
-1. Os problemas identificados pelo checklist
-2. As sugestoes de melhoria ("howToImprove")
-3. As evidencias textuais com problemas ("textEvidence")
+Implementar rastreamento completo de tokens usados em cada chamada a API OpenAI, com armazenamento no banco de dados e dashboard para visualizacao.
 
-Por isso, a versao "melhorada" pode nao corrigir os problemas que a propria plataforma identificou, resultando em nota igual ou menor.
+**Fase 1 (agora):** Mostrar tokens no frontend para testes
+**Fase 2 (futuro):** Adicionar autenticacao para restringir acesso ao admin
 
-## Solucao Proposta
+---
 
-Passar as analises dos blocos como contexto para o endpoint de melhoria, garantindo que a IA saiba exatamente o que precisa corrigir.
+## Custos de Referencia - GPT-4.1-mini
+
+| Tipo | Preco por 1M tokens |
+|------|---------------------|
+| Input | $0.40 |
+| Output | $1.60 |
+
+---
+
+## Arquitetura
+
+```text
++-------------------+      +-------------------+      +------------------+
+|   Edge Functions  | ---> |   token_usage     | ---> |  /admin page     |
+|  analyze-block    |      |   (tabela)        |      |  (dashboard)     |
+|  improve-essay    |      +-------------------+      +------------------+
++-------------------+
+        |
+        v
+   Retorna usage no
+   response JSON
+```
+
+---
 
 ## Mudancas Tecnicas
 
-### 1. Atualizar o Endpoint improve-essay
+### 1. Criar Tabela token_usage
+
+**SQL Migration:**
+
+```sql
+CREATE TABLE public.token_usage (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  operation_type TEXT NOT NULL, -- 'analyze-block' ou 'improve-essay'
+  block_type TEXT, -- 'introduction', 'development', 'conclusion' ou null
+  prompt_tokens INTEGER NOT NULL,
+  completion_tokens INTEGER NOT NULL,
+  total_tokens INTEGER NOT NULL,
+  estimated_cost_usd NUMERIC(10, 6) NOT NULL
+);
+
+-- RLS desabilitado por enquanto (fase de testes)
+-- Depois adicionamos politica para admin only
+```
+
+### 2. Atualizar Edge Function analyze-block
+
+**Arquivo:** `supabase/functions/analyze-block/index.ts`
+
+**Mudancas:**
+- Importar cliente Supabase
+- Extrair `usage` da resposta OpenAI
+- Calcular custo estimado
+- Inserir registro na tabela `token_usage`
+- Retornar dados de uso na resposta
+
+**Trecho relevante:**
+
+```typescript
+const data = await response.json();
+const usage = data.usage;
+
+// Calcular custo (GPT-4.1-mini: input $0.40/1M, output $1.60/1M)
+const estimatedCost = 
+  (usage.prompt_tokens * 0.40 / 1_000_000) + 
+  (usage.completion_tokens * 1.60 / 1_000_000);
+
+// Salvar no banco
+await supabaseClient.from('token_usage').insert({
+  operation_type: 'analyze-block',
+  block_type: blockType,
+  prompt_tokens: usage.prompt_tokens,
+  completion_tokens: usage.completion_tokens,
+  total_tokens: usage.total_tokens,
+  estimated_cost_usd: estimatedCost,
+});
+
+// Retornar com dados de uso
+return new Response(JSON.stringify({ 
+  analysis, 
+  usage: { ...usage, estimated_cost_usd: estimatedCost } 
+}));
+```
+
+### 3. Atualizar Edge Function improve-essay
 
 **Arquivo:** `supabase/functions/improve-essay/index.ts`
 
-**Mudancas:**
-- Receber as analises de cada bloco junto com o texto
-- Reformular o prompt para incluir os problemas identificados
-- Instruir a IA a corrigir especificamente cada ponto do checklist nao atendido
-- Garantir que os 5 elementos da proposta de intervencao estejam presentes na conclusao
+**Mudancas identicas:** extrair usage, calcular custo, salvar, retornar.
 
-**Novo formato de entrada:**
-```typescript
-{
-  blocks: [
-    {
-      type: 'introduction',
-      text: '...',
-      analysis: {
-        checklist: [
-          { label: 'Tese identificavel', checked: false },
-          // ...
-        ],
-        howToImprove: ['Tornar a tese mais explicita'],
-        textEvidence: [
-          { quote: '...', issue: '...', suggestion: '...' }
-        ]
-      }
-    }
-  ],
-  theme?: string
-}
-```
-
-**Novo prompt:**
-- Listar explicitamente o que precisa ser corrigido por bloco
-- Para a conclusao, exigir os 5 elementos (agente, acao, meio, finalidade, detalhamento)
-- Instruir a IA a manter as ideias mas corrigir os pontos falhos
-
-### 2. Atualizar o Frontend
+### 4. Atualizar Frontend para Receber Dados
 
 **Arquivo:** `src/lib/ai.ts`
 
-**Mudanca:**
-- Passar as analises dos blocos para o endpoint
-- Filtrar apenas os itens nao atendidos do checklist
+Retornar os dados de uso junto com a analise/texto melhorado.
 
-**Arquivo:** `src/pages/Index.tsx`
+**Arquivo:** `src/types/atlas.ts`
 
-**Mudanca:**
-- Garantir que o handleGenerateImproved envie os blocos com suas analises
+Adicionar interface para TokenUsage:
 
-### 3. Refinar o Prompt do Sistema (improve-essay)
-
-O novo prompt deve:
-1. Receber uma lista explicita de "PROBLEMAS A CORRIGIR" por bloco
-2. Para a conclusao, verificar e incluir os 5 elementos obrigatorios
-3. Manter o tom didatico e nao adicionar informacoes que o aluno nao mencionou
-4. Melhorar conectivos e coesao de forma consistente
-
-### Exemplo de Prompt Reformulado
-
-```text
-Voce e um professor especialista em redacao ENEM. Reescreva a redacao do aluno corrigindo ESPECIFICAMENTE os problemas listados abaixo.
-
-REGRAS:
-- CORRIJA cada problema listado
-- MANTENHA as ideias e argumentos do aluno
-- NAO adicione informacoes novas
-- Melhore conectivos e clareza
-
-PROBLEMAS A CORRIGIR:
-
-[INTRODUCAO]
-- Tese esta implicita, precisa ser mais assertiva
-- Falta conectivo inicial forte
-
-[DESENVOLVIMENTO 1]
-- Relacao causa-consequencia nao esta clara
-
-[CONCLUSAO]
-- Proposta de intervencao incompleta:
-  - Agente: presente (Governo)
-  - Acao: presente (investir)
-  - Meio: presente (corredores exclusivos)
-  - Finalidade: presente (reduzir desigualdades)
-  - Detalhamento: FALTANDO - detalhar melhor o meio ou a acao
-
-REDACAO ORIGINAL:
-...
-
-Reescreva garantindo que TODOS os problemas acima sejam corrigidos.
+```typescript
+export interface TokenUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  estimated_cost_usd: number;
+}
 ```
 
-## Fluxo Corrigido
+### 5. Criar Pagina Admin
 
-```text
-[Aluno escreve] -> [Analisa blocos] -> [Checklist gerado]
-                                              |
-                                              v
-                                   [Gerar versao melhorada]
-                                              |
-                                              v
-                        [IA recebe texto + problemas identificados]
-                                              |
-                                              v
-                           [Versao melhorada corrige os problemas]
+**Novo arquivo:** `src/pages/Admin.tsx`
+
+Dashboard com:
+- Tabela de historico de operacoes
+- Totais agregados (hoje, semana, mes)
+- Custo total estimado em USD
+- Grafico de uso ao longo do tempo (opcional)
+
+**Rota:** `/admin` (sem autenticacao na fase 1)
+
+### 6. Adicionar Rota no App
+
+**Arquivo:** `src/App.tsx`
+
+```typescript
+import Admin from "./pages/Admin";
+// ...
+<Route path="/admin" element={<Admin />} />
 ```
 
-## Resultado Esperado
+---
 
-1. A versao melhorada vai corrigir especificamente os pontos que a plataforma identificou como falhos
-2. Ao reanalisar a versao melhorada, ela deve ter notas iguais ou maiores
-3. O aluno consegue ver claramente a diferenca entre o original e a versao corrigida
-4. Maior consistencia entre analise e melhoria
+## Dados que Serao Exibidos no Dashboard
 
-## Arquivos a Modificar
+| Coluna | Exemplo |
+|--------|---------|
+| Data/Hora | 02/02/2026 20:39 |
+| Operacao | analyze-block |
+| Bloco | introduction |
+| Tokens Input | 890 |
+| Tokens Output | 412 |
+| Custo USD | $0.00102 |
+
+**Agregacoes:**
+- Total de operacoes hoje
+- Total de tokens (input + output)
+- Custo total estimado
+- Custo medio por analise vs por melhoria
+
+---
+
+## Arquivos a Criar/Modificar
 
 | Arquivo | Acao |
 |---------|------|
-| `supabase/functions/improve-essay/index.ts` | Refatorar prompt para receber e usar analises |
-| `src/lib/ai.ts` | Passar analises para o endpoint |
-| `src/pages/Index.tsx` | Nenhuma mudanca necessaria (ja passa os blocos) |
+| Tabela `token_usage` | Criar via migracao SQL |
+| `supabase/functions/analyze-block/index.ts` | Adicionar logging de tokens |
+| `supabase/functions/improve-essay/index.ts` | Adicionar logging de tokens |
+| `src/types/atlas.ts` | Adicionar interface TokenUsage |
+| `src/lib/ai.ts` | Retornar dados de uso |
+| `src/pages/Admin.tsx` | Criar dashboard (novo) |
+| `src/App.tsx` | Adicionar rota /admin |
+
+---
+
+## Fase 2 (Futuro) - Restricao de Acesso
+
+Quando quiser restringir o acesso ao dashboard:
+
+1. Criar tabela `user_roles` com enum `app_role`
+2. Adicionar seu usuario como admin
+3. Criar funcao `has_role()` com SECURITY DEFINER
+4. Adicionar RLS na tabela `token_usage`
+5. Proteger rota `/admin` com autenticacao
+
+Isso sera implementado em um segundo momento, quando voce quiser que apenas voce tenha acesso.
