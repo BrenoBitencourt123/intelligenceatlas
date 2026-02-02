@@ -53,17 +53,17 @@ export const ResultPanel = ({
   return (
     <div className="bg-card rounded-xl border border-border shadow-panel overflow-hidden">
       <Tabs defaultValue="summary" className="w-full">
-        <TabsList className="w-full justify-start rounded-none border-b bg-muted/30 p-0 h-auto">
+        <TabsList className="w-full grid grid-cols-2 rounded-none border-b bg-muted/30 p-0 h-auto">
           <TabsTrigger 
             value="summary" 
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-5 py-3.5 text-sm font-medium"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3.5 text-sm font-medium justify-center"
           >
             <FileText className="h-4 w-4 mr-2" />
             Resumo
           </TabsTrigger>
           <TabsTrigger 
             value="competencies"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-5 py-3.5 text-sm font-medium"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3.5 text-sm font-medium justify-center"
           >
             <Award className="h-4 w-4 mr-2" />
             Competências
