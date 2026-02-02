@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Block, BlockType } from '@/types/atlas';
 import { runPrecheck } from '@/lib/precheck';
 import { StatusPill } from './StatusPill';
@@ -10,7 +10,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { 
-  Sparkles, 
   Trash2, 
   X, 
   CheckCircle2, 
@@ -28,7 +27,6 @@ interface BlockCardProps {
   block: Block;
   onTextChange: (text: string) => void;
   onClear: () => void;
-  onAnalyze: () => void;
   onRemove?: () => void;
   canRemove?: boolean;
   isAnalyzing?: boolean;
@@ -38,7 +36,6 @@ export const BlockCard = ({
   block,
   onTextChange,
   onClear,
-  onAnalyze,
   onRemove,
   canRemove = false,
   isAnalyzing = false,
@@ -64,6 +61,12 @@ export const BlockCard = ({
         <div className="flex items-center gap-3">
           <h3 className="font-semibold text-foreground">{block.title}</h3>
           <StatusPill status={block.status} />
+          {isAnalyzing && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Analisando...</span>
+            </div>
+          )}
         </div>
         {canRemove && onRemove && (
           <Button
@@ -92,8 +95,8 @@ export const BlockCard = ({
         </div>
       </div>
       
-      {/* Footer actions */}
-      <div className="flex items-center justify-between px-5 py-3 border-t border-border/50 bg-muted/30">
+      {/* Footer actions - simplified without individual analyze button */}
+      <div className="flex items-center justify-end px-5 py-3 border-t border-border/50 bg-muted/30">
         <Button
           variant="ghost"
           size="sm"
@@ -103,25 +106,6 @@ export const BlockCard = ({
         >
           <X className="h-4 w-4 mr-1.5" />
           Limpar
-        </Button>
-        
-        <Button
-          size="sm"
-          onClick={onAnalyze}
-          disabled={!hasContent || isAnalyzing}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
-        >
-          {isAnalyzing ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-              Analisando...
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4 mr-1.5" />
-              Analisar bloco
-            </>
-          )}
         </Button>
       </div>
       

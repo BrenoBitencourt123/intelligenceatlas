@@ -3,9 +3,16 @@ import { BlockType, BlockAnalysis, TokenUsage } from '@/types/atlas';
 import { hashText } from './storage';
 import { supabase } from '@/integrations/supabase/client';
 
-// Response type including token usage
-export interface AnalyzeBlockResponse {
-  analysis: BlockAnalysis;
+// Response type for unified essay analysis
+export interface AnalyzeEssayResponse {
+  blockAnalyses: Record<string, BlockAnalysis>;
+  competencies: Array<{
+    id: 'c1' | 'c2' | 'c3' | 'c4' | 'c5';
+    score: number;
+    explanation: string;
+  }>;
+  totalScore: number;
+  overallFeedback: string;
   usage: TokenUsage | null;
 }
 
@@ -14,34 +21,46 @@ export interface ImproveEssayResponse {
   usage: TokenUsage | null;
 }
 
-// Analyze a single block using AI
-export const analyzeBlock = async (
-  blockType: BlockType,
-  text: string,
+// Unified analysis: analyzes all blocks + evaluates competencies in a single AI call
+export const analyzeEssay = async (
+  blocks: { id: string; type: BlockType; text: string }[],
   theme?: string
-): Promise<AnalyzeBlockResponse> => {
-  const { data, error } = await supabase.functions.invoke('analyze-block', {
-    body: { blockType, text, theme },
+): Promise<AnalyzeEssayResponse> => {
+  const { data, error } = await supabase.functions.invoke('analyze-essay', {
+    body: { blocks, theme },
   });
 
   if (error) {
-    console.error('Analyze block error:', error);
-    throw new Error(error.message || 'Erro ao analisar bloco');
+    console.error('Analyze essay error:', error);
+    throw new Error(error.message || 'Erro ao analisar redação');
   }
 
   if (data.error) {
     throw new Error(data.error);
   }
 
-  const analysis = data.analysis;
-  
-  // Add timestamp and hash for caching
+  // Add timestamp and hash to each block analysis for caching
+  const blockAnalysesWithMeta: Record<string, BlockAnalysis> = {};
+  for (const block of blocks) {
+    const analysis = data.blockAnalyses[block.id];
+    if (analysis) {
+      blockAnalysesWithMeta[block.id] = {
+        ...analysis,
+        timestamp: Date.now(),
+        textHash: hashText(block.text),
+      };
+    }
+  }
+
   return {
-    analysis: {
-      ...analysis,
-      timestamp: Date.now(),
-      textHash: hashText(text),
-    },
+    blockAnalyses: blockAnalysesWithMeta,
+    competencies: data.competencies.map((c: { id: string; score: number; explanation: string }) => ({
+      id: c.id as 'c1' | 'c2' | 'c3' | 'c4' | 'c5',
+      score: c.score,
+      explanation: c.explanation,
+    })),
+    totalScore: data.totalScore,
+    overallFeedback: data.overallFeedback,
     usage: data.usage || null,
   };
 };
@@ -81,56 +100,14 @@ export const generateImprovedVersion = async (
   };
 };
 
-// Response type for competency evaluation
-export interface EvaluateCompetenciesResponse {
-  competencies: Array<{
-    id: 'c1' | 'c2' | 'c3' | 'c4' | 'c5';
-    score: number;
-    explanation: string;
-  }>;
-  totalScore: number;
-  overallFeedback: string;
-  usage: TokenUsage | null;
-}
-
-// Evaluate competencies using AI - analyzes the full essay
-export const evaluateCompetencies = async (
-  blocks: { type: BlockType; text: string }[],
-  theme?: string
-): Promise<EvaluateCompetenciesResponse> => {
-  const { data, error } = await supabase.functions.invoke('evaluate-competencies', {
-    body: { blocks, theme },
-  });
-
-  if (error) {
-    console.error('Evaluate competencies error:', error);
-    throw new Error(error.message || 'Erro ao avaliar competências');
-  }
-
-  if (data.error) {
-    throw new Error(data.error);
-  }
-
-  return {
-    competencies: data.competencies.map((c: { id: string; score: number; explanation: string }) => ({
-      id: c.id as 'c1' | 'c2' | 'c3' | 'c4' | 'c5',
-      score: c.score,
-      explanation: c.explanation,
-    })),
-    totalScore: data.totalScore,
-    overallFeedback: data.overallFeedback,
-    usage: data.usage || null,
-  };
-};
-
 // Legacy function - kept for backwards compatibility but now just returns placeholder
-// Use evaluateCompetencies instead for AI-based evaluation
+// Use analyzeEssay instead for unified AI-based analysis
 export const calculateCompetencies = (
   blocks: { type: BlockType; text: string; analysis?: BlockAnalysis }[]
 ) => {
   const hasContent = blocks.some(b => b.text.trim().length > 0);
   
-  // Return placeholder competencies - actual scores come from evaluateCompetencies
+  // Return placeholder competencies - actual scores come from analyzeEssay
   return [
     {
       id: 'c1' as const,
