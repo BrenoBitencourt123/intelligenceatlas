@@ -1,13 +1,16 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { DailyThemeCard } from '@/components/home/DailyThemeCard';
+import { LockedThemeCard } from '@/components/home/LockedThemeCard';
 import { ProgressCard } from '@/components/home/ProgressCard';
 import { StatsCard } from '@/components/home/StatsCard';
 import { useDailyTheme } from '@/hooks/useDailyTheme';
 import { useUserStats } from '@/hooks/useUserStats';
+import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Home = () => {
   const { theme, isLoading: isThemeLoading } = useDailyTheme();
+  const { isPro, monthlyLimit } = usePlanFeatures();
   const { 
     totalEssays, 
     lastScore, 
@@ -16,9 +19,6 @@ const Home = () => {
     hasWrittenToday,
     isLoading: isStatsLoading 
   } = useUserStats();
-  
-  // Monthly limit based on plan (basic = 30)
-  const monthlyLimit = 30;
 
   return (
     <MainLayout>
@@ -35,11 +35,13 @@ const Home = () => {
           {/* Daily theme CTA */}
           {isThemeLoading ? (
             <Skeleton className="h-32 rounded-lg" />
-          ) : (
+          ) : isPro ? (
             <DailyThemeCard 
               title={theme.title} 
               hasWrittenToday={hasWrittenToday} 
             />
+          ) : (
+            <LockedThemeCard />
           )}
 
           {/* Stats grid */}
