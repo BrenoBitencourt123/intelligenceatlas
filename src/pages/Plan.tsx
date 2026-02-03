@@ -5,16 +5,32 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useUserStats } from '@/hooks/useUserStats';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMemo } from 'react';
 
 const Plan = () => {
-  // Mock data
-  const currentPlan = {
-    name: 'Básico',
-    price: 29.90,
-    used: 12,
-    total: 30,
-    nextReset: '15 de fevereiro',
-  };
+  const { profile } = useAuth();
+  const { monthlyEssays, isLoading } = useUserStats();
+
+  // Calculate next reset date (first day of next month)
+  const nextReset = useMemo(() => {
+    const now = new Date();
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return nextMonth.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
+  }, []);
+
+  // Plan config based on profile
+  const planConfig = useMemo(() => {
+    const planType = profile?.plan_type || 'basic';
+    if (planType === 'pro') {
+      return { name: 'Pro', price: 49.90, limit: 999 };
+    }
+    return { name: 'Básico', price: 29.90, limit: 30 };
+  }, [profile?.plan_type]);
+
+  const usagePercentage = Math.min(100, Math.round((monthlyEssays / planConfig.limit) * 100));
 
   const basicFeatures = [
     '30 correções por mês',
@@ -31,8 +47,6 @@ const Plan = () => {
     'Histórico completo',
     'Prioridade no suporte',
   ];
-
-  const usagePercentage = Math.round((currentPlan.used / currentPlan.total) * 100);
 
   return (
     <MainLayout>
@@ -52,16 +66,16 @@ const Plan = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <CardTitle className="text-xl">Plano {currentPlan.name}</CardTitle>
+                    <CardTitle className="text-xl">Plano {planConfig.name}</CardTitle>
                     <Badge variant="secondary">Atual</Badge>
                   </div>
                   <CardDescription>
-                    Próxima renovação: {currentPlan.nextReset}
+                    Próxima renovação: {nextReset}
                   </CardDescription>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-foreground">
-                    R$ {currentPlan.price.toFixed(2).replace('.', ',')}
+                    R$ {planConfig.price.toFixed(2).replace('.', ',')}
                   </p>
                   <p className="text-xs text-muted-foreground">/mês</p>
                 </div>
@@ -72,14 +86,26 @@ const Plan = () => {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Uso do mês</span>
-                  <span className="font-medium text-foreground">
-                    {currentPlan.used}/{currentPlan.total} correções
-                  </span>
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-24" />
+                  ) : (
+                    <span className="font-medium text-foreground">
+                      {monthlyEssays}/{planConfig.limit} correções
+                    </span>
+                  )}
                 </div>
-                <Progress value={usagePercentage} className="h-2" />
-                <p className="text-xs text-muted-foreground">
-                  {currentPlan.total - currentPlan.used} correções restantes
-                </p>
+                {isLoading ? (
+                  <Skeleton className="h-2 w-full" />
+                ) : (
+                  <Progress value={usagePercentage} className="h-2" />
+                )}
+                {isLoading ? (
+                  <Skeleton className="h-3 w-32" />
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {Math.max(0, planConfig.limit - monthlyEssays)} correções restantes
+                  </p>
+                )}
               </div>
 
               <Separator />
