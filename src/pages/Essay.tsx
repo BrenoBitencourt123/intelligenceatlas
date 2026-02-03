@@ -16,8 +16,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Essay = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { theme, isLoading: isThemeLoading } = useDailyTheme();
+  const isPro = profile?.plan_type === 'pro';
   const {
     state,
     updateBlockText,
@@ -231,7 +232,7 @@ const Essay = () => {
             {/* Left column - Editor */}
             <div className="lg:w-[62%] space-y-4">
               {/* Pedagogical context section */}
-              <PedagogicalSection theme={theme} />
+              <PedagogicalSection theme={theme} isLocked={!isPro} />
               
               {/* Action buttons - above blocks */}
               <div className="flex items-center justify-end gap-2 flex-wrap py-2">
