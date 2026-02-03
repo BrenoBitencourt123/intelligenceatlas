@@ -1,143 +1,245 @@
 
-# Plano: Substituir Logout por Menu de Perfil
+# Plano: Controle de Exibicao por Plano (Basico vs Pro)
 
 ## Visao Geral
 
-Transformar o botao "Sair" atual em um menu de perfil com avatar do usuario. Ao clicar, abre um dropdown (desktop) ou navega para uma pagina de perfil (mobile) onde o usuario pode gerenciar suas informacoes.
+Implementar logica de gating baseada no plano do usuario (`profile.plan_type`) para exibir ou bloquear conteudos exclusivos do Plano Pro, mantendo todo o layout existente inalterado.
 
-## Funcionalidades do Perfil
-
-1. **Avatar** - Exibicao de foto (com fallback para iniciais do nome/email)
-2. **Informacoes basicas** - Nome, email, plano atual
-3. **Alterar senha** - Via Supabase Auth
-4. **Upload de foto** - Armazenamento no Storage
-5. **Sair** - Botao de logout dentro do menu/pagina
-
-## Arquitetura
+## Regras de Negocio
 
 ```text
-+------------------+     +------------------+     +------------------+
-|    TopNav.tsx    |     |   BottomNav.tsx  |     |   Profile.tsx    |
-|   (Desktop)      |     |    (Mobile)      |     |    (Pagina)      |
-+------------------+     +------------------+     +------------------+
-         |                        |                        |
-         v                        v                        v
-  DropdownMenu              NavLink para            Formulario com:
-  com opcoes:               /perfil                 - Foto upload
-  - Ver Perfil                                      - Nome
-  - Alterar Senha                                   - Email (readonly)
-  - Sair                                            - Alterar senha
-                                                    - Sair
++------------------+-------------------------+-------------------------+
+| Recurso          | Plano Basico           | Plano Pro               |
++------------------+-------------------------+-------------------------+
+| Correcoes/mes    | 30 (1 por dia)         | Ate 2 por dia           |
+| Tema do dia      | BLOQUEADO              | Liberado                |
+| Contexto         | BLOQUEADO              | Liberado                |
+| Perguntas        | BLOQUEADO              | Liberado                |
+| Estrutura        | BLOQUEADO              | Liberado                |
+| Editor blocos    | Funciona normalmente   | Funciona normalmente    |
+| Correcao AI      | Funciona normalmente   | Funciona normalmente    |
+| Versao melhorada | Funciona normalmente   | Funciona normalmente    |
++------------------+-------------------------+-------------------------+
 ```
 
-## Mudancas no Banco de Dados
+## Mudancas na Tela Inicio (Home.tsx)
 
-Adicionar coluna `avatar_url` na tabela `profiles`:
+### Plano Pro
+Manter comportamento atual: exibir `DailyThemeCard` com tema e botao "Escrever redacao de hoje".
 
-```sql
-ALTER TABLE public.profiles 
-ADD COLUMN avatar_url TEXT;
-```
+### Plano Basico
+Substituir `DailyThemeCard` por um card bloqueado:
+- Icone de cadeado
+- Texto: "O Tema do Dia e um beneficio exclusivo do Plano Pro"
+- Botao: "Ver Plano Pro" (navega para /plano)
 
-Criar bucket de storage para avatares (se nao existir):
+### Implementacao
 
-```sql
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('avatars', 'avatars', true)
-ON CONFLICT DO NOTHING;
+Criar componente `LockedThemeCard` para a versao bloqueada e usar condicional baseada em `profile?.plan_type`.
 
--- Politica para usuarios fazerem upload do proprio avatar
-CREATE POLICY "Users can upload own avatar"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
+## Mudancas na Tela Redacao (Essay.tsx)
 
-CREATE POLICY "Users can update own avatar"
-ON storage.objects FOR UPDATE
-TO authenticated
-USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
+### Plano Pro
+Manter comportamento atual: exibir `PedagogicalSection` com todos os cards visiveis.
 
-CREATE POLICY "Anyone can view avatars"
-ON storage.objects FOR SELECT
-TO public
-USING (bucket_id = 'avatars');
-```
+### Plano Basico
+Renderizar todos os cards com overlay de bloqueio:
+- Blur leve no conteudo (`blur-sm`)
+- Overlay semi-transparente
+- Icone de cadeado centralizado
+- Texto explicativo
+- Sem interacao (pointer-events-none)
 
-## Arquivos a Criar/Modificar
+### Implementacao
 
-### 1. Nova pagina de Perfil (`src/pages/Profile.tsx`)
+Criar componente wrapper `LockedOverlay` que envolve qualquer conteudo e aplica o efeito de bloqueio.
 
-Pagina completa com:
-- Avatar com opcao de upload
-- Campo para editar nome
-- Email (somente leitura)
-- Botao para alterar senha (envia email de reset)
-- Informacoes do plano atual
-- Botao de sair
+Modificar `PedagogicalSection` para receber prop `isLocked` e aplicar bloqueio nos 4 cards.
 
-### 2. Componente ProfileMenu (`src/components/layout/ProfileMenu.tsx`)
+## Arquivos a Criar
 
-Dropdown para desktop com:
-- Avatar pequeno como trigger
-- Opcoes: "Meu Perfil", "Alterar Senha", separador, "Sair"
+### 1. src/components/home/LockedThemeCard.tsx
 
-### 3. Atualizar TopNav (`src/components/layout/TopNav.tsx`)
-
-Substituir botao de logout pelo componente ProfileMenu
-
-### 4. Atualizar BottomNav (`src/components/layout/BottomNav.tsx`)
-
-Substituir botao de logout por link para /perfil com icone de usuario
-
-### 5. Atualizar rotas (`src/App.tsx`)
-
-Adicionar rota protegida para /perfil
-
-### 6. Atualizar AuthContext (`src/contexts/AuthContext.tsx`)
-
-Incluir `avatar_url` no tipo Profile e funcao para atualizar perfil
-
-## Detalhes Tecnicos
-
-### Upload de Avatar
-
-1. Usuario seleciona imagem
-2. Redimensionar no cliente (max 200x200px)
-3. Upload para Storage bucket `avatars/{user_id}/avatar.jpg`
-4. Atualizar `profiles.avatar_url` com URL publica
-
-### Alteracao de Senha
-
-Usar `supabase.auth.resetPasswordForEmail()` para enviar email de reset:
+Card que substitui o tema do dia para usuarios do Plano Basico:
 
 ```typescript
-const { error } = await supabase.auth.resetPasswordForEmail(email, {
-  redirectTo: `${window.location.origin}/reset-password`
-});
+// Estrutura:
+// - Card com borda pontilhada
+// - Icone Lock grande centralizado
+// - Titulo "Tema do Dia"
+// - Texto explicativo do beneficio Pro
+// - Botao "Ver Plano Pro" -> /plano
 ```
 
-### Fallback do Avatar
+### 2. src/components/atlas/LockedOverlay.tsx
 
-Quando nao houver foto, exibir iniciais:
+Componente wrapper que aplica efeito de bloqueio:
 
 ```typescript
-const getInitials = (name: string | null, email: string) => {
-  if (name) {
-    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+// Props: children, title (opcional)
+// Estrutura:
+// - Container relativo
+// - Children com classe blur-sm e pointer-events-none
+// - Overlay absoluto com:
+//   - Background semi-transparente
+//   - Icone Lock
+//   - Texto sobre Plano Pro
+//   - Link para /plano
+```
+
+## Arquivos a Modificar
+
+### 1. src/pages/Home.tsx
+
+Adicionar logica condicional:
+
+```typescript
+const { profile } = useAuth();
+const isPro = profile?.plan_type === 'pro';
+
+// No render:
+{isPro ? (
+  <DailyThemeCard title={theme.title} hasWrittenToday={hasWrittenToday} />
+) : (
+  <LockedThemeCard />
+)}
+```
+
+### 2. src/components/atlas/PedagogicalSection.tsx
+
+Adicionar prop `isLocked` e wrapper condicional:
+
+```typescript
+interface PedagogicalSectionProps {
+  theme: DailyTheme;
+  isLocked?: boolean;
+}
+
+export const PedagogicalSection = ({ theme, isLocked = false }: PedagogicalSectionProps) => {
+  if (isLocked) {
+    return (
+      <LockedOverlay>
+        <div className="space-y-4">
+          <ThemeCard title={theme.title} motivatingText={theme.motivatingText} />
+          <ContextCard context={theme.context} />
+          <GuidingQuestionsCard questions={theme.guidingQuestions} />
+          <StructureGuideCard structureGuide={theme.structureGuide} />
+        </div>
+      </LockedOverlay>
+    );
   }
-  return email[0].toUpperCase();
+  
+  return (
+    <div className="space-y-4">
+      <ThemeCard ... />
+      <ContextCard ... />
+      <GuidingQuestionsCard ... />
+      <StructureGuideCard ... />
+    </div>
+  );
 };
 ```
 
-## Fluxo do Usuario
+### 3. src/pages/Essay.tsx
 
-1. **Desktop**: Clica no avatar no canto direito -> Dropdown abre -> Escolhe opcao
-2. **Mobile**: Clica no icone de perfil na barra inferior -> Vai para pagina /perfil
-3. **Alterar senha**: Clica no botao -> Recebe email -> Segue link para resetar
+Passar prop `isLocked` para `PedagogicalSection`:
+
+```typescript
+const { profile } = useAuth();
+const isPro = profile?.plan_type === 'pro';
+
+// No render:
+<PedagogicalSection theme={theme} isLocked={!isPro} />
+```
+
+## Design Visual do Bloqueio
+
+### Card Bloqueado na Home
+
+```text
++----------------------------------------+
+|  [  ]  [  ]  [  ]  [  ]  (borda tracejada)
+|                                        |
+|              [CADEADO]                 |
+|                                        |
+|          TEMA DO DIA                   |
+|                                        |
+|  O Tema do Dia e um beneficio          |
+|  exclusivo do Plano Pro, que oferece   |
+|  tema diario e orientacao completa.    |
+|                                        |
+|       [ Ver Plano Pro ]                |
+|                                        |
++----------------------------------------+
+```
+
+### Overlay na Tela Redacao
+
+```text
++----------------------------------------+
+|  Tema do Dia (blur)                    |
+|  Contexto (blur)            [CADEADO]  |
+|  Perguntas (blur)                      |
+|  Estrutura (blur)    Recurso exclusivo |
+|                      do Plano Pro      |
+|                      [ Ver plano ]     |
++----------------------------------------+
+```
+
+## Fluxo de Usuario
+
+### Usuario Basico
+1. Acessa Home -> Ve card bloqueado com CTA para Plano Pro
+2. Acessa Redacao -> Ve secao pedagogica bloqueada, mas pode usar editor normalmente
+3. Pode colar tema manualmente e usar correcao
+
+### Usuario Pro
+1. Acessa Home -> Ve tema do dia normalmente
+2. Acessa Redacao -> Ve toda orientacao pedagogica
+3. Experiencia completa
+
+## Detalhes Tecnicos
+
+### Hook Reutilizavel (Opcional)
+
+Criar hook `usePlanFeatures` para centralizar logica:
+
+```typescript
+export const usePlanFeatures = () => {
+  const { profile } = useAuth();
+  const isPro = profile?.plan_type === 'pro';
+  
+  return {
+    isPro,
+    hasThemeAccess: isPro,
+    hasPedagogicalAccess: isPro,
+    monthlyLimit: isPro ? 60 : 30,
+    dailyLimit: isPro ? 2 : 1,
+  };
+};
+```
+
+### Consideracoes
+
+- Nao alterar editor de blocos (funciona igual para todos)
+- Nao alterar correcao AI (funciona igual para todos)
+- Nao alterar versao melhorada (funciona igual para todos)
+- Manter tema disponivel via contexto mesmo bloqueado (para usuario colar manualmente)
+
+## Resumo de Mudancas
+
+| Arquivo | Acao |
+|---------|------|
+| `src/components/home/LockedThemeCard.tsx` | Criar |
+| `src/components/atlas/LockedOverlay.tsx` | Criar |
+| `src/hooks/usePlanFeatures.ts` | Criar (opcional) |
+| `src/pages/Home.tsx` | Modificar |
+| `src/pages/Essay.tsx` | Modificar |
+| `src/components/atlas/PedagogicalSection.tsx` | Modificar |
 
 ## Resultado Esperado
 
-- Menu de navegacao mais limpo e profissional
-- Usuario pode personalizar seu perfil com foto
-- Opcao de alterar senha acessivel
-- Experiencia consistente entre desktop e mobile
+- Interface simples e educacional
+- Usuario Basico entende o valor do Pro
+- Fluxo de redacao preservado para ambos os planos
+- Incentivo natural para upgrade sem fricao
