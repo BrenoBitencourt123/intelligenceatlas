@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      essays: {
+        Row: {
+          analysis: Json | null
+          analyzed_at: string | null
+          blocks: Json
+          created_at: string
+          id: string
+          theme: string
+          total_score: number | null
+          user_id: string
+        }
+        Insert: {
+          analysis?: Json | null
+          analyzed_at?: string | null
+          blocks?: Json
+          created_at?: string
+          id?: string
+          theme: string
+          total_score?: number | null
+          user_id: string
+        }
+        Update: {
+          analysis?: Json | null
+          analyzed_at?: string | null
+          blocks?: Json
+          created_at?: string
+          id?: string
+          theme?: string
+          total_score?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "essays_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+          plan_started_at: string
+          plan_type: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          name?: string | null
+          plan_started_at?: string
+          plan_type?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+          plan_started_at?: string
+          plan_type?: string
+        }
+        Relationships: []
+      }
       token_usage: {
         Row: {
           block_type: string | null

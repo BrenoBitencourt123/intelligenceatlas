@@ -1,6 +1,9 @@
-import { Home, PenLine, CreditCard } from 'lucide-react';
+import { Home, PenLine, CreditCard, LogOut } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 const navItems = [
   { title: 'Início', path: '/', icon: Home },
@@ -9,6 +12,14 @@ const navItems = [
 ];
 
 export const TopNav = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
   return (
     <header className="hidden md:block sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
       <div className="container max-w-7xl mx-auto px-4">
@@ -40,6 +51,19 @@ export const TopNav = () => {
               </NavLink>
             ))}
           </nav>
+
+          {/* User actions */}
+          {user && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleSignOut}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
+            </Button>
+          )}
         </div>
       </div>
     </header>
