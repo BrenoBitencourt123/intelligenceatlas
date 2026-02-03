@@ -16,21 +16,17 @@ export const useIsAdmin = () => {
       }
 
       try {
-        // Query the user_roles table using the has_role function via RPC
-        // Since we can't call the function directly, we check if the user has admin role
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
+        // Use the has_role function via RPC - it's SECURITY DEFINER so it bypasses RLS
+        const { data, error } = await supabase.rpc('has_role', {
+          _user_id: user.id,
+          _role: 'admin'
+        });
 
         if (error) {
-          // If RLS blocks the query (user is not admin), data will be null
-          console.log('Admin check:', error.message);
+          console.error('Admin check error:', error.message);
           setIsAdmin(false);
         } else {
-          setIsAdmin(!!data);
+          setIsAdmin(data === true);
         }
       } catch (err) {
         console.error('Error checking admin status:', err);
