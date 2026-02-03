@@ -15,9 +15,11 @@ export const TopNav = () => {
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">A</span>
-            </div>
+            <img 
+              src="https://storage.googleapis.com/gpt-engineer-file-uploads/f4QJ9UCag0bQmfSQvlHZMs1PDKy2/uploads/1770063094363-favicon.ico" 
+              alt="Atlas" 
+              className="h-8 w-8 rounded-lg"
+            />
             <span className="font-semibold text-foreground">Atlas</span>
           </div>
 
