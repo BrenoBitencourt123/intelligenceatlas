@@ -1,4 +1,4 @@
-import { Check, Lock, Zap, Crown, Loader2, Settings, Sparkles } from 'lucide-react';
+import { Check, Zap, Crown, Loader2, Settings, Sparkles, Star } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,11 +28,6 @@ const Plan = () => {
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     return nextMonth.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
   }, []);
-
-  // Get current plan config
-  const currentPlanConfig = useMemo(() => {
-    return STRIPE_PLANS[planType] || STRIPE_PLANS.free;
-  }, [planType]);
 
   // Usage calculation
   const usedEssays = isFree ? totalEssays : monthlyEssays;
@@ -110,24 +105,26 @@ const Plan = () => {
 
   const basicFeatures = [
     '30 correções por mês',
-    'Análise das 5 competências',
-    'Versão melhorada',
+    'Análise das 5 competências ENEM',
+    'Versão melhorada da redação',
     'Histórico de redações',
   ];
 
   const proFeatures = [
-    'Até 2 correções por dia',
+    '60 correções por mês',
     'Tema do dia automático',
     'Contexto e fundamentação',
     'Perguntas norteadoras',
     'Estrutura sugerida',
-    'Versão melhorada',
+    'Análise das 5 competências ENEM',
+    'Versão melhorada da redação',
+    'Histórico de redações',
   ];
 
   if (isCheckingSubscription) {
     return (
       <MainLayout>
-        <div className="container max-w-2xl mx-auto px-4 py-8">
+        <div className="container max-w-5xl mx-auto px-4 py-8">
           <div className="flex flex-col items-center justify-center py-12 gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-muted-foreground">Verificando sua assinatura...</p>
@@ -139,251 +136,250 @@ const Plan = () => {
 
   return (
     <MainLayout>
-      <div className="container max-w-2xl mx-auto px-4 py-8">
-        <div className="space-y-6">
+      <div className="container max-w-5xl mx-auto px-4 py-8">
+        <div className="space-y-8">
           {/* Header */}
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-foreground">Seu Plano</h1>
-            <p className="text-muted-foreground">
-              Gerencie sua assinatura e veja seu uso
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold text-foreground">Escolha seu plano</h1>
+            <p className="text-muted-foreground max-w-lg mx-auto">
+              Prepare-se para o ENEM com a melhor plataforma de correção de redações do Brasil
             </p>
           </div>
 
-          {/* Current Plan Card */}
-          <Card className={isPro ? "border-2 border-amber-500" : isBasic ? "border-2 border-primary" : "border-2 border-muted"}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    {isPro && <Crown className="h-5 w-5 text-amber-500" />}
-                    {isBasic && <Zap className="h-5 w-5 text-primary" />}
-                    <CardTitle className="text-xl">Plano {currentPlanConfig.name}</CardTitle>
-                    <Badge variant="secondary">Atual</Badge>
+          {/* Usage Card for paying users */}
+          {!isFree && (
+            <Card className="border bg-muted/30">
+              <CardContent className="py-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">Uso do mês</p>
+                    <p className="text-xs text-muted-foreground">
+                      Renova em {nextReset}
+                    </p>
                   </div>
-                  <CardDescription>
-                    {isFree 
-                      ? 'Experimente o Atlas gratuitamente'
-                      : `Próxima renovação: ${nextReset}`}
-                  </CardDescription>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-foreground">
-                    {currentPlanConfig.price === 0 
-                      ? 'Grátis'
-                      : `R$ ${currentPlanConfig.price.toFixed(2).replace('.', ',')}`}
-                  </p>
-                  {currentPlanConfig.price > 0 && (
-                    <p className="text-xs text-muted-foreground">/mês</p>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Usage */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {isFree ? 'Redações usadas' : 'Uso do mês'}
-                  </span>
-                  {isLoading ? (
-                    <Skeleton className="h-4 w-24" />
-                  ) : (
-                    <span className="font-medium text-foreground">
-                      {usedEssays}/{monthlyLimit} {isFree ? 'redação' : 'correções'}
-                    </span>
-                  )}
-                </div>
-                {isLoading ? (
-                  <Skeleton className="h-2 w-full" />
-                ) : (
-                  <Progress value={usagePercentage} className="h-2" />
-                )}
-                {!isLoading && (
-                  <p className="text-xs text-muted-foreground">
-                    {isFree && usedEssays >= 1 
-                      ? 'Você usou sua redação gratuita'
-                      : `${Math.max(0, monthlyLimit - usedEssays)} ${isFree ? 'redação restante' : 'correções restantes'}`}
-                  </p>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Features */}
-              <ul className="space-y-2">
-                {(isFree ? freeFeatures : isBasic ? basicFeatures : proFeatures).map((feature, index) => (
-                  <li key={index} className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-primary" />
-                    <span className="text-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-
-          {/* Upgrade options for Free users */}
-          {isFree && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-foreground">Escolha um plano</h2>
-              
-              {/* Basic Plan Card */}
-              <Card className="border-2 border-primary/50 hover:border-primary transition-colors">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-lg">Plano Básico</CardTitle>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-foreground">
-                        R$ {STRIPE_PLANS.basic.price.toFixed(2).replace('.', ',')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">/mês</p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-1.5">
-                    {basicFeatures.map((feature, index) => (
-                      <li key={index} className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span className="text-foreground">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button 
-                    className="w-full" 
-                    onClick={() => handleUpgrade('basic')}
-                    disabled={isCreatingCheckout !== null}
-                  >
-                    {isCreatingCheckout === 'basic' ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="flex-1 max-w-xs space-y-1">
+                    {isLoading ? (
+                      <Skeleton className="h-2 w-full" />
                     ) : (
                       <>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Assinar Básico
+                        <Progress value={usagePercentage} className="h-2" />
+                        <p className="text-xs text-muted-foreground text-right">
+                          {usedEssays}/{monthlyLimit} correções
+                        </p>
                       </>
                     )}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Pro Plan Card */}
-              <Card className="border-2 border-amber-500/50 hover:border-amber-500 transition-colors">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Crown className="h-5 w-5 text-amber-500" />
-                      <CardTitle className="text-lg">Plano Pro</CardTitle>
-                      <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
-                        Recomendado
-                      </Badge>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-foreground">
-                        R$ {STRIPE_PLANS.pro.price.toFixed(2).replace('.', ',')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">/mês</p>
-                    </div>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-1.5">
-                    {proFeatures.map((feature, index) => (
-                      <li key={index} className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-amber-500" />
-                        <span className="text-foreground">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button 
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white" 
-                    onClick={() => handleUpgrade('pro')}
-                    disabled={isCreatingCheckout !== null}
-                  >
-                    {isCreatingCheckout === 'pro' ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Crown className="h-4 w-4 mr-2" />
-                        Assinar Pro
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          {/* Upgrade option for Basic users */}
-          {isBasic && (
-            <Card className="border-2 border-amber-500/50">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Crown className="h-5 w-5 text-amber-500" />
-                    <CardTitle className="text-lg">Fazer upgrade para Pro</CardTitle>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-foreground">
-                      R$ {STRIPE_PLANS.pro.price.toFixed(2).replace('.', ',')}
-                    </p>
-                    <p className="text-xs text-muted-foreground">/mês</p>
-                  </div>
+          {/* Plans Grid - 3 columns */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            {/* Free Plan Card */}
+            <Card className={`relative flex flex-col ${isFree ? 'border-2 border-primary ring-2 ring-primary/20' : 'border'}`}>
+              <CardHeader className="pb-4">
+                <div className="space-y-2">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    Grátis
+                    {isFree && (
+                      <Badge variant="secondary" className="text-xs">Seu plano</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>Experimente grátis</CardDescription>
+                </div>
+                <div className="pt-2">
+                  <p className="text-3xl font-bold text-foreground">R$ 0</p>
+                  <p className="text-xs text-muted-foreground">para sempre</p>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Desbloqueie o tema do dia e orientações completas para sua redação.
-                </p>
-                <ul className="space-y-1.5">
-                  <li className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-amber-500" />
-                    <span className="text-foreground">Tema do dia automático</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-amber-500" />
-                    <span className="text-foreground">Contexto e perguntas norteadoras</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-amber-500" />
-                    <span className="text-foreground">Até 2 correções por dia</span>
-                  </li>
+              <CardContent className="flex-1 flex flex-col">
+                <ul className="space-y-2.5 flex-1">
+                  {freeFeatures.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <span className="text-foreground">{feature}</span>
+                    </li>
+                  ))}
                 </ul>
-                <Button 
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-white" 
-                  onClick={() => handleUpgrade('pro')}
-                  disabled={isCreatingCheckout !== null}
-                >
-                  {isCreatingCheckout === 'pro' ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="pt-6">
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    disabled
+                  >
+                    {isFree ? 'Plano atual' : 'Gratuito'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Basic Plan Card */}
+            <Card className={`relative flex flex-col ${isBasic ? 'border-2 border-primary ring-2 ring-primary/20' : 'border'}`}>
+              <CardHeader className="pb-4">
+                <div className="space-y-2">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-primary" />
+                    Básico
+                    {isBasic && (
+                      <Badge variant="secondary" className="text-xs">Seu plano</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>Para quem quer praticar mais</CardDescription>
+                </div>
+                <div className="pt-2">
+                  <p className="text-3xl font-bold text-foreground">
+                    R$ {STRIPE_PLANS.basic.price.toFixed(2).replace('.', ',')}
+                  </p>
+                  <p className="text-xs text-muted-foreground">/mês</p>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col">
+                <ul className="space-y-2.5 flex-1">
+                  {basicFeatures.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <span className="text-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="pt-6">
+                  {isBasic ? (
+                    <Button className="w-full" variant="outline" disabled>
+                      Plano atual
+                    </Button>
+                  ) : isPro ? (
+                    <Button className="w-full" variant="outline" disabled>
+                      Incluído no Pro
+                    </Button>
                   ) : (
-                    <>
-                      <Crown className="h-4 w-4 mr-2" />
-                      Fazer upgrade para Pro
-                    </>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => handleUpgrade('basic')}
+                      disabled={isCreatingCheckout !== null}
+                    >
+                      {isCreatingCheckout === 'basic' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Assinar Básico
+                        </>
+                      )}
+                    </Button>
                   )}
-                </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Pro Plan Card - Featured */}
+            <Card className={`relative flex flex-col border-2 ${isPro ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-amber-500/70'} bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-950/20 dark:to-transparent order-first md:order-last`}>
+              {/* Recommended Badge */}
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge className="bg-amber-500 hover:bg-amber-500 text-white border-0 shadow-md">
+                  <Star className="h-3 w-3 mr-1 fill-current" />
+                  Recomendado
+                </Badge>
+              </div>
+              
+              <CardHeader className="pb-4 pt-6">
+                <div className="space-y-2">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Crown className="h-5 w-5 text-amber-500" />
+                    Pro
+                    {isPro && (
+                      <Badge variant="secondary" className="text-xs">Seu plano</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>Preparação completa para o ENEM</CardDescription>
+                </div>
+                <div className="pt-2">
+                  <p className="text-3xl font-bold text-foreground">
+                    R$ {STRIPE_PLANS.pro.price.toFixed(2).replace('.', ',')}
+                  </p>
+                  <p className="text-xs text-muted-foreground">/mês</p>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col">
+                <ul className="space-y-2.5 flex-1">
+                  {proFeatures.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <Check className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                      <span className="text-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="pt-6">
+                  {isPro ? (
+                    <Button className="w-full bg-amber-500 hover:bg-amber-500" disabled>
+                      Plano atual
+                    </Button>
+                  ) : (
+                    <Button 
+                      className="w-full bg-amber-500 hover:bg-amber-600 text-white" 
+                      onClick={() => handleUpgrade('pro')}
+                      disabled={isCreatingCheckout !== null}
+                    >
+                      {isCreatingCheckout === 'pro' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Crown className="h-4 w-4 mr-2" />
+                          {isBasic ? 'Fazer upgrade' : 'Começar agora'}
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Free user usage info */}
+          {isFree && (
+            <Card className="border bg-muted/30">
+              <CardContent className="py-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">Sua redação gratuita</p>
+                    <p className="text-xs text-muted-foreground">
+                      {usedEssays >= 1 ? 'Você já usou sua redação gratuita' : 'Você tem 1 redação gratuita'}
+                    </p>
+                  </div>
+                  <div className="flex-1 max-w-xs space-y-1">
+                    {isLoading ? (
+                      <Skeleton className="h-2 w-full" />
+                    ) : (
+                      <>
+                        <Progress value={usagePercentage} className="h-2" />
+                        <p className="text-xs text-muted-foreground text-right">
+                          {usedEssays}/1 usada
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
 
           {/* Manage subscription for paying users */}
           {(isBasic || isPro) && (
-            <Button 
-              className="w-full gap-2" 
-              size="lg" 
-              variant="outline"
-              onClick={handleManageSubscription}
-              disabled={isOpeningPortal}
-            >
-              {isOpeningPortal ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Settings className="h-4 w-4" />
-              )}
-              Gerenciar assinatura
-            </Button>
+            <div className="flex justify-center">
+              <Button 
+                className="gap-2" 
+                variant="ghost"
+                onClick={handleManageSubscription}
+                disabled={isOpeningPortal}
+              >
+                {isOpeningPortal ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Settings className="h-4 w-4" />
+                )}
+                Gerenciar assinatura
+              </Button>
+            </div>
           )}
         </div>
       </div>
