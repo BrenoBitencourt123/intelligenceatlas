@@ -2,7 +2,7 @@ import { ThemeCard } from './ThemeCard';
 import { ContextCard } from './ContextCard';
 import { GuidingQuestionsCard } from './GuidingQuestionsCard';
 import { StructureGuideCard } from './StructureGuideCard';
-import { LockedOverlay } from './LockedOverlay';
+import { LockedPedagogicalCard } from './LockedPedagogicalCard';
 import type { DailyTheme } from '@/data/dailyThemes';
 
 interface PedagogicalSectionProps {
@@ -11,7 +11,11 @@ interface PedagogicalSectionProps {
 }
 
 export const PedagogicalSection = ({ theme, isLocked = false }: PedagogicalSectionProps) => {
-  const content = (
+  if (isLocked) {
+    return <LockedPedagogicalCard />;
+  }
+
+  return (
     <div className="space-y-4">
       <ThemeCard title={theme.title} motivatingText={theme.motivatingText} />
       <ContextCard context={theme.context} />
@@ -19,10 +23,4 @@ export const PedagogicalSection = ({ theme, isLocked = false }: PedagogicalSecti
       <StructureGuideCard structureGuide={theme.structureGuide} />
     </div>
   );
-
-  if (isLocked) {
-    return <LockedOverlay>{content}</LockedOverlay>;
-  }
-
-  return content;
 };
