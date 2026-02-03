@@ -1,245 +1,116 @@
 
-# Plano: Controle de Exibicao por Plano (Basico vs Pro)
+# Plano: Simplificar Bloqueio da Secao Pedagogica
 
-## Visao Geral
+## Problema Identificado
 
-Implementar logica de gating baseada no plano do usuario (`profile.plan_type`) para exibir ou bloquear conteudos exclusivos do Plano Pro, mantendo todo o layout existente inalterado.
+Atualmente, quando o usuario e do Plano Basico, todos os 4 cards (Tema, Contexto, Perguntas, Estrutura) sao renderizados com blur e overlay. Isso:
 
-## Regras de Negocio
+1. Ocupa muito espaco vertical na pagina
+2. Cria confusao - usuario pode pensar que o editor tambem esta bloqueado
+3. Experiencia visual ruim com muito conteudo borrado
+
+## Solucao Proposta
+
+Substituir a abordagem de overlay por um **card unico e compacto** quando o plano for Basico:
 
 ```text
-+------------------+-------------------------+-------------------------+
-| Recurso          | Plano Basico           | Plano Pro               |
-+------------------+-------------------------+-------------------------+
-| Correcoes/mes    | 30 (1 por dia)         | Ate 2 por dia           |
-| Tema do dia      | BLOQUEADO              | Liberado                |
-| Contexto         | BLOQUEADO              | Liberado                |
-| Perguntas        | BLOQUEADO              | Liberado                |
-| Estrutura        | BLOQUEADO              | Liberado                |
-| Editor blocos    | Funciona normalmente   | Funciona normalmente    |
-| Correcao AI      | Funciona normalmente   | Funciona normalmente    |
-| Versao melhorada | Funciona normalmente   | Funciona normalmente    |
-+------------------+-------------------------+-------------------------+
+ANTES (Plano Basico):
++------------------------------------------+
+| [Tema do Dia - BLUR]                     |
+| [Contexto - BLUR]        OVERLAY GRANDE  |
+| [Perguntas - BLUR]       cobrindo tudo   |
+| [Estrutura - BLUR]                       |
++------------------------------------------+
+
+DEPOIS (Plano Basico):
++------------------------------------------+
+| [CADEADO] Orientacao de Redacao          |
+|                                          |
+| O Plano Pro oferece tema diario,         |
+| contexto, perguntas e estrutura          |
+| sugerida para guiar sua redacao.         |
+|                                          |
+| [ Ver Plano Pro -> ]                     |
++------------------------------------------+
 ```
 
-## Mudancas na Tela Inicio (Home.tsx)
+## Mudancas Necessarias
 
-### Plano Pro
-Manter comportamento atual: exibir `DailyThemeCard` com tema e botao "Escrever redacao de hoje".
+### 1. Criar Novo Componente: LockedPedagogicalCard
 
-### Plano Basico
-Substituir `DailyThemeCard` por um card bloqueado:
+Arquivo: `src/components/atlas/LockedPedagogicalCard.tsx`
+
+Card compacto que substitui toda a secao pedagogica para usuarios Basico:
 - Icone de cadeado
-- Texto: "O Tema do Dia e um beneficio exclusivo do Plano Pro"
-- Botao: "Ver Plano Pro" (navega para /plano)
+- Titulo "Orientacao de Redacao"
+- Texto explicativo curto sobre os beneficios do Pro
+- Lista resumida do que esta incluido (tema, contexto, perguntas, estrutura)
+- Botao "Ver Plano Pro"
 
-### Implementacao
+### 2. Modificar PedagogicalSection
 
-Criar componente `LockedThemeCard` para a versao bloqueada e usar condicional baseada em `profile?.plan_type`.
+Arquivo: `src/components/atlas/PedagogicalSection.tsx`
 
-## Mudancas na Tela Redacao (Essay.tsx)
-
-### Plano Pro
-Manter comportamento atual: exibir `PedagogicalSection` com todos os cards visiveis.
-
-### Plano Basico
-Renderizar todos os cards com overlay de bloqueio:
-- Blur leve no conteudo (`blur-sm`)
-- Overlay semi-transparente
-- Icone de cadeado centralizado
-- Texto explicativo
-- Sem interacao (pointer-events-none)
-
-### Implementacao
-
-Criar componente wrapper `LockedOverlay` que envolve qualquer conteudo e aplica o efeito de bloqueio.
-
-Modificar `PedagogicalSection` para receber prop `isLocked` e aplicar bloqueio nos 4 cards.
-
-## Arquivos a Criar
-
-### 1. src/components/home/LockedThemeCard.tsx
-
-Card que substitui o tema do dia para usuarios do Plano Basico:
-
+Mudar a logica de:
 ```typescript
-// Estrutura:
-// - Card com borda pontilhada
-// - Icone Lock grande centralizado
-// - Titulo "Tema do Dia"
-// - Texto explicativo do beneficio Pro
-// - Botao "Ver Plano Pro" -> /plano
-```
-
-### 2. src/components/atlas/LockedOverlay.tsx
-
-Componente wrapper que aplica efeito de bloqueio:
-
-```typescript
-// Props: children, title (opcional)
-// Estrutura:
-// - Container relativo
-// - Children com classe blur-sm e pointer-events-none
-// - Overlay absoluto com:
-//   - Background semi-transparente
-//   - Icone Lock
-//   - Texto sobre Plano Pro
-//   - Link para /plano
-```
-
-## Arquivos a Modificar
-
-### 1. src/pages/Home.tsx
-
-Adicionar logica condicional:
-
-```typescript
-const { profile } = useAuth();
-const isPro = profile?.plan_type === 'pro';
-
-// No render:
-{isPro ? (
-  <DailyThemeCard title={theme.title} hasWrittenToday={hasWrittenToday} />
-) : (
-  <LockedThemeCard />
-)}
-```
-
-### 2. src/components/atlas/PedagogicalSection.tsx
-
-Adicionar prop `isLocked` e wrapper condicional:
-
-```typescript
-interface PedagogicalSectionProps {
-  theme: DailyTheme;
-  isLocked?: boolean;
+// ANTES
+if (isLocked) {
+  return <LockedOverlay>{content}</LockedOverlay>;
 }
-
-export const PedagogicalSection = ({ theme, isLocked = false }: PedagogicalSectionProps) => {
-  if (isLocked) {
-    return (
-      <LockedOverlay>
-        <div className="space-y-4">
-          <ThemeCard title={theme.title} motivatingText={theme.motivatingText} />
-          <ContextCard context={theme.context} />
-          <GuidingQuestionsCard questions={theme.guidingQuestions} />
-          <StructureGuideCard structureGuide={theme.structureGuide} />
-        </div>
-      </LockedOverlay>
-    );
-  }
-  
-  return (
-    <div className="space-y-4">
-      <ThemeCard ... />
-      <ContextCard ... />
-      <GuidingQuestionsCard ... />
-      <StructureGuideCard ... />
-    </div>
-  );
-};
+return content;
 ```
 
-### 3. src/pages/Essay.tsx
-
-Passar prop `isLocked` para `PedagogicalSection`:
-
+Para:
 ```typescript
-const { profile } = useAuth();
-const isPro = profile?.plan_type === 'pro';
-
-// No render:
-<PedagogicalSection theme={theme} isLocked={!isPro} />
+// DEPOIS
+if (isLocked) {
+  return <LockedPedagogicalCard />;
+}
+return content;
 ```
 
-## Design Visual do Bloqueio
+### 3. Remover LockedOverlay (Opcional)
 
-### Card Bloqueado na Home
+O componente `LockedOverlay` pode ser mantido para uso futuro ou removido se nao for mais necessario.
+
+## Design do Card Compacto
 
 ```text
-+----------------------------------------+
-|  [  ]  [  ]  [  ]  [  ]  (borda tracejada)
-|                                        |
-|              [CADEADO]                 |
-|                                        |
-|          TEMA DO DIA                   |
-|                                        |
-|  O Tema do Dia e um beneficio          |
-|  exclusivo do Plano Pro, que oferece   |
-|  tema diario e orientacao completa.    |
-|                                        |
-|       [ Ver Plano Pro ]                |
-|                                        |
-+----------------------------------------+
++------------------------------------------+
+|  [BOOK/SPARKLE ICON]                     |
+|  ORIENTACAO DE REDACAO                   |
+|                                          |
+|  O Plano Pro oferece recursos para       |
+|  guiar sua escrita:                      |
+|                                          |
+|  * Tema do dia automatico                |
+|  * Contexto e fundamentacao              |
+|  * Perguntas norteadoras                 |
+|  * Estrutura sugerida                    |
+|                                          |
+|  [ Ver Plano Pro  -> ]                   |
++------------------------------------------+
 ```
 
-### Overlay na Tela Redacao
+## Beneficios
 
-```text
-+----------------------------------------+
-|  Tema do Dia (blur)                    |
-|  Contexto (blur)            [CADEADO]  |
-|  Perguntas (blur)                      |
-|  Estrutura (blur)    Recurso exclusivo |
-|                      do Plano Pro      |
-|                      [ Ver plano ]     |
-+----------------------------------------+
-```
+1. **Clareza** - Usuario entende exatamente o que esta bloqueado
+2. **Compacidade** - Ocupa muito menos espaco vertical
+3. **UX melhor** - Editor fica visivel imediatamente abaixo
+4. **Consistencia** - Mesmo padrao do LockedThemeCard na Home
+5. **Performance** - Nao precisa renderizar 4 cards + blur + overlay
 
-## Fluxo de Usuario
-
-### Usuario Basico
-1. Acessa Home -> Ve card bloqueado com CTA para Plano Pro
-2. Acessa Redacao -> Ve secao pedagogica bloqueada, mas pode usar editor normalmente
-3. Pode colar tema manualmente e usar correcao
-
-### Usuario Pro
-1. Acessa Home -> Ve tema do dia normalmente
-2. Acessa Redacao -> Ve toda orientacao pedagogica
-3. Experiencia completa
-
-## Detalhes Tecnicos
-
-### Hook Reutilizavel (Opcional)
-
-Criar hook `usePlanFeatures` para centralizar logica:
-
-```typescript
-export const usePlanFeatures = () => {
-  const { profile } = useAuth();
-  const isPro = profile?.plan_type === 'pro';
-  
-  return {
-    isPro,
-    hasThemeAccess: isPro,
-    hasPedagogicalAccess: isPro,
-    monthlyLimit: isPro ? 60 : 30,
-    dailyLimit: isPro ? 2 : 1,
-  };
-};
-```
-
-### Consideracoes
-
-- Nao alterar editor de blocos (funciona igual para todos)
-- Nao alterar correcao AI (funciona igual para todos)
-- Nao alterar versao melhorada (funciona igual para todos)
-- Manter tema disponivel via contexto mesmo bloqueado (para usuario colar manualmente)
-
-## Resumo de Mudancas
+## Arquivos Afetados
 
 | Arquivo | Acao |
 |---------|------|
-| `src/components/home/LockedThemeCard.tsx` | Criar |
-| `src/components/atlas/LockedOverlay.tsx` | Criar |
-| `src/hooks/usePlanFeatures.ts` | Criar (opcional) |
-| `src/pages/Home.tsx` | Modificar |
-| `src/pages/Essay.tsx` | Modificar |
+| `src/components/atlas/LockedPedagogicalCard.tsx` | Criar |
 | `src/components/atlas/PedagogicalSection.tsx` | Modificar |
+| `src/components/atlas/LockedOverlay.tsx` | Manter (pode ser util em outros contextos) |
 
 ## Resultado Esperado
 
-- Interface simples e educacional
-- Usuario Basico entende o valor do Pro
-- Fluxo de redacao preservado para ambos os planos
-- Incentivo natural para upgrade sem fricao
+- Usuario Basico ve um card compacto explicando os beneficios Pro
+- Editor de blocos aparece logo abaixo, claramente acessivel
+- Incentivo para upgrade sem confundir o usuario
+- Interface limpa e objetiva
