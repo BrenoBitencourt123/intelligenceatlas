@@ -6,6 +6,7 @@ interface Profile {
   id: string;
   email: string;
   name: string | null;
+  avatar_url: string | null;
   plan_type: 'basic' | 'pro';
   plan_started_at: string;
   created_at: string;
