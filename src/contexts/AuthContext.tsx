@@ -7,7 +7,7 @@ interface Profile {
   email: string;
   name: string | null;
   avatar_url: string | null;
-  plan_type: 'basic' | 'pro';
+  plan_type: 'free' | 'basic' | 'pro';
   plan_started_at: string;
   created_at: string;
 }

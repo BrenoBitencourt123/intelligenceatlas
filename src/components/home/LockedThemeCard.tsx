@@ -22,7 +22,7 @@ export const LockedThemeCard = () => {
             <Lock className="h-6 w-6 text-muted-foreground" />
           </div>
           <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-            O Tema do Dia é um benefício exclusivo do Plano Pro, que oferece tema diário e orientação completa para a redação.
+            O Tema do Dia é exclusivo do Plano Pro. Inclui tema diário, contexto, perguntas norteadoras e estrutura sugerida.
           </p>
         </div>
         

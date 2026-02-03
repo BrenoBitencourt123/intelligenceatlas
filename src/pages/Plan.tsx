@@ -1,4 +1,4 @@
-import { Check, Lock, Zap, Crown, Loader2, Settings } from 'lucide-react';
+import { Check, Lock, Zap, Crown, Loader2, Settings, Sparkles } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUserStats } from '@/hooks/useUserStats';
-import { useAuth } from '@/contexts/AuthContext';
+import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { useMemo, useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,14 +15,12 @@ import { toast } from 'sonner';
 import { STRIPE_PLANS } from '@/lib/stripe';
 
 const Plan = () => {
-  const { profile } = useAuth();
-  const { monthlyEssays, isLoading } = useUserStats();
+  const { planType, isFree, isBasic, isPro, monthlyLimit } = usePlanFeatures();
+  const { monthlyEssays, totalEssays, isLoading } = useUserStats();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
-  const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
+  const [isCreatingCheckout, setIsCreatingCheckout] = useState<string | null>(null);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
-
-  const isPro = profile?.plan_type === 'pro';
 
   // Calculate next reset date (first day of next month)
   const nextReset = useMemo(() => {
@@ -31,15 +29,14 @@ const Plan = () => {
     return nextMonth.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
   }, []);
 
-  // Plan config based on profile
-  const planConfig = useMemo(() => {
-    if (isPro) {
-      return STRIPE_PLANS.pro;
-    }
-    return STRIPE_PLANS.basic;
-  }, [isPro]);
+  // Get current plan config
+  const currentPlanConfig = useMemo(() => {
+    return STRIPE_PLANS[planType] || STRIPE_PLANS.free;
+  }, [planType]);
 
-  const usagePercentage = Math.min(100, Math.round((monthlyEssays / planConfig.limit) * 100));
+  // Usage calculation
+  const usedEssays = isFree ? totalEssays : monthlyEssays;
+  const usagePercentage = Math.min(100, Math.round((usedEssays / monthlyLimit) * 100));
 
   const checkSubscription = useCallback(async () => {
     setIsCheckingSubscription(true);
@@ -47,9 +44,8 @@ const Plan = () => {
       const { data, error } = await supabase.functions.invoke('check-subscription');
       if (error) throw error;
       
-      if (data?.subscribed && data?.plan_type === 'pro') {
-        toast.success('Assinatura Pro ativada com sucesso!');
-        // Force page reload to update profile data
+      if (data?.subscribed) {
+        toast.success(`Assinatura ${data.plan_type === 'pro' ? 'Pro' : 'Básica'} ativada!`);
         window.location.reload();
       }
     } catch (error) {
@@ -62,17 +58,16 @@ const Plan = () => {
   // Check for success parameter and verify subscription
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
-      // Clear the success parameter
       setSearchParams({}, { replace: true });
       checkSubscription();
     }
   }, [searchParams, setSearchParams, checkSubscription]);
 
-  const handleUpgrade = async () => {
-    setIsCreatingCheckout(true);
+  const handleUpgrade = async (targetPlan: 'basic' | 'pro') => {
+    setIsCreatingCheckout(targetPlan);
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { price_id: STRIPE_PLANS.pro.price_id }
+        body: { price_id: STRIPE_PLANS[targetPlan].price_id }
       });
 
       if (error) throw error;
@@ -84,7 +79,7 @@ const Plan = () => {
       console.error('Error creating checkout:', error);
       toast.error('Erro ao iniciar checkout. Tente novamente.');
     } finally {
-      setIsCreatingCheckout(false);
+      setIsCreatingCheckout(null);
     }
   };
 
@@ -106,20 +101,27 @@ const Plan = () => {
     }
   };
 
+  // Features reais de cada plano
+  const freeFeatures = [
+    '1 redação gratuita',
+    'Editor completo',
+    'Feedback resumido',
+  ];
+
   const basicFeatures = [
     '30 correções por mês',
-    'Tema do dia liberado',
     'Análise das 5 competências',
     'Versão melhorada',
+    'Histórico de redações',
   ];
 
   const proFeatures = [
-    'Correções ilimitadas',
-    'Todos os temas anteriores',
-    'Análise detalhada por parágrafo',
-    'Sugestões de repertório',
-    'Histórico completo',
-    'Prioridade no suporte',
+    'Até 2 correções por dia',
+    'Tema do dia automático',
+    'Contexto e fundamentação',
+    'Perguntas norteadoras',
+    'Estrutura sugerida',
+    'Versão melhorada',
   ];
 
   if (isCheckingSubscription) {
@@ -148,24 +150,31 @@ const Plan = () => {
           </div>
 
           {/* Current Plan Card */}
-          <Card className={isPro ? "border-2 border-amber-500" : "border-2 border-primary"}>
+          <Card className={isPro ? "border-2 border-amber-500" : isBasic ? "border-2 border-primary" : "border-2 border-muted"}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     {isPro && <Crown className="h-5 w-5 text-amber-500" />}
-                    <CardTitle className="text-xl">Plano {planConfig.name}</CardTitle>
+                    {isBasic && <Zap className="h-5 w-5 text-primary" />}
+                    <CardTitle className="text-xl">Plano {currentPlanConfig.name}</CardTitle>
                     <Badge variant="secondary">Atual</Badge>
                   </div>
                   <CardDescription>
-                    Próxima renovação: {nextReset}
+                    {isFree 
+                      ? 'Experimente o Atlas gratuitamente'
+                      : `Próxima renovação: ${nextReset}`}
                   </CardDescription>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-foreground">
-                    R$ {planConfig.price.toFixed(2).replace('.', ',')}
+                    {currentPlanConfig.price === 0 
+                      ? 'Grátis'
+                      : `R$ ${currentPlanConfig.price.toFixed(2).replace('.', ',')}`}
                   </p>
-                  <p className="text-xs text-muted-foreground">/mês</p>
+                  {currentPlanConfig.price > 0 && (
+                    <p className="text-xs text-muted-foreground">/mês</p>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -173,30 +182,28 @@ const Plan = () => {
               {/* Usage */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Uso do mês</span>
+                  <span className="text-muted-foreground">
+                    {isFree ? 'Redações usadas' : 'Uso do mês'}
+                  </span>
                   {isLoading ? (
                     <Skeleton className="h-4 w-24" />
                   ) : (
                     <span className="font-medium text-foreground">
-                      {monthlyEssays}/{isPro ? '∞' : planConfig.limit} correções
+                      {usedEssays}/{monthlyLimit} {isFree ? 'redação' : 'correções'}
                     </span>
                   )}
                 </div>
-                {!isPro && (
-                  <>
-                    {isLoading ? (
-                      <Skeleton className="h-2 w-full" />
-                    ) : (
-                      <Progress value={usagePercentage} className="h-2" />
-                    )}
-                    {isLoading ? (
-                      <Skeleton className="h-3 w-32" />
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        {Math.max(0, planConfig.limit - monthlyEssays)} correções restantes
-                      </p>
-                    )}
-                  </>
+                {isLoading ? (
+                  <Skeleton className="h-2 w-full" />
+                ) : (
+                  <Progress value={usagePercentage} className="h-2" />
+                )}
+                {!isLoading && (
+                  <p className="text-xs text-muted-foreground">
+                    {isFree && usedEssays >= 1 
+                      ? 'Você usou sua redação gratuita'
+                      : `${Math.max(0, monthlyLimit - usedEssays)} ${isFree ? 'redação restante' : 'correções restantes'}`}
+                  </p>
                 )}
               </div>
 
@@ -204,7 +211,7 @@ const Plan = () => {
 
               {/* Features */}
               <ul className="space-y-2">
-                {(isPro ? proFeatures : basicFeatures).map((feature, index) => (
+                {(isFree ? freeFeatures : isBasic ? basicFeatures : proFeatures).map((feature, index) => (
                   <li key={index} className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-primary" />
                     <span className="text-foreground">{feature}</span>
@@ -214,47 +221,155 @@ const Plan = () => {
             </CardContent>
           </Card>
 
-          {/* Pro Plan Card - Only show if not Pro */}
-          {!isPro && (
-            <Card className="relative overflow-hidden opacity-75">
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80 z-10 pointer-events-none" />
-              <div className="absolute top-4 right-4 z-20">
-                <Badge variant="outline" className="gap-1 bg-background">
-                  <Lock className="h-3 w-3" />
-                  Bloqueado
-                </Badge>
-              </div>
+          {/* Upgrade options for Free users */}
+          {isFree && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-foreground">Escolha um plano</h2>
               
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Crown className="h-5 w-5 text-amber-500" />
-                  <CardTitle className="text-xl">Plano Pro</CardTitle>
-                </div>
-                <CardDescription>
-                  Para quem quer treinar sem limites
-                </CardDescription>
-                <div className="pt-2">
-                  <p className="text-2xl font-bold text-foreground">
-                    R$ {STRIPE_PLANS.pro.price.toFixed(2).replace('.', ',')}
-                  </p>
-                  <p className="text-xs text-muted-foreground">/mês</p>
+              {/* Basic Plan Card */}
+              <Card className="border-2 border-primary/50 hover:border-primary transition-colors">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">Plano Básico</CardTitle>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-foreground">
+                        R$ {STRIPE_PLANS.basic.price.toFixed(2).replace('.', ',')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">/mês</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-1.5">
+                    {basicFeatures.map((feature, index) => (
+                      <li key={index} className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span className="text-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => handleUpgrade('basic')}
+                    disabled={isCreatingCheckout !== null}
+                  >
+                    {isCreatingCheckout === 'basic' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Assinar Básico
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Pro Plan Card */}
+              <Card className="border-2 border-amber-500/50 hover:border-amber-500 transition-colors">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Crown className="h-5 w-5 text-amber-500" />
+                      <CardTitle className="text-lg">Plano Pro</CardTitle>
+                      <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
+                        Recomendado
+                      </Badge>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-foreground">
+                        R$ {STRIPE_PLANS.pro.price.toFixed(2).replace('.', ',')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">/mês</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-1.5">
+                    {proFeatures.map((feature, index) => (
+                      <li key={index} className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-amber-500" />
+                        <span className="text-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button 
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white" 
+                    onClick={() => handleUpgrade('pro')}
+                    disabled={isCreatingCheckout !== null}
+                  >
+                    {isCreatingCheckout === 'pro' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Crown className="h-4 w-4 mr-2" />
+                        Assinar Pro
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Upgrade option for Basic users */}
+          {isBasic && (
+            <Card className="border-2 border-amber-500/50">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Crown className="h-5 w-5 text-amber-500" />
+                    <CardTitle className="text-lg">Fazer upgrade para Pro</CardTitle>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-bold text-foreground">
+                      R$ {STRIPE_PLANS.pro.price.toFixed(2).replace('.', ',')}
+                    </p>
+                    <p className="text-xs text-muted-foreground">/mês</p>
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {proFeatures.map((feature, index) => (
-                    <li key={index} className="flex items-center gap-2 text-sm">
-                      <Zap className="h-4 w-4 text-primary" />
-                      <span className="text-muted-foreground">{feature}</span>
-                    </li>
-                  ))}
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Desbloqueie o tema do dia e orientações completas para sua redação.
+                </p>
+                <ul className="space-y-1.5">
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-amber-500" />
+                    <span className="text-foreground">Tema do dia automático</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-amber-500" />
+                    <span className="text-foreground">Contexto e perguntas norteadoras</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-amber-500" />
+                    <span className="text-foreground">Até 2 correções por dia</span>
+                  </li>
                 </ul>
+                <Button 
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-white" 
+                  onClick={() => handleUpgrade('pro')}
+                  disabled={isCreatingCheckout !== null}
+                >
+                  {isCreatingCheckout === 'pro' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Crown className="h-4 w-4 mr-2" />
+                      Fazer upgrade para Pro
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           )}
 
-          {/* CTA Buttons */}
-          {isPro ? (
+          {/* Manage subscription for paying users */}
+          {(isBasic || isPro) && (
             <Button 
               className="w-full gap-2" 
               size="lg" 
@@ -268,20 +383,6 @@ const Plan = () => {
                 <Settings className="h-4 w-4" />
               )}
               Gerenciar assinatura
-            </Button>
-          ) : (
-            <Button 
-              className="w-full gap-2" 
-              size="lg" 
-              onClick={handleUpgrade}
-              disabled={isCreatingCheckout}
-            >
-              {isCreatingCheckout ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Crown className="h-4 w-4" />
-              )}
-              Fazer upgrade para Pro
             </Button>
           )}
         </div>
