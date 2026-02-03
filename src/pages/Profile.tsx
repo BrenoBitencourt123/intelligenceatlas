@@ -1,0 +1,311 @@
+import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { Camera, LogOut, Mail, User, Key, Crown, Loader2 } from 'lucide-react';
+
+const getInitials = (name: string | null, email: string) => {
+  if (name) {
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  }
+  return email[0].toUpperCase();
+};
+
+export default function Profile() {
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [name, setName] = useState(profile?.name || '');
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || null);
+
+  const handleUpdateName = async () => {
+    if (!user) return;
+    
+    setIsUpdatingName(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ name })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      toast.success('Nome atualizado com sucesso!');
+    } catch (error) {
+      console.error('Error updating name:', error);
+      toast.error('Erro ao atualizar nome');
+    } finally {
+      setIsUpdatingName(false);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione uma imagem');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 2MB');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      // Create a unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Add cache buster
+      const urlWithCacheBuster = `${publicUrl}?t=${Date.now()}`;
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: urlWithCacheBuster })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(urlWithCacheBuster);
+      toast.success('Foto atualizada com sucesso!');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Erro ao fazer upload da foto');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!user?.email) return;
+
+    setIsSendingPasswordReset(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+
+      if (error) throw error;
+      toast.success('Email de redefinição de senha enviado!');
+    } catch (error) {
+      console.error('Error sending password reset:', error);
+      toast.error('Erro ao enviar email de redefinição');
+    } finally {
+      setIsSendingPasswordReset(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
+  if (!user || !profile) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  return (
+    <MainLayout>
+      <div className="container max-w-2xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Meu Perfil</h1>
+
+        {/* Avatar Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Foto de Perfil</CardTitle>
+            <CardDescription>Clique na foto para alterar</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center gap-6">
+            <div className="relative">
+              <Avatar 
+                className="h-24 w-24 cursor-pointer ring-2 ring-border hover:ring-primary transition-all"
+                onClick={handleAvatarClick}
+              >
+                <AvatarImage src={avatarUrl || undefined} alt={profile.name || 'Avatar'} />
+                <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+                  {getInitials(profile.name, profile.email)}
+                </AvatarFallback>
+              </Avatar>
+              <div 
+                className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5 cursor-pointer hover:bg-primary/90 transition-colors"
+                onClick={handleAvatarClick}
+              >
+                {isUploadingAvatar ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </div>
+            <div>
+              <p className="font-medium">{profile.name || 'Sem nome'}</p>
+              <p className="text-sm text-muted-foreground">{profile.email}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Personal Info */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Informações Pessoais
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Seu nome"
+                />
+                <Button 
+                  onClick={handleUpdateName} 
+                  disabled={isUpdatingName || name === profile.name}
+                >
+                  {isUpdatingName ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Salvar'
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                Email
+              </Label>
+              <Input
+                id="email"
+                value={profile.email}
+                disabled
+                className="bg-muted"
+              />
+              <p className="text-xs text-muted-foreground">O email não pode ser alterado</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Plan Info */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Crown className="h-5 w-5" />
+              Plano Atual
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <Badge variant={profile.plan_type === 'pro' ? 'default' : 'secondary'} className="mb-2">
+                  {profile.plan_type === 'pro' ? 'Pro' : 'Básico'}
+                </Badge>
+                <p className="text-sm text-muted-foreground">
+                  Membro desde {new Date(profile.created_at).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+              {profile.plan_type !== 'pro' && (
+                <Button variant="outline" onClick={() => navigate('/plano')}>
+                  Fazer Upgrade
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Security */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              Segurança
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="outline" 
+              onClick={handlePasswordReset}
+              disabled={isSendingPasswordReset}
+            >
+              {isSendingPasswordReset ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                'Alterar Senha'
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Enviaremos um email com o link para redefinir sua senha
+            </p>
+          </CardContent>
+        </Card>
+
+        <Separator className="my-6" />
+
+        {/* Logout */}
+        <Button 
+          variant="destructive" 
+          className="w-full"
+          onClick={handleSignOut}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sair da Conta
+        </Button>
+      </div>
+    </MainLayout>
+  );
+}
