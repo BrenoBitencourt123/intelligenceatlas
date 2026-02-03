@@ -1,167 +1,88 @@
 
-# Plano: Corrigir Fluxo de Planos e Paridade Mobile
 
-## Resumo
+# Plano: Redesenhar Pagina de Planos com Layout Persuasivo
 
-Este plano aborda os seguintes problemas identificados:
+## Problema Identificado
 
-1. Usuarios novos entram como "Basico" quando deveriam ser "Free"
-2. Features incorretas listadas no Plano Pro (promessas falsas)
-3. Paridade mobile comprometida (nota nao aparece apos analise)
-4. Hierarquia visual dos botoes confusa
+A pagina atual mostra apenas o plano atual do usuario, e os outros planos aparecem como opcoes abaixo. Isso nao cria uma comparacao visual clara. Alem disso:
 
----
+1. O Plano Pro tem menos features listadas que o Basico (parece menos atrativo)
+2. Falta "Historico de redacoes" no Pro
+3. "2 correcoes por dia" deveria ser "60 correcoes por mes" para paridade com Basico
+4. Nao existe comparacao lado a lado dos 3 planos
 
-## 1. Sistema de Planos Corrigido
+## Solucao
 
-### Estrutura Real dos Planos
-
-| Plano   | Preco    | Limite        | Tema do Dia | Pedagogico | Versao Melhorada |
-|---------|----------|---------------|-------------|------------|------------------|
-| Free    | R$ 0     | 1 redacao     | Nao         | Nao        | Nao              |
-| Basico  | R$ 29,90 | 30/mes (1/dia)| Nao         | Nao        | Sim              |
-| Pro     | R$ 49,90 | 60/mes (2/dia)| Sim         | Sim        | Sim              |
-
-### Alteracao no Banco de Dados
-
-Atualizar o trigger `handle_new_user` para criar usuarios com `plan_type = 'free'`:
-
-```sql
--- Alterar default da coluna
-ALTER TABLE public.profiles 
-ALTER COLUMN plan_type SET DEFAULT 'free';
-
--- Atualizar trigger para criar usuarios como Free
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger 
-LANGUAGE plpgsql 
-SECURITY DEFINER
-SET search_path = 'public'
-AS $$
-BEGIN
-  INSERT INTO public.profiles (id, email, plan_type)
-  VALUES (new.id, new.email, 'free');
-  RETURN new;
-END;
-$$;
-```
+Criar uma pagina com os 3 planos lado a lado (ou empilhados no mobile), com destaque visual para o Pro como "Recomendado".
 
 ---
 
-## 2. Alteracoes no Frontend
+## Novas Listas de Features
 
-### 2.1. Constantes de Planos
+### Plano Free
+- 1 redacao gratuita
+- Editor completo
+- Feedback resumido
 
-**Arquivo: `src/lib/stripe.ts`**
+### Plano Basico
+- 30 correcoes por mes
+- Analise das 5 competencias ENEM
+- Versao melhorada da redacao
+- Historico de redacoes
 
-Adicionar plano Free e corrigir limites do Pro:
+### Plano Pro (todas as features do Basico + exclusivas)
+- 60 correcoes por mes
+- Analise das 5 competencias ENEM
+- Versao melhorada da redacao
+- Historico de redacoes
+- Tema do dia automatico
+- Contexto e fundamentacao
+- Perguntas norteadoras
+- Estrutura sugerida
 
-```typescript
-export const STRIPE_PLANS = {
-  free: {
-    product_id: null,
-    price_id: null,
-    name: 'Free',
-    price: 0,
-    limit: 1, // 1 redacao total
-  },
-  basic: {
-    product_id: 'prod_TuYV8OLHKPqp3Y',
-    price_id: 'price_1SwjOrLbqFmREm0fqfXpdc8L',
-    name: 'Básico',
-    price: 29.90,
-    limit: 30, // 30/mes
-  },
-  pro: {
-    product_id: 'prod_TuYWj1Y0ffKgoX',
-    price_id: 'price_1SwjPWLbqFmREm0fpy8ef02R',
-    name: 'Pro',
-    price: 49.90,
-    limit: 60, // 60/mes (2/dia)
-  },
-} as const;
-```
+---
 
-### 2.2. Hook de Features
+## Novo Layout Visual
 
-**Arquivo: `src/hooks/usePlanFeatures.ts`**
+```text
+Desktop (3 colunas):
++-------------+  +---------------+  +-------------+
+|   GRATIS    |  |    BASICO     |  |     PRO     |
+|    R$ 0     |  |   R$ 29,90    |  |   R$ 49,90  |
++-------------+  +---------------+  +---------------+
+|   Feature   |  |   Feature     |  |   Feature   |
+|   Feature   |  |   Feature     |  |   Feature   |
+|   Feature   |  |   Feature     |  |   Feature   |
++-------------+  |   Feature     |  |   Feature   |
+|             |  +---------------+  |   Feature   |
+|             |  | [Assinar]     |  |   Feature   |
++-------------+  +---------------+  |   Feature   |
+                                    |   Feature   |
+                                    +---------------+
+                                    | [Assinar PRO] |
+                                    | RECOMENDADO   |
+                                    +---------------+
 
-Refatorar para suportar tres planos com regras corretas:
-
-```typescript
-export const usePlanFeatures = () => {
-  const { profile } = useAuth();
-  const planType = profile?.plan_type || 'free';
-  
-  const isFree = planType === 'free';
-  const isBasic = planType === 'basic';
-  const isPro = planType === 'pro';
-  
-  return {
-    planType,
-    isFree,
-    isBasic,
-    isPro,
-    // Tema do dia: apenas Pro
-    hasThemeAccess: isPro,
-    // Pedagogico: apenas Pro
-    hasPedagogicalAccess: isPro,
-    // Versao melhorada: Basic e Pro
-    hasImprovedVersionAccess: isBasic || isPro,
-    // Limites
-    monthlyLimit: isPro ? 60 : isBasic ? 30 : 1,
-    dailyLimit: isPro ? 2 : 1,
-  };
-};
-```
-
-### 2.3. Tipo do Perfil
-
-**Arquivo: `src/contexts/AuthContext.tsx`**
-
-Incluir 'free' no tipo:
-
-```typescript
-interface Profile {
-  // ...
-  plan_type: 'free' | 'basic' | 'pro';
-}
-```
-
-### 2.4. Edge Function check-subscription
-
-**Arquivo: `supabase/functions/check-subscription/index.ts`**
-
-Atualizar mapeamento para incluir fallback 'free':
-
-```typescript
-const PRODUCT_TO_PLAN: Record<string, "free" | "basic" | "pro"> = {
-  prod_TuYV8OLHKPqp3Y: "basic",
-  prod_TuYWj1Y0ffKgoX: "pro",
-};
-
-// Quando nao tem assinatura:
-return { subscribed: false, plan_type: "free", ... }
+Mobile (empilhado, Pro primeiro com destaque):
 ```
 
 ---
 
-## 3. Tela de Planos (Plan.tsx)
+## Elementos Persuasivos
 
-### Problema Atual (Screenshot)
+1. **Badge "Recomendado"** no Plano Pro
+2. **Destaque visual**: borda dourada e fundo levemente destacado no Pro
+3. **Economia**: mostrar "Mais popular" ou "Melhor custo-beneficio"
+4. **Ordem das features**: listar primeiro os diferenciais exclusivos do Pro
+5. **CTA mais forte**: "Comecar agora" em vez de apenas "Assinar"
 
-O Plano Pro mostra features que nao existem:
-- "Correcoes ilimitadas" (FALSO - sao 60/mes)
-- "Todos os temas anteriores" (NAO EXISTE)
-- "Analise detalhada por paragrafo" (JA EXISTE NO BASICO)
-- "Sugestoes de repertorio" (NAO EXISTE)
-- "Prioridade no suporte" (NAO EXISTE)
+---
 
-### Correcao
+## Alteracoes no Arquivo
 
 **Arquivo: `src/pages/Plan.tsx`**
 
-Mostrar 3 cards de plano (Free, Basico, Pro) com features reais:
+### 1. Atualizar arrays de features
 
 ```typescript
 const freeFeatures = [
@@ -172,193 +93,103 @@ const freeFeatures = [
 
 const basicFeatures = [
   '30 correções por mês',
-  'Análise das 5 competências',
-  'Versão melhorada',
+  'Análise das 5 competências ENEM',
+  'Versão melhorada da redação',
   'Histórico de redações',
 ];
 
 const proFeatures = [
-  'Até 2 correções por dia',
+  '60 correções por mês',
   'Tema do dia automático',
   'Contexto e fundamentação',
   'Perguntas norteadoras',
   'Estrutura sugerida',
-  'Versão melhorada',
+  'Análise das 5 competências ENEM',
+  'Versão melhorada da redação',
+  'Histórico de redações',
 ];
 ```
 
-Adicionar logica para:
-- Mostrar card do plano atual com destaque
-- Usuarios Free verem opcoes de upgrade para Basico OU Pro
-- Usuarios Basico verem opcao de upgrade para Pro
-- Usuarios Pro verem botao de gerenciar assinatura
+### 2. Criar layout de 3 colunas
 
----
-
-## 4. Paridade Mobile (MobileResultsBar)
-
-### Problema
-
-Apos analise, a nota nao aparece destacada na barra inferior mobile. O usuario precisa abrir o sheet para ver.
-
-### Solucao
-
-**Arquivo: `src/components/atlas/MobileResultsBar.tsx`**
-
-1. Mostrar nota real quando disponivel (nao apenas estimatedScore)
-2. Adicionar badge visual quando analise completa
-3. Abrir sheet automaticamente apos primeira analise
+Remover a logica condicional que mostra apenas upgrade options. Mostrar sempre os 3 planos em grid:
 
 ```tsx
-// Exibir nota real se disponivel
-<span className="text-2xl font-bold">
-  {state.totalScore > 0 ? state.totalScore : estimatedScore || '—'}
-</span>
+{/* Grid de planos */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  {/* Card Free */}
+  <Card className={isFree ? "border-2 border-primary" : "border"}>
+    ...
+  </Card>
 
-// Badge de analise completa
-{state.totalScore > 0 && (
-  <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
-    Analisado
-  </Badge>
-)}
-```
+  {/* Card Basico */}
+  <Card className={isBasic ? "border-2 border-primary" : "border"}>
+    ...
+  </Card>
 
----
-
-## 5. Hierarquia Visual dos Botoes (Essay.tsx)
-
-### Problema Atual (Screenshot)
-
-Os 3 botoes estao alinhados horizontalmente com pesos visuais similares:
-- "Colar e dividir"
-- "Adicionar desenvolvimento"
-- "Analisar tudo"
-
-Isso causa confusao, especialmente no mobile.
-
-### Solucao
-
-**Arquivo: `src/pages/Essay.tsx`**
-
-Reorganizar botoes com hierarquia clara:
-
-```tsx
-<div className="space-y-3 py-2">
-  {/* Botoes secundarios - linha superior */}
-  <div className="flex items-center gap-2">
-    <Button variant="ghost" size="sm" className="text-muted-foreground">
-      <Scissors className="h-4 w-4 mr-1.5" />
-      Colar e dividir
-    </Button>
-    <Button variant="ghost" size="sm" className="text-muted-foreground">
-      <Plus className="h-4 w-4 mr-1.5" />
-      Desenvolvimento
-    </Button>
-  </div>
-  
-  {/* Botao principal - destaque */}
-  <Button
-    size="lg"
-    onClick={handleAnalyzeAll}
-    disabled={!canAnalyze || isAnalyzingAll}
-    className="w-full bg-foreground hover:bg-foreground/90 text-background"
-  >
-    <Sparkles className="h-5 w-5 mr-2" />
-    Analisar redação
-  </Button>
+  {/* Card Pro - Destaque */}
+  <Card className={`border-2 ${isPro ? "border-amber-500" : "border-amber-500/50"} bg-amber-50/50 dark:bg-amber-950/10`}>
+    <Badge>Recomendado</Badge>
+    ...
+  </Card>
 </div>
 ```
 
-Mudancas visuais:
-- Botoes secundarios: `variant="ghost"`, `size="sm"`, cor muted
-- Botao principal: `size="lg"`, `w-full`, alto contraste
-- Espaco vertical entre grupos
+### 3. Texto persuasivo por plano
+
+- **Free**: "Experimente grátis" / "Plano atual"
+- **Basico**: "Para quem quer praticar mais" 
+- **Pro**: "Preparação completa para o ENEM"
+
+### 4. Botoes de acao contextuais
+
+| Usuario | Free Card | Basic Card | Pro Card |
+|---------|-----------|------------|----------|
+| Free    | "Plano atual" (disabled) | "Assinar Básico" | "Assinar Pro" |
+| Basic   | — | "Plano atual" (disabled) | "Fazer upgrade" |
+| Pro     | — | — | "Plano atual" (disabled) |
+
+### 5. Manter secao de gerenciamento
+
+Usuarios pagantes continuam vendo o botao "Gerenciar assinatura" abaixo do grid.
 
 ---
 
-## 6. Bloqueio de Features por Plano
-
-### Tela de Redacao
-
-**Arquivo: `src/components/atlas/PedagogicalSection.tsx`**
-
-Receber `planType` e mostrar conteudo bloqueado para Free/Basic:
-
-```tsx
-interface Props {
-  theme: DailyTheme;
-  planType: 'free' | 'basic' | 'pro';
-}
-
-export const PedagogicalSection = ({ theme, planType }: Props) => {
-  if (planType !== 'pro') {
-    return <LockedPedagogicalCard />;
-  }
-  // Mostrar cards normalmente
-};
-```
-
-### Versao Melhorada
-
-**Arquivo: `src/components/atlas/ResultPanel.tsx`**
-
-Bloquear botao "Gerar versao melhorada" para usuarios Free:
-
-```tsx
-{/* Verificar se usuario pode gerar */}
-{!hasImprovedVersionAccess ? (
-  <div className="text-center p-4 bg-muted/30 rounded-lg">
-    <Lock className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-    <p className="text-sm text-muted-foreground">
-      Versão melhorada disponível no Plano Básico
-    </p>
-    <Button variant="outline" size="sm" className="mt-3">
-      Ver planos
-    </Button>
-  </div>
-) : (
-  <Button onClick={onGenerateImproved}>...</Button>
-)}
-```
-
----
-
-## Arquivos a Modificar
+## Arquivo a Modificar
 
 | Arquivo | Tipo | Descricao |
 |---------|------|-----------|
-| Migracao SQL | Criar | Alterar trigger e default para 'free' |
-| `src/lib/stripe.ts` | Editar | Adicionar plano Free, corrigir limites |
-| `src/contexts/AuthContext.tsx` | Editar | Tipo plan_type incluir 'free' |
-| `src/hooks/usePlanFeatures.ts` | Editar | Refatorar para 3 planos |
-| `src/pages/Plan.tsx` | Editar | 3 cards com features reais |
-| `src/pages/Essay.tsx` | Editar | Hierarquia de botoes |
-| `src/pages/Home.tsx` | Editar | Adaptar para 3 planos |
-| `src/components/atlas/MobileResultsBar.tsx` | Editar | Exibir nota real |
-| `src/components/atlas/PedagogicalSection.tsx` | Editar | Receber planType |
-| `src/components/atlas/ResultPanel.tsx` | Editar | Bloquear versao melhorada para Free |
-| `supabase/functions/check-subscription/index.ts` | Editar | Fallback para 'free' |
+| `src/pages/Plan.tsx` | Editar | Layout 3 colunas, features corretas, elementos persuasivos |
 
 ---
 
 ## Secao Tecnica
 
-### Migracao de Usuarios Existentes
+### Responsividade
 
-Usuarios atuais com `plan_type = 'basic'` sem assinatura Stripe ativa deveriam ser 'free'. Opcoes:
+- Desktop: `grid-cols-3` com cards lado a lado
+- Mobile: `grid-cols-1` com Pro no topo (ordem: Pro, Basico, Free ou usar `order` CSS)
 
-1. **Nao migrar automaticamente**: Manter usuarios existentes como 'basic' e apenas novos entram como 'free'
-2. **Migrar via query**: Atualizar todos sem assinatura para 'free' (requer verificacao manual)
+### Destaque Visual do Pro
 
-Recomendacao: Opcao 1 por seguranca, para nao afetar usuarios existentes negativamente.
+```tsx
+<Card className="border-2 border-amber-500 bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-950/20 relative">
+  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+    <Badge className="bg-amber-500 text-white">
+      Recomendado
+    </Badge>
+  </div>
+  ...
+</Card>
+```
 
-### Ordem de Implementacao
+### Indicador de Plano Atual
 
-1. Migracao do banco (trigger + default)
-2. Atualizar edge function check-subscription
-3. Atualizar tipos e constantes frontend
-4. Refatorar usePlanFeatures
-5. Atualizar Plan.tsx (features reais)
-6. Atualizar Essay.tsx (botoes + bloqueios)
-7. Atualizar MobileResultsBar (paridade)
-8. Testar fluxos completos
+Cada card mostra um indicador se for o plano do usuario:
+
+```tsx
+{planType === 'pro' && (
+  <Badge variant="secondary" className="ml-2">Seu plano</Badge>
+)}
+```
+
