@@ -2,12 +2,14 @@ import { useState, useCallback } from 'react';
 import { useEssayState } from '@/hooks/useEssayState';
 import { useDailyTheme } from '@/hooks/useDailyTheme';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
+import { useQuotaCheck } from '@/hooks/useQuotaCheck';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { BlockCard } from '@/components/atlas/BlockCard';
 import { ResultPanel } from '@/components/atlas/ResultPanel';
 import { PasteDivideModal } from '@/components/atlas/PasteDivideModal';
 import { MobileResultsBar } from '@/components/atlas/MobileResultsBar';
 import { PedagogicalSection } from '@/components/atlas/PedagogicalSection';
+import { QuotaExceededModal } from '@/components/atlas/QuotaExceededModal';
 import { analyzeEssay, generateImprovedVersion } from '@/lib/ai';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -20,6 +22,7 @@ const Essay = () => {
   const { user } = useAuth();
   const { theme, isLoading: isThemeLoading } = useDailyTheme();
   const { planType, hasPedagogicalAccess, hasImprovedVersionAccess } = usePlanFeatures();
+  const { canAnalyze: hasQuota, reason: quotaReason, isLoading: isQuotaLoading } = useQuotaCheck();
   const {
     state,
     updateBlockText,
@@ -42,9 +45,10 @@ const Essay = () => {
   const [pasteModalOpen, setPasteModalOpen] = useState(false);
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
   const [isGeneratingImproved, setIsGeneratingImproved] = useState(false);
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
   
-  // Check if can analyze (any block has content)
-  const canAnalyze = state.blocks.some(b => b.text.trim().length > 0);
+  // Check if can analyze (any block has content AND has quota)
+  const canAnalyze = state.blocks.some(b => b.text.trim().length > 0) && hasQuota;
   
   // Helper function for competency descriptions
   const getCompetencyDescription = (id: string): string => {
@@ -103,6 +107,12 @@ const Essay = () => {
 
   // Unified analysis: analyzes all blocks + evaluates competencies in ONE AI call
   const handleAnalyzeAll = useCallback(async () => {
+    // Check quota first
+    if (!hasQuota) {
+      setShowQuotaModal(true);
+      return;
+    }
+
     const blocksWithContent = state.blocks.filter(b => b.text.trim().length > 0);
     
     if (blocksWithContent.length === 0) {
@@ -161,6 +171,12 @@ const Essay = () => {
     } catch (error) {
       console.error('Analyze essay error:', error);
       
+      // Check if it's a quota exceeded error from backend
+      if (error instanceof Error && error.message.includes('QUOTA_EXCEEDED')) {
+        setShowQuotaModal(true);
+        return;
+      }
+      
       // Mark blocks as unavailable on error
       for (const block of blocksWithContent) {
         setBlockAnalysis(block.id, null, 'unavailable');
@@ -170,7 +186,7 @@ const Essay = () => {
     } finally {
       setIsAnalyzingAll(false);
     }
-  }, [state.blocks, state.theme, setBlockAnalysis, setCompetencies, setTotalScore, saveEssayToDatabase]);
+  }, [state.blocks, state.theme, hasQuota, setBlockAnalysis, setCompetencies, setTotalScore, saveEssayToDatabase]);
   
   // Generate improved version
   const handleGenerateImproved = useCallback(async () => {
@@ -331,6 +347,13 @@ const Essay = () => {
           open={pasteModalOpen}
           onOpenChange={setPasteModalOpen}
           onApply={applyDividedText}
+        />
+        
+        {/* Quota Exceeded Modal */}
+        <QuotaExceededModal
+          open={showQuotaModal}
+          onOpenChange={setShowQuotaModal}
+          reason={quotaReason}
         />
       </div>
     </MainLayout>

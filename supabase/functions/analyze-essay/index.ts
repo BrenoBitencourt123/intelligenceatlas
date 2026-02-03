@@ -164,6 +164,109 @@ serve(async (req) => {
       );
     }
 
+    const user = claimsData.user;
+
+    // ===== QUOTA VALIDATION =====
+    // Get user's plan type
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('plan_type')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error("Failed to fetch user profile:", profileError);
+      return new Response(
+        JSON.stringify({ error: "Erro ao verificar plano do usuário." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const planType = profile.plan_type || 'free';
+    
+    // Define limits per plan
+    const limits: Record<string, { monthly: number; daily: number }> = {
+      free: { monthly: 1, daily: 1 },
+      basic: { monthly: 30, daily: 1 },
+      pro: { monthly: 60, daily: 2 },
+    };
+
+    const userLimits = limits[planType] || limits.free;
+
+    // Calculate start of month and start of today
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Count monthly analyzed essays
+    const { count: monthlyCount, error: monthlyError } = await supabaseClient
+      .from('essays')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .not('analyzed_at', 'is', null)
+      .gte('analyzed_at', startOfMonth.toISOString());
+
+    if (monthlyError) {
+      console.error("Failed to count monthly essays:", monthlyError);
+    }
+
+    // For free plan, check total (not monthly)
+    if (planType === 'free') {
+      const { count: totalCount } = await supabaseClient
+        .from('essays')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .not('analyzed_at', 'is', null);
+
+      if ((totalCount ?? 0) >= userLimits.monthly) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Você usou sua redação gratuita. Assine para continuar.',
+            code: 'QUOTA_EXCEEDED',
+            limit_type: 'total'
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else {
+      // Check monthly limit for basic/pro
+      if ((monthlyCount ?? 0) >= userLimits.monthly) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Limite de correções do mês atingido.',
+            code: 'QUOTA_EXCEEDED',
+            limit_type: 'monthly'
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Count today's analyzed essays
+      const { count: todayCount, error: todayError } = await supabaseClient
+        .from('essays')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .not('analyzed_at', 'is', null)
+        .gte('analyzed_at', startOfToday.toISOString());
+
+      if (todayError) {
+        console.error("Failed to count today's essays:", todayError);
+      }
+
+      // Check daily limit
+      if ((todayCount ?? 0) >= userLimits.daily) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Limite diário de correções atingido. Volte amanhã!',
+            code: 'QUOTA_EXCEEDED',
+            limit_type: 'daily'
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+    // ===== END QUOTA VALIDATION =====
+
     const { blocks, theme } = await req.json();
     
     if (!blocks || blocks.length === 0) {
