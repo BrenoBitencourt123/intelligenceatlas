@@ -235,46 +235,42 @@ const Essay = () => {
               {/* Pedagogical context section */}
               <PedagogicalSection theme={theme} isLocked={!hasPedagogicalAccess} />
               
-              {/* Action buttons - reorganized with hierarchy */}
-              <div className="space-y-3 py-2">
-                {/* Secondary buttons */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setPasteModalOpen(true)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <Scissors className="h-4 w-4 mr-1.5" />
-                    Colar e dividir
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={addDevelopment}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <Plus className="h-4 w-4 mr-1.5" />
-                    Desenvolvimento
-                  </Button>
-                </div>
-                
-                {/* Primary button */}
+              {/* Action buttons - all in one line */}
+              <div className="flex items-center gap-2 flex-wrap py-2">
                 <Button
-                  size="lg"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPasteModalOpen(true)}
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Scissors className="h-4 w-4 mr-1.5" />
+                  Colar e dividir
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={addDevelopment}
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Desenvolvimento
+                </Button>
+                
+                <Button
+                  size="sm"
                   onClick={handleAnalyzeAll}
                   disabled={!canAnalyze || isAnalyzingAll}
-                  className="w-full md:w-auto bg-foreground hover:bg-foreground/90 text-background"
+                  className="bg-foreground hover:bg-foreground/80 text-background"
                 >
                   {isAnalyzingAll ? (
                     <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                       Analisando...
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-5 w-5 mr-2" />
+                      <Sparkles className="h-4 w-4 mr-1.5" />
                       Analisar redação
                     </>
                   )}
