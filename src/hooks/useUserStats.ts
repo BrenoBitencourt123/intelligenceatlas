@@ -8,6 +8,7 @@ interface UserStats {
   monthlyAverage: number | null;
   monthlyEssays: number;
   hasWrittenToday: boolean;
+  todayAnalyzedCount: number;
   isLoading: boolean;
 }
 
@@ -19,6 +20,7 @@ export const useUserStats = (): UserStats => {
     monthlyAverage: null,
     monthlyEssays: 0,
     hasWrittenToday: false,
+    todayAnalyzedCount: 0,
     isLoading: true,
   });
 
@@ -74,12 +76,20 @@ export const useUserStats = (): UserStats => {
           return essayDate >= startOfToday;
         }) || false;
 
+        // Count today's analyzed essays (essays with analyzed_at in today)
+        const todayAnalyzedCount = essays?.filter(e => {
+          if (!e.analyzed_at) return false;
+          const analyzedDate = new Date(e.analyzed_at);
+          return analyzedDate >= startOfToday;
+        }).length || 0;
+
         setStats({
           totalEssays,
           lastScore,
           monthlyAverage,
           monthlyEssays: monthlyEssaysCount,
           hasWrittenToday,
+          todayAnalyzedCount,
           isLoading: false,
         });
       } catch (error) {

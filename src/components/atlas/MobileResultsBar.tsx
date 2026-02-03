@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ResultPanel } from './ResultPanel';
 import { Sparkles, ChevronUp, Loader2, CheckCircle2 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MobileResultsBarProps {
   state: EssayState;
@@ -36,15 +37,17 @@ export const MobileResultsBar = ({
   hasImprovedVersionAccess = true,
 }: MobileResultsBarProps) => {
   const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
   
-  // Auto-open sheet when analysis completes
+  // Auto-open sheet when analysis completes (only on mobile)
   const hasAnalysis = state.totalScore > 0;
   
   useEffect(() => {
-    if (hasAnalysis && analyzedCount === totalCount) {
+    // Only auto-open on mobile devices
+    if (isMobile && hasAnalysis && analyzedCount === totalCount) {
       setOpen(true);
     }
-  }, [hasAnalysis, analyzedCount, totalCount]);
+  }, [isMobile, hasAnalysis, analyzedCount, totalCount]);
   
   // Display score: real score if available, otherwise estimated
   const displayScore = state.totalScore > 0 ? state.totalScore : estimatedScore;
