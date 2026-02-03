@@ -11,10 +11,13 @@ import { getDailyTheme } from '@/data/dailyThemes';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Scissors, Plus, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const dailyTheme = getDailyTheme();
 
 const Essay = () => {
+  const { user } = useAuth();
   const {
     state,
     updateBlockText,
@@ -53,6 +56,49 @@ const Essay = () => {
     return descriptions[id] || '';
   };
   
+  // Save essay to database
+  const saveEssayToDatabase = useCallback(async (
+    theme: string,
+    blocks: typeof state.blocks,
+    analysis: Record<string, unknown>,
+    totalScore: number
+  ) => {
+    if (!user) {
+      console.warn('[Save Essay] No user logged in, skipping save');
+      return;
+    }
+
+    try {
+      const blocksData = blocks.map(b => ({
+        id: b.id,
+        type: b.type,
+        title: b.title,
+        text: b.text,
+        wordCount: b.wordCount,
+      }));
+
+      const { error } = await supabase.from('essays').insert([{
+        user_id: user.id,
+        theme,
+        blocks: blocksData as unknown as import('@/integrations/supabase/types').Json,
+        analysis: analysis as unknown as import('@/integrations/supabase/types').Json,
+        total_score: totalScore,
+        analyzed_at: new Date().toISOString(),
+      }]);
+
+      if (error) {
+        console.error('[Save Essay] Error:', error);
+        toast.error('Erro ao salvar redação no histórico');
+        return;
+      }
+
+      console.log('[Save Essay] Essay saved successfully');
+      toast.success('Redação salva no seu histórico!');
+    } catch (error) {
+      console.error('[Save Essay] Unexpected error:', error);
+    }
+  }, [user]);
+
   // Unified analysis: analyzes all blocks + evaluates competencies in ONE AI call
   const handleAnalyzeAll = useCallback(async () => {
     const blocksWithContent = state.blocks.filter(b => b.text.trim().length > 0);
@@ -97,6 +143,17 @@ const Essay = () => {
       if (response.usage) {
         console.log('[Token Usage] Análise unificada:', response.usage);
       }
+
+      // Save to database after successful analysis
+      await saveEssayToDatabase(
+        state.theme,
+        state.blocks,
+        {
+          blockAnalyses: response.blockAnalyses,
+          competencies: response.competencies,
+        },
+        response.totalScore
+      );
       
       toast.success('Análise completa!');
     } catch (error) {
@@ -111,7 +168,7 @@ const Essay = () => {
     } finally {
       setIsAnalyzingAll(false);
     }
-  }, [state.blocks, state.theme, setBlockAnalysis, setCompetencies, setTotalScore]);
+  }, [state.blocks, state.theme, setBlockAnalysis, setCompetencies, setTotalScore, saveEssayToDatabase]);
   
   // Generate improved version
   const handleGenerateImproved = useCallback(async () => {

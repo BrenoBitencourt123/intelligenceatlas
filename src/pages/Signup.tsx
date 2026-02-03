@@ -79,8 +79,8 @@ export default function Signup() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <img 
-              src="/lovable-uploads/1770063094363-favicon.ico" 
+          <img 
+              src="https://storage.googleapis.com/gpt-engineer-file-uploads/f4QJ9UCag0bQmfSQvlHZMs1PDKy2/uploads/1770063094363-favicon.ico" 
               alt="Atlas Logo" 
               className="h-12 w-12"
             />
