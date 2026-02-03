@@ -1,147 +1,82 @@
 
 
-# Plano: Integrar Stripe para Pagamentos de Assinatura
+# Plano: Corrigir Checkout do Stripe no Mobile
 
-## Visao Geral
+## Problema Identificado
 
-Implementar fluxo completo de assinatura com Stripe, permitindo que usuarios do Plano Basico facam upgrade para o Plano Pro, e que novos usuarios escolham seu plano.
-
-## Produtos Criados no Stripe
-
-| Plano   | Product ID           | Price ID                          | Valor     |
-|---------|----------------------|-----------------------------------|-----------|
-| Basico  | prod_TuYV8OLHKPqp3Y  | price_1SwjOrLbqFmREm0fqfXpdc8L    | R$ 29,90  |
-| Pro     | prod_TuYWj1Y0ffKgoX  | price_1SwjPWLbqFmREm0fpy8ef02R    | R$ 49,90  |
-
-## Arquitetura do Fluxo
-
-```text
-+------------------+     +------------------+     +------------------+
-|  Plan.tsx        |     | create-checkout  |     | Stripe Checkout  |
-|  (Frontend)      | --> | (Edge Function)  | --> | (Pagina Stripe)  |
-+------------------+     +------------------+     +------------------+
-                                                          |
-                                                          v
-+------------------+     +------------------+     +------------------+
-|  profiles.       | <-- | check-sub        | <-- | Success Page     |
-|  plan_type='pro' |     | (Edge Function)  |     | /plano?success   |
-+------------------+     +------------------+     +------------------+
-```
-
-## Edge Functions a Criar
-
-### 1. create-checkout
-
-Cria sessao de checkout no Stripe para assinatura.
-
-- Recebe: `price_id` (qual plano)
-- Busca/cria customer no Stripe pelo email do usuario
-- Retorna URL do checkout
-- Success URL: `/plano?success=true`
-- Cancel URL: `/plano`
-
-### 2. check-subscription
-
-Verifica status da assinatura do usuario no Stripe.
-
-- Busca customer pelo email
-- Verifica assinaturas ativas
-- Retorna: `subscribed`, `product_id`, `subscription_end`
-- Chamado apos login e apos retorno do checkout
-
-### 3. customer-portal
-
-Permite usuario gerenciar assinatura (cancelar, trocar cartao).
-
-- Cria sessao do Customer Portal do Stripe
-- Retorna URL do portal
-
-## Modificacoes no Frontend
-
-### 1. Constantes de Planos
-
-Criar mapeamento entre planos e IDs do Stripe:
+O código atual usa `window.open(data.url, '_blank')` dentro de uma Promise assíncrona:
 
 ```typescript
-const STRIPE_PLANS = {
-  basic: {
-    product_id: 'prod_TuYV8OLHKPqp3Y',
-    price_id: 'price_1SwjOrLbqFmREm0fqfXpdc8L',
-    name: 'Básico',
-    price: 29.90,
-    limit: 30,
-  },
-  pro: {
-    product_id: 'prod_TuYWj1Y0ffKgoX',
-    price_id: 'price_1SwjPWLbqFmREm0fpy8ef02R',
-    name: 'Pro',
-    price: 49.90,
-    limit: 999,
-  },
+const handleUpgrade = async () => {
+  const { data } = await supabase.functions.invoke('create-checkout', {...});
+  if (data?.url) {
+    window.open(data.url, '_blank');  // BLOQUEADO no mobile!
+  }
 };
 ```
 
-### 2. Plan.tsx
+Navegadores móveis bloqueiam `window.open` quando chamado fora do contexto direto de clique do usuário. Como há uma chamada assíncrona antes, o navegador não considera mais como ação iniciada pelo usuário.
 
-- Adicionar botao funcional "Fazer upgrade para Pro"
-- Ao clicar, chamar `create-checkout` com `price_id` do Pro
-- Redirecionar para URL retornada
-- Detectar `?success=true` na URL e chamar `check-subscription`
-- Atualizar `profiles.plan_type` se assinatura confirmada
-- Adicionar botao "Gerenciar assinatura" que abre Customer Portal
+## Solucao
 
-### 3. AuthContext (Opcional)
+Usar `window.location.href` para redirecionar na mesma aba, em vez de tentar abrir uma nova aba. Isso funciona consistentemente em todos os dispositivos.
 
-Chamar `check-subscription` apos login para sincronizar estado.
+## Alteracoes
 
-## Fluxo do Usuario
+### Arquivo: `src/pages/Plan.tsx`
 
-### Upgrade para Pro
+**Antes (linha 80-82):**
+```typescript
+if (data?.url) {
+  window.open(data.url, '_blank');
+}
+```
 
-1. Usuario clica em "Fazer upgrade para Pro" na pagina /plano
-2. Sistema chama `create-checkout` com price_id do Pro
-3. Usuario e redirecionado para Stripe Checkout
-4. Usuario preenche dados de pagamento
-5. Apos sucesso, Stripe redireciona para /plano?success=true
-6. Frontend detecta parametro e chama `check-subscription`
-7. Sistema confirma assinatura e atualiza `profiles.plan_type = 'pro'`
-8. Usuario ve confirmacao e novos beneficios desbloqueados
+**Depois:**
+```typescript
+if (data?.url) {
+  window.location.href = data.url;
+}
+```
 
-### Gerenciar Assinatura
+Mesma alteracao para o `handleManageSubscription` (linha 98-100):
 
-1. Usuario clica em "Gerenciar assinatura"
-2. Sistema chama `customer-portal`
-3. Usuario e redirecionado para portal Stripe
-4. Usuario pode cancelar, trocar cartao, ver faturas
-5. Ao voltar, sistema pode re-verificar status
+**Antes:**
+```typescript
+if (data?.url) {
+  window.open(data.url, '_blank');
+}
+```
 
-## Arquivos a Criar
+**Depois:**
+```typescript
+if (data?.url) {
+  window.location.href = data.url;
+}
+```
 
-| Arquivo | Descricao |
-|---------|-----------|
-| `supabase/functions/create-checkout/index.ts` | Cria sessao de checkout |
-| `supabase/functions/check-subscription/index.ts` | Verifica assinatura |
-| `supabase/functions/customer-portal/index.ts` | Abre portal Stripe |
-| `src/lib/stripe.ts` | Constantes e tipos dos planos |
+## Por que Isso Funciona
+
+- `window.location.href` redireciona o usuario na mesma aba
+- Funciona em todos os navegadores (desktop e mobile)
+- Apos o pagamento, o Stripe redireciona de volta para `/plano?success=true`
+- O fluxo de verificacao de assinatura ja esta preparado para isso
+
+## Comportamento Apos a Mudanca
+
+1. Usuario clica em "Fazer upgrade para Pro"
+2. Pagina redireciona para o Stripe Checkout (mesma aba)
+3. Usuario completa o pagamento
+4. Stripe redireciona para `/plano?success=true`
+5. Sistema verifica a assinatura e atualiza o plano
 
 ## Arquivos a Modificar
 
-| Arquivo | Descricao |
-|---------|-----------|
-| `supabase/config.toml` | Adicionar novas functions |
-| `src/pages/Plan.tsx` | Botoes funcionais e logica de checkout |
+| Arquivo | Mudanca |
+|---------|---------|
+| `src/pages/Plan.tsx` | Substituir `window.open(url, '_blank')` por `window.location.href = url` em 2 lugares |
 
-## Seguranca
+## Secao Tecnica
 
-- Todas as edge functions validam JWT do usuario
-- Nunca expor STRIPE_SECRET_KEY no frontend
-- Apenas price_ids sao enviados do frontend
-- Verificacao de assinatura sempre via Stripe API (nao confiar em parametros)
-
-## Consideracoes
-
-- Usuario pode comecar no plano gratuito (sem assinatura Stripe)
-- Primeiro pagamento ativa o plano correspondente
-- Cancelamento no portal nao remove acesso imediatamente (ate fim do periodo)
-- Sincronizacao de `plan_type` baseada no produto assinado
+A razao tecnica e que navegadores implementam uma politica de seguranca onde popups so podem ser abertos em resposta direta a uma acao do usuario (clique). Quando ha codigo assincrono entre o clique e o `window.open`, o navegador perde a conexao com o evento original e bloqueia a abertura.
 
