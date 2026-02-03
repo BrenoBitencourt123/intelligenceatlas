@@ -15,8 +15,8 @@ const logStep = (step: string, details?: unknown) => {
 
 // Map Stripe product IDs to plan types
 const PRODUCT_TO_PLAN: Record<string, "free" | "basic" | "pro"> = {
-  prod_TuYV8OLHKPqp3Y: "basic",
-  prod_TuYWj1Y0ffKgoX: "pro",
+  prod_TudMGgwl1PEvof: "basic",
+  prod_TudN04n9u6Wdvf: "pro",
 };
 
 serve(async (req) => {
