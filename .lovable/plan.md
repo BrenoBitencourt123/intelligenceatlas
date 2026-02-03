@@ -1,116 +1,147 @@
 
-# Plano: Simplificar Bloqueio da Secao Pedagogica
 
-## Problema Identificado
+# Plano: Integrar Stripe para Pagamentos de Assinatura
 
-Atualmente, quando o usuario e do Plano Basico, todos os 4 cards (Tema, Contexto, Perguntas, Estrutura) sao renderizados com blur e overlay. Isso:
+## Visao Geral
 
-1. Ocupa muito espaco vertical na pagina
-2. Cria confusao - usuario pode pensar que o editor tambem esta bloqueado
-3. Experiencia visual ruim com muito conteudo borrado
+Implementar fluxo completo de assinatura com Stripe, permitindo que usuarios do Plano Basico facam upgrade para o Plano Pro, e que novos usuarios escolham seu plano.
 
-## Solucao Proposta
+## Produtos Criados no Stripe
 
-Substituir a abordagem de overlay por um **card unico e compacto** quando o plano for Basico:
+| Plano   | Product ID           | Price ID                          | Valor     |
+|---------|----------------------|-----------------------------------|-----------|
+| Basico  | prod_TuYV8OLHKPqp3Y  | price_1SwjOrLbqFmREm0fqfXpdc8L    | R$ 29,90  |
+| Pro     | prod_TuYWj1Y0ffKgoX  | price_1SwjPWLbqFmREm0fpy8ef02R    | R$ 49,90  |
 
-```text
-ANTES (Plano Basico):
-+------------------------------------------+
-| [Tema do Dia - BLUR]                     |
-| [Contexto - BLUR]        OVERLAY GRANDE  |
-| [Perguntas - BLUR]       cobrindo tudo   |
-| [Estrutura - BLUR]                       |
-+------------------------------------------+
-
-DEPOIS (Plano Basico):
-+------------------------------------------+
-| [CADEADO] Orientacao de Redacao          |
-|                                          |
-| O Plano Pro oferece tema diario,         |
-| contexto, perguntas e estrutura          |
-| sugerida para guiar sua redacao.         |
-|                                          |
-| [ Ver Plano Pro -> ]                     |
-+------------------------------------------+
-```
-
-## Mudancas Necessarias
-
-### 1. Criar Novo Componente: LockedPedagogicalCard
-
-Arquivo: `src/components/atlas/LockedPedagogicalCard.tsx`
-
-Card compacto que substitui toda a secao pedagogica para usuarios Basico:
-- Icone de cadeado
-- Titulo "Orientacao de Redacao"
-- Texto explicativo curto sobre os beneficios do Pro
-- Lista resumida do que esta incluido (tema, contexto, perguntas, estrutura)
-- Botao "Ver Plano Pro"
-
-### 2. Modificar PedagogicalSection
-
-Arquivo: `src/components/atlas/PedagogicalSection.tsx`
-
-Mudar a logica de:
-```typescript
-// ANTES
-if (isLocked) {
-  return <LockedOverlay>{content}</LockedOverlay>;
-}
-return content;
-```
-
-Para:
-```typescript
-// DEPOIS
-if (isLocked) {
-  return <LockedPedagogicalCard />;
-}
-return content;
-```
-
-### 3. Remover LockedOverlay (Opcional)
-
-O componente `LockedOverlay` pode ser mantido para uso futuro ou removido se nao for mais necessario.
-
-## Design do Card Compacto
+## Arquitetura do Fluxo
 
 ```text
-+------------------------------------------+
-|  [BOOK/SPARKLE ICON]                     |
-|  ORIENTACAO DE REDACAO                   |
-|                                          |
-|  O Plano Pro oferece recursos para       |
-|  guiar sua escrita:                      |
-|                                          |
-|  * Tema do dia automatico                |
-|  * Contexto e fundamentacao              |
-|  * Perguntas norteadoras                 |
-|  * Estrutura sugerida                    |
-|                                          |
-|  [ Ver Plano Pro  -> ]                   |
-+------------------------------------------+
++------------------+     +------------------+     +------------------+
+|  Plan.tsx        |     | create-checkout  |     | Stripe Checkout  |
+|  (Frontend)      | --> | (Edge Function)  | --> | (Pagina Stripe)  |
++------------------+     +------------------+     +------------------+
+                                                          |
+                                                          v
++------------------+     +------------------+     +------------------+
+|  profiles.       | <-- | check-sub        | <-- | Success Page     |
+|  plan_type='pro' |     | (Edge Function)  |     | /plano?success   |
++------------------+     +------------------+     +------------------+
 ```
 
-## Beneficios
+## Edge Functions a Criar
 
-1. **Clareza** - Usuario entende exatamente o que esta bloqueado
-2. **Compacidade** - Ocupa muito menos espaco vertical
-3. **UX melhor** - Editor fica visivel imediatamente abaixo
-4. **Consistencia** - Mesmo padrao do LockedThemeCard na Home
-5. **Performance** - Nao precisa renderizar 4 cards + blur + overlay
+### 1. create-checkout
 
-## Arquivos Afetados
+Cria sessao de checkout no Stripe para assinatura.
 
-| Arquivo | Acao |
-|---------|------|
-| `src/components/atlas/LockedPedagogicalCard.tsx` | Criar |
-| `src/components/atlas/PedagogicalSection.tsx` | Modificar |
-| `src/components/atlas/LockedOverlay.tsx` | Manter (pode ser util em outros contextos) |
+- Recebe: `price_id` (qual plano)
+- Busca/cria customer no Stripe pelo email do usuario
+- Retorna URL do checkout
+- Success URL: `/plano?success=true`
+- Cancel URL: `/plano`
 
-## Resultado Esperado
+### 2. check-subscription
 
-- Usuario Basico ve um card compacto explicando os beneficios Pro
-- Editor de blocos aparece logo abaixo, claramente acessivel
-- Incentivo para upgrade sem confundir o usuario
-- Interface limpa e objetiva
+Verifica status da assinatura do usuario no Stripe.
+
+- Busca customer pelo email
+- Verifica assinaturas ativas
+- Retorna: `subscribed`, `product_id`, `subscription_end`
+- Chamado apos login e apos retorno do checkout
+
+### 3. customer-portal
+
+Permite usuario gerenciar assinatura (cancelar, trocar cartao).
+
+- Cria sessao do Customer Portal do Stripe
+- Retorna URL do portal
+
+## Modificacoes no Frontend
+
+### 1. Constantes de Planos
+
+Criar mapeamento entre planos e IDs do Stripe:
+
+```typescript
+const STRIPE_PLANS = {
+  basic: {
+    product_id: 'prod_TuYV8OLHKPqp3Y',
+    price_id: 'price_1SwjOrLbqFmREm0fqfXpdc8L',
+    name: 'Básico',
+    price: 29.90,
+    limit: 30,
+  },
+  pro: {
+    product_id: 'prod_TuYWj1Y0ffKgoX',
+    price_id: 'price_1SwjPWLbqFmREm0fpy8ef02R',
+    name: 'Pro',
+    price: 49.90,
+    limit: 999,
+  },
+};
+```
+
+### 2. Plan.tsx
+
+- Adicionar botao funcional "Fazer upgrade para Pro"
+- Ao clicar, chamar `create-checkout` com `price_id` do Pro
+- Redirecionar para URL retornada
+- Detectar `?success=true` na URL e chamar `check-subscription`
+- Atualizar `profiles.plan_type` se assinatura confirmada
+- Adicionar botao "Gerenciar assinatura" que abre Customer Portal
+
+### 3. AuthContext (Opcional)
+
+Chamar `check-subscription` apos login para sincronizar estado.
+
+## Fluxo do Usuario
+
+### Upgrade para Pro
+
+1. Usuario clica em "Fazer upgrade para Pro" na pagina /plano
+2. Sistema chama `create-checkout` com price_id do Pro
+3. Usuario e redirecionado para Stripe Checkout
+4. Usuario preenche dados de pagamento
+5. Apos sucesso, Stripe redireciona para /plano?success=true
+6. Frontend detecta parametro e chama `check-subscription`
+7. Sistema confirma assinatura e atualiza `profiles.plan_type = 'pro'`
+8. Usuario ve confirmacao e novos beneficios desbloqueados
+
+### Gerenciar Assinatura
+
+1. Usuario clica em "Gerenciar assinatura"
+2. Sistema chama `customer-portal`
+3. Usuario e redirecionado para portal Stripe
+4. Usuario pode cancelar, trocar cartao, ver faturas
+5. Ao voltar, sistema pode re-verificar status
+
+## Arquivos a Criar
+
+| Arquivo | Descricao |
+|---------|-----------|
+| `supabase/functions/create-checkout/index.ts` | Cria sessao de checkout |
+| `supabase/functions/check-subscription/index.ts` | Verifica assinatura |
+| `supabase/functions/customer-portal/index.ts` | Abre portal Stripe |
+| `src/lib/stripe.ts` | Constantes e tipos dos planos |
+
+## Arquivos a Modificar
+
+| Arquivo | Descricao |
+|---------|-----------|
+| `supabase/config.toml` | Adicionar novas functions |
+| `src/pages/Plan.tsx` | Botoes funcionais e logica de checkout |
+
+## Seguranca
+
+- Todas as edge functions validam JWT do usuario
+- Nunca expor STRIPE_SECRET_KEY no frontend
+- Apenas price_ids sao enviados do frontend
+- Verificacao de assinatura sempre via Stripe API (nao confiar em parametros)
+
+## Consideracoes
+
+- Usuario pode comecar no plano gratuito (sem assinatura Stripe)
+- Primeiro pagamento ativa o plano correspondente
+- Cancelamento no portal nao remove acesso imediatamente (ate fim do periodo)
+- Sincronizacao de `plan_type` baseada no produto assinado
+
