@@ -228,7 +228,7 @@ const Essay = () => {
     <MainLayout>
       <div className="min-h-screen bg-background">
         {/* Main content */}
-        <main className="container max-w-7xl mx-auto px-4 py-6">
+        <main className="container max-w-7xl mx-auto px-4 py-6 pb-40 md:pb-6">
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Left column - Editor */}
             <div className="lg:w-[62%] space-y-4">
