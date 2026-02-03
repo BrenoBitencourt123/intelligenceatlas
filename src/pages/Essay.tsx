@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useEssayState } from '@/hooks/useEssayState';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { Header } from '@/components/atlas/Header';
 import { BlockCard } from '@/components/atlas/BlockCard';
 import { ResultPanel } from '@/components/atlas/ResultPanel';
 import { PasteDivideModal } from '@/components/atlas/PasteDivideModal';
@@ -10,6 +9,8 @@ import { PedagogicalSection } from '@/components/atlas/PedagogicalSection';
 import { analyzeEssay, generateImprovedVersion } from '@/lib/ai';
 import { getDailyTheme } from '@/data/dailyThemes';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Sparkles, Scissors, Plus, Loader2 } from 'lucide-react';
 
 const dailyTheme = getDailyTheme();
 
@@ -144,15 +145,6 @@ const Essay = () => {
   return (
     <MainLayout>
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        <Header
-          onAnalyzeAll={handleAnalyzeAll}
-          onPasteDivide={() => setPasteModalOpen(true)}
-          onAddDevelopment={addDevelopment}
-          isAnalyzing={isAnalyzingAll}
-          canAnalyze={canAnalyze}
-        />
-        
         {/* Main content */}
         <main className="container max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-col lg:flex-row gap-6">
@@ -160,6 +152,47 @@ const Essay = () => {
             <div className="lg:w-[62%] space-y-4">
               {/* Pedagogical context section */}
               <PedagogicalSection theme={dailyTheme} />
+              
+              {/* Action buttons - above blocks */}
+              <div className="flex items-center justify-end gap-2 flex-wrap py-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPasteModalOpen(true)}
+                  className="text-muted-foreground"
+                >
+                  <Scissors className="h-4 w-4 mr-1.5" />
+                  Colar e dividir
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addDevelopment}
+                >
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Adicionar desenvolvimento
+                </Button>
+                
+                <Button
+                  size="sm"
+                  onClick={handleAnalyzeAll}
+                  disabled={!canAnalyze || isAnalyzingAll}
+                  className="bg-foreground hover:bg-foreground/90 text-background"
+                >
+                  {isAnalyzingAll ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      Analisando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-1.5" />
+                      Analisar tudo
+                    </>
+                  )}
+                </Button>
+              </div>
               
               {/* Essay blocks */}
               {state.blocks.map((block) => (
