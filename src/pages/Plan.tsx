@@ -68,7 +68,7 @@ const Plan = () => {
       if (error) throw error;
 
       if (data?.url) {
-        window.location.href = data.url;
+        window.open(data.url, '_blank');
       }
     } catch (error) {
       console.error('Error creating checkout:', error);
