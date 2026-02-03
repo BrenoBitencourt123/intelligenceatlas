@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmbeddedCheckoutModal } from '@/components/checkout/EmbeddedCheckoutModal';
 import { useUserStats } from '@/hooks/useUserStats';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { useMemo, useEffect, useState, useCallback } from 'react';
@@ -19,7 +20,7 @@ const Plan = () => {
   const { monthlyEssays, totalEssays, isLoading } = useUserStats();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
-  const [isCreatingCheckout, setIsCreatingCheckout] = useState<string | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<'basic' | 'pro' | null>(null);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
 
   // Calculate next reset date (first day of next month)
@@ -58,24 +59,8 @@ const Plan = () => {
     }
   }, [searchParams, setSearchParams, checkSubscription]);
 
-  const handleUpgrade = async (targetPlan: 'basic' | 'pro') => {
-    setIsCreatingCheckout(targetPlan);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { price_id: STRIPE_PLANS[targetPlan].price_id }
-      });
-
-      if (error) throw error;
-
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      console.error('Error creating checkout:', error);
-      toast.error('Erro ao iniciar checkout. Tente novamente.');
-    } finally {
-      setIsCreatingCheckout(null);
-    }
+  const handleUpgrade = (targetPlan: 'basic' | 'pro') => {
+    setCheckoutPlan(targetPlan);
   };
 
   const handleManageSubscription = async () => {
@@ -222,16 +207,9 @@ const Plan = () => {
                     <Button 
                       className="w-full bg-amber-500 hover:bg-amber-600 text-white" 
                       onClick={() => handleUpgrade('pro')}
-                      disabled={isCreatingCheckout !== null}
                     >
-                      {isCreatingCheckout === 'pro' ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Crown className="h-4 w-4 mr-2" />
-                          {isBasic ? 'Fazer upgrade' : 'Começar agora'}
-                        </>
-                      )}
+                      <Crown className="h-4 w-4 mr-2" />
+                      {isBasic ? 'Fazer upgrade' : 'Começar agora'}
                     </Button>
                   )}
                 </div>
@@ -280,16 +258,9 @@ const Plan = () => {
                     <Button 
                       className="w-full" 
                       onClick={() => handleUpgrade('basic')}
-                      disabled={isCreatingCheckout !== null}
                     >
-                      {isCreatingCheckout === 'basic' ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Assinar Básico
-                        </>
-                      )}
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Assinar Básico
                     </Button>
                   )}
                 </div>
@@ -382,6 +353,16 @@ const Plan = () => {
             </div>
           )}
         </div>
+
+        {/* Embedded Checkout Modal */}
+        {checkoutPlan && (
+          <EmbeddedCheckoutModal
+            open={!!checkoutPlan}
+            onOpenChange={(open) => !open && setCheckoutPlan(null)}
+            priceId={STRIPE_PLANS[checkoutPlan].price_id!}
+            planName={STRIPE_PLANS[checkoutPlan].name}
+          />
+        )}
       </div>
     </MainLayout>
   );
