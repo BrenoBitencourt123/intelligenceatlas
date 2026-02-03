@@ -43,14 +43,14 @@ export const Header = ({
           </div>
           
           {/* Actions */}
-          <div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
-            {/* Mobile: 2 buttons row | Desktop: inline with others */}
-            <div className="flex items-center gap-2 md:contents">
+          <div className="flex flex-col gap-2 w-full md:w-auto md:flex-row md:items-center">
+            {/* Mobile: stacked layout | Desktop: all inline */}
+            <div className="grid grid-cols-2 gap-2 md:flex md:gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onPasteDivide}
-                className="text-muted-foreground flex-1 md:flex-initial"
+                className="text-muted-foreground"
               >
                 <Scissors className="h-4 w-4 mr-1.5" />
                 Colar e dividir
@@ -60,14 +60,13 @@ export const Header = ({
                 variant="outline"
                 size="sm"
                 onClick={onAddDevelopment}
-                className="flex-1 md:flex-initial"
               >
                 <Plus className="h-4 w-4 mr-1.5" />
                 Desenvolvimento
               </Button>
             </div>
             
-            {/* Mobile: full width below | Desktop: inline */}
+            {/* Mobile: full width matching grid above | Desktop: inline */}
             <Button
               size="sm"
               onClick={onAnalyzeAll}
