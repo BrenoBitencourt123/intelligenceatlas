@@ -1,6 +1,8 @@
-import { FileText } from 'lucide-react';
+import { FileText, PenLine } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface ProgressCardProps {
   used: number;
@@ -9,6 +11,7 @@ interface ProgressCardProps {
 }
 
 export const ProgressCard = ({ used, total, isFree = false }: ProgressCardProps) => {
+  const navigate = useNavigate();
   const percentage = Math.min(100, Math.round((used / total) * 100));
   const remaining = Math.max(0, total - used);
 
@@ -33,6 +36,14 @@ export const ProgressCard = ({ used, total, isFree = false }: ProgressCardProps)
             ? (remaining === 0 ? 'Você usou sua redação gratuita' : `${remaining} redação gratuita restante`)
             : `${remaining} correções restantes este mês`}
         </p>
+        <Button 
+          className="w-full mt-2" 
+          size="sm"
+          onClick={() => navigate('/redacao')}
+        >
+          <PenLine className="h-4 w-4 mr-2" />
+          Escrever redação
+        </Button>
       </CardContent>
     </Card>
   );
