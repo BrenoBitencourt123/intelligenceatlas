@@ -43,9 +43,9 @@ export default function Login() {
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <img 
-              src="/lovable-uploads/1770063094363-favicon.ico" 
+              src="https://storage.googleapis.com/gpt-engineer-file-uploads/f4QJ9UCag0bQmfSQvlHZMs1PDKy2/uploads/1770063094363-favicon.ico" 
               alt="Atlas Logo" 
-              className="h-12 w-12"
+              className="h-12 w-12 rounded-lg"
             />
           </div>
           <CardTitle className="text-2xl font-bold">Entrar no Atlas</CardTitle>
