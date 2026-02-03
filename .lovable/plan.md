@@ -1,269 +1,137 @@
 
-# Painel Admin para Gerenciamento de Temas
+# Plano para Corrigir Acesso ao Painel Admin
 
-Implementacao de uma interface profissional para cadastrar, editar e gerenciar temas diarios, com acesso restrito exclusivamente ao email **brenobitencourt123@gmail.com**.
+## Problema Identificado
 
----
+Após investigação detalhada, encontrei **dois problemas** que causam o "Acesso Negado":
 
-## Resumo da Implementacao
-
-O sistema sera protegido por verificacao server-side via RLS (Row Level Security), garantindo que apenas o usuario admin possa realizar operacoes de INSERT/UPDATE/DELETE na tabela de temas.
-
-```text
-Usuario acessa /admin
-        |
-        v
-+----------------------+
-| E admin autorizado?  |
-| (verifica user_roles)|
-+----------------------+
-    |            |
-   Sim          Nao
-    |            |
-    v            v
-Mostra painel   Redireciona
-com Tabs:       para Home
-- Tokens        com toast de
-- Temas         erro
-```
-
----
-
-## Etapa 1: Migracao do Banco de Dados
-
-Criar tabela de roles e funcao de verificacao segura.
-
-### 1.1 Criar Enum e Tabela user_roles
-
-```sql
--- Criar enum para roles
-CREATE TYPE public.app_role AS ENUM ('admin', 'user');
-
--- Criar tabela de roles
-CREATE TABLE public.user_roles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  role app_role NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (user_id, role)
-);
-
--- Habilitar RLS
-ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
-
--- Apenas admins podem ver a tabela de roles
-CREATE POLICY "Admins can view roles" ON public.user_roles
-  FOR SELECT USING (
-    public.has_role(auth.uid(), 'admin')
-  );
-```
-
-### 1.2 Criar Funcao has_role (Security Definer)
-
-```sql
-CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
-RETURNS BOOLEAN
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = _user_id AND role = _role
-  )
-$$;
-```
-
-### 1.3 Adicionar Politicas RLS na Tabela daily_themes
-
-```sql
--- Admins podem inserir temas
-CREATE POLICY "Admins can insert themes" ON public.daily_themes
-  FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- Admins podem atualizar temas
-CREATE POLICY "Admins can update themes" ON public.daily_themes
-  FOR UPDATE USING (public.has_role(auth.uid(), 'admin'));
-
--- Admins podem deletar temas
-CREATE POLICY "Admins can delete themes" ON public.daily_themes
-  FOR DELETE USING (public.has_role(auth.uid(), 'admin'));
-```
-
-### 1.4 Inserir Voce como Admin
-
-Apos a migracao, sera necessario inserir seu usuario como admin. Isso sera feito buscando seu ID na tabela profiles pelo email e inserindo na user_roles.
-
----
-
-## Etapa 2: Criar Hook useIsAdmin
-
-Verificar server-side se o usuario logado e admin.
-
-**Arquivo:** `src/hooks/useIsAdmin.ts`
-
-**Funcionalidades:**
-- Consulta a tabela `user_roles` para verificar se o usuario tem role 'admin'
-- Retorna `{ isAdmin, isLoading }`
-- Cache para evitar consultas repetidas
-
----
-
-## Etapa 3: Criar Hook useAdminThemes
-
-Gerenciar operacoes CRUD de temas.
-
-**Arquivo:** `src/hooks/useAdminThemes.ts`
-
-**Funcionalidades:**
-- `themes`: Lista de todos os temas cadastrados
-- `isLoading`: Estado de carregamento
-- `createTheme(data)`: Criar novo tema
-- `updateTheme(id, data)`: Atualizar tema existente
-- `deleteTheme(id)`: Excluir tema
-- Ordenacao por data (mais recentes primeiro)
-
----
-
-## Etapa 4: Criar Componente ThemeForm
-
-Formulario para criar/editar temas.
-
-**Arquivo:** `src/components/admin/ThemeForm.tsx`
-
-**Campos:**
-| Campo | Tipo | Validacao |
-|-------|------|-----------|
-| Data | DatePicker | Obrigatorio, unico |
-| Titulo | Input | Obrigatorio, min 10 chars |
-| Texto Motivador | Textarea | Obrigatorio, min 100 chars |
-| Contexto | Textarea | Obrigatorio, min 50 chars |
-| Perguntas Norteadoras | Array dinamico | Min 3, max 7 perguntas |
-
-**Recursos:**
-- Validacao com Zod
-- Campos dinamicos para perguntas (adicionar/remover)
-- Skeleton de estrutura pre-preenchido
-- Botoes Cancelar e Salvar
-
----
-
-## Etapa 5: Criar Componente ThemesPanel
-
-Lista e gerenciamento de temas.
-
-**Arquivo:** `src/components/admin/ThemesPanel.tsx`
-
-**Interface:**
-```text
-+----------------------------------------------------------+
-|  Temas Cadastrados                    [+ Novo Tema]      |
-+----------------------------------------------------------+
-|  Data       | Titulo                   | Origem | Acoes  |
-+----------------------------------------------------------+
-|  03/02/2026 | Violencia contra mulher  | Manual |  X  X  |
-|  02/02/2026 | Crise climatica          | IA     |  X  X  |
-+----------------------------------------------------------+
-```
-
-**Funcionalidades:**
-- Tabela com todos os temas ordenados por data
-- Badge colorido indicando origem (IA = azul, Manual = verde)
-- Botoes de edicao e exclusao
-- Modal de confirmacao para exclusao
-- Dialog/Sheet para formulario de criacao/edicao
-
----
-
-## Etapa 6: Atualizar Admin.tsx
-
-Adicionar sistema de abas e protecao de acesso.
-
-**Modificacoes:**
-1. Importar `useIsAdmin` para verificar permissao
-2. Redirecionar para Home se nao for admin
-3. Adicionar `Tabs` com duas abas:
-   - "Tokens" (dashboard atual)
-   - "Temas" (novo painel)
-4. Mover conteudo atual para TabsContent "tokens"
-5. Adicionar ThemesPanel em TabsContent "temas"
-
----
-
-## Estrutura de Arquivos
-
-| Arquivo | Acao | Descricao |
-|---------|------|-----------|
-| Migration SQL | Criar | user_roles, has_role(), politicas RLS |
-| `src/hooks/useIsAdmin.ts` | Criar | Verificar se usuario e admin |
-| `src/hooks/useAdminThemes.ts` | Criar | CRUD de temas |
-| `src/components/admin/ThemeForm.tsx` | Criar | Formulario de tema |
-| `src/components/admin/ThemesPanel.tsx` | Criar | Lista de temas |
-| `src/pages/Admin.tsx` | Modificar | Abas + protecao de acesso |
-
----
-
-## Fluxo de Seguranca
+### 1. Race Condition no useIsAdmin
+O hook `useIsAdmin` executa antes do `AuthContext` terminar de carregar a sessão do usuário:
 
 ```text
-1. Usuario acessa /admin
-        |
-        v
-2. useIsAdmin consulta user_roles
-        |
-        v
-3. RLS verifica se usuario e admin
-        |
-   +----+----+
-   |         |
-  Sim       Nao
-   |         |
-   v         v
-4. Mostra   Redireciona
-   painel   para /
+Timeline do problema:
++--------------------+--------------------+--------------------+
+| AuthContext        | useIsAdmin         | Admin.tsx          |
++--------------------+--------------------+--------------------+
+| loading = true     |                    |                    |
+| user = null        | user = null        |                    |
+|                    | isAdmin = false    |                    |
+|                    | isLoading = false  | !isAdmin? REDIRECT!|
+|                    |                    | << Acesso negado   |
+| loading = false    |                    |                    |
+| user = {...}       | (tarde demais)     |                    |
++--------------------+--------------------+--------------------+
 ```
 
-**Camadas de Seguranca:**
-1. **Frontend**: Hook `useIsAdmin` esconde UI para nao-admins
-2. **Backend (RLS)**: Politicas bloqueiam INSERT/UPDATE/DELETE mesmo se alguem tentar burlar o frontend
-3. **Funcao Security Definer**: `has_role()` evita recursao infinita e garante verificacao segura
+O hook decide `isAdmin = false` **antes** do auth terminar de carregar.
 
----
+### 2. Rota /admin Desprotegida
+A rota `/admin` não usa `ProtectedRoute`, então não há garantia de que o auth está pronto.
 
-## Ordem de Implementacao
+## Confirmação no Banco de Dados
 
-1. Criar migration com tabela `user_roles` e funcao `has_role()`
-2. Adicionar politicas RLS para admin na tabela `daily_themes`
-3. Criar hook `useIsAdmin`
-4. Criar hook `useAdminThemes`
-5. Criar componente `ThemeForm`
-6. Criar componente `ThemesPanel`
-7. Atualizar `Admin.tsx` com abas e protecao
-8. Inserir seu usuario como admin (manual via SQL)
+O usuário `brenobitencourt123@gmail.com` (ID: `ac04c1d0-7534-4ce5-8399-722a655e4e93`) **TEM** a role admin corretamente configurada no banco:
+- Tabela `user_roles`: role = 'admin'
+- Função `has_role()` retorna `true` quando testada diretamente
 
----
+## Solução Proposta
 
-## Como Tornar seu Usuario Admin
+### Correção do useIsAdmin (src/hooks/useIsAdmin.ts)
 
-Apos a implementacao, sera necessario rodar este comando SQL para adicionar seu usuario como admin:
+Modificar o hook para:
+1. Usar o estado `loading` do AuthContext
+2. Só verificar admin quando o auth estiver pronto
+3. Manter `isLoading = true` enquanto auth carrega
 
-```sql
--- Buscar seu user_id pelo email
-INSERT INTO public.user_roles (user_id, role)
-SELECT id, 'admin'
-FROM auth.users
-WHERE email = 'brenobitencourt123@gmail.com';
+```typescript
+export const useIsAdmin = () => {
+  const { user, loading: authLoading } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      // Esperar o auth terminar de carregar
+      if (authLoading) {
+        return; // Mantém isChecking = true
+      }
+
+      if (!user) {
+        setIsAdmin(false);
+        setIsChecking(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.rpc('has_role', {
+          _user_id: user.id,
+          _role: 'admin'
+        });
+
+        if (error) {
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(data === true);
+        }
+      } catch (err) {
+        setIsAdmin(false);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user, authLoading]);
+
+  // isLoading é true enquanto auth OU verificação de admin estiver pendente
+  return { isAdmin, isLoading: authLoading || isChecking };
+};
 ```
 
-Voce pode executar isso via Lovable Cloud > Run SQL.
+### Opcional: Proteger Rota Admin (src/App.tsx)
 
----
+Adicionar `ProtectedRoute` à rota `/admin`:
 
-## Beneficios da Abordagem
+```typescript
+<Route
+  path="/admin"
+  element={
+    <ProtectedRoute>
+      <Admin />
+    </ProtectedRoute>
+  }
+/>
+```
 
-1. **Seguranca Maxima**: Verificacao server-side via RLS, impossivel burlar pelo frontend
-2. **Acesso Exclusivo**: Apenas seu email tera acesso ao painel admin
-3. **Escalavel**: Facil adicionar novos admins no futuro (basta INSERT na user_roles)
-4. **UX Profissional**: Interface integrada com abas e formulario validado
-5. **Rastreabilidade**: Campo `is_ai_generated` diferencia temas manuais de IA
+Isso garante que o usuário está autenticado antes de tentar verificar admin.
+
+## Alternativa: Código Único de Acesso
+
+Se preferir adicionar uma camada extra de segurança (como mencionado), posso implementar um sistema de código único:
+
+1. Admin digita um código (ex: PIN de 6 dígitos)
+2. Código é validado contra hash no banco
+3. Sessão admin fica ativa por tempo limitado
+
+Esta seria uma feature adicional, não substitui a correção do bug atual.
+
+## Detalhes Técnicos
+
+### Arquivos a Modificar
+
+1. **src/hooks/useIsAdmin.ts** - Adicionar dependência do `authLoading`
+2. **src/App.tsx** - Opcional: Proteger rota com ProtectedRoute
+
+### Impacto
+
+- Nenhuma alteração no banco de dados
+- Correção compatível com código existente
+- Melhora a UX eliminando flash de "acesso negado"
+
+## Resultado Esperado
+
+Após a correção:
+1. Usuário acessa `/admin`
+2. Tela de loading aparece enquanto auth carrega
+3. Hook verifica admin via RPC
+4. Painel admin é exibido para usuários com role 'admin'
