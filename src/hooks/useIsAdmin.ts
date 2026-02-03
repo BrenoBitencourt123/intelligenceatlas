@@ -3,21 +3,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useIsAdmin = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
+      // Wait for auth to finish loading
+      if (authLoading) {
+        return; // Keep isChecking = true
+      }
+
       if (!user) {
         setIsAdmin(false);
-        setIsLoading(false);
+        setIsChecking(false);
         return;
       }
 
       try {
         console.log('[useIsAdmin] Checking admin for user:', user.id);
-        // Use the has_role function via RPC - it's SECURITY DEFINER so it bypasses RLS
         const { data, error } = await supabase.rpc('has_role', {
           _user_id: user.id,
           _role: 'admin'
@@ -35,12 +39,13 @@ export const useIsAdmin = () => {
         console.error('Error checking admin status:', err);
         setIsAdmin(false);
       } finally {
-        setIsLoading(false);
+        setIsChecking(false);
       }
     };
 
     checkAdminStatus();
-  }, [user]);
+  }, [user, authLoading]);
 
-  return { isAdmin, isLoading };
+  // isLoading is true while auth OR admin check is pending
+  return { isAdmin, isLoading: authLoading || isChecking };
 };
