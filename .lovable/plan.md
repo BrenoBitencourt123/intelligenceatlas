@@ -1,192 +1,269 @@
 
-# Sistema Híbrido de Temas Diários
+# Painel Admin para Gerenciamento de Temas
 
-Implementação de um sistema onde temas são buscados do banco de dados primeiro, e caso não exista tema para o dia atual, a IA gera automaticamente um novo tema.
-
----
-
-## Resumo do Funcionamento
-
-```
-Usuário acessa a Home ou Redação
-            ↓
-Busca tema na tabela `daily_themes` para a data de hoje
-            ↓
-    ┌───────────────────────────────────────┐
-    │         Tema encontrado?              │
-    └───────────────────────────────────────┘
-            ↓                    ↓
-           Sim                  Não
-            ↓                    ↓
-    Retorna tema            Chama Edge Function
-    do banco              `generate-theme` (IA)
-                                 ↓
-                          IA gera tema completo
-                                 ↓
-                          Salva no banco
-                                 ↓
-                          Retorna tema novo
-```
+Implementacao de uma interface profissional para cadastrar, editar e gerenciar temas diarios, com acesso restrito exclusivamente ao email **brenobitencourt123@gmail.com**.
 
 ---
 
-## Etapa 1: Criar Tabela `daily_themes`
+## Resumo da Implementacao
 
-Criar nova tabela no banco para armazenar os temas cadastrados.
+O sistema sera protegido por verificacao server-side via RLS (Row Level Security), garantindo que apenas o usuario admin possa realizar operacoes de INSERT/UPDATE/DELETE na tabela de temas.
 
-| Coluna | Tipo | Descrição |
-|--------|------|-----------|
-| id | uuid | Identificador único |
-| date | date | Data do tema (única) |
-| title | text | Título do tema ENEM |
-| motivating_text | text | Texto motivador (citações/dados) |
-| context | text | Contextualização do tema |
-| guiding_questions | jsonb | Array de 5 perguntas norteadoras |
-| structure_guide | jsonb | Guia de estrutura (intro, dev, conclusão) |
-| is_ai_generated | boolean | Se foi gerado por IA ou manual |
-| created_at | timestamp | Data de criação |
-
-**RLS Policies:**
-- SELECT: público (qualquer usuário pode ler)
-- INSERT: apenas administrador ou service_role (para a IA)
-
----
-
-## Etapa 2: Criar Edge Function `generate-theme`
-
-Nova função que será chamada quando não houver tema cadastrado para hoje.
-
-**Entrada:** Data (opcional, padrão = hoje)
-
-**Processo:**
-1. Verifica se já existe tema para a data
-2. Se existir, retorna o tema existente
-3. Se não existir, chama GPT-4.1-mini para gerar tema completo
-4. Salva no banco com `is_ai_generated = true`
-5. Retorna o tema gerado
-
-**Prompt para IA:**
-- Gerar tema relevante e atual no estilo ENEM
-- Incluir texto motivador com citação/dado real
-- Gerar 5 perguntas norteadoras
-- Incluir contexto histórico-social
-- Manter guia de estrutura padrão
-
-**Arquivo:** `supabase/functions/generate-theme/index.ts`
-
----
-
-## Etapa 3: Criar Hook `useDailyTheme`
-
-Novo hook React para gerenciar a busca do tema.
-
-**Localização:** `src/hooks/useDailyTheme.ts`
-
-**Funcionalidades:**
-- Busca tema no banco para a data de hoje
-- Se não encontrar, chama a Edge Function
-- Gerencia estados: `isLoading`, `error`, `theme`
-- Cache local para evitar requisições repetidas
-
-**Código simplificado:**
-```typescript
-export function useDailyTheme() {
-  // 1. Tenta buscar do banco (WHERE date = hoje)
-  // 2. Se não existir, chama generate-theme
-  // 3. Retorna { theme, isLoading, error }
-}
+```text
+Usuario acessa /admin
+        |
+        v
++----------------------+
+| E admin autorizado?  |
+| (verifica user_roles)|
++----------------------+
+    |            |
+   Sim          Nao
+    |            |
+    v            v
+Mostra painel   Redireciona
+com Tabs:       para Home
+- Tokens        com toast de
+- Temas         erro
 ```
 
 ---
 
-## Etapa 4: Atualizar Páginas para Usar Hook
+## Etapa 1: Migracao do Banco de Dados
 
-### Home.tsx
-- Substituir `getDailyTheme()` por `useDailyTheme()`
-- Adicionar skeleton enquanto carrega
-- Exibir badge se tema foi gerado por IA
+Criar tabela de roles e funcao de verificacao segura.
 
-### Essay.tsx
-- Substituir `getDailyTheme()` por `useDailyTheme()`
-- Passar tema dinâmico para `PedagogicalSection`
-- Adicionar loading state
-
----
-
-## Etapa 5: Painel Admin para Cadastrar Temas (Opcional)
-
-Criar interface para cadastrar temas manualmente.
-
-**Funcionalidades:**
-- Formulário com todos os campos do tema
-- Calendário para selecionar a data
-- Preview do tema antes de salvar
-- Lista de temas agendados
-
-**Localização:** Nova rota `/admin/themes` ou integrar em `/admin`
-
----
-
-## Arquivos a Criar/Modificar
-
-| Arquivo | Ação | Descrição |
-|---------|------|-----------|
-| Migration SQL | Criar | Tabela `daily_themes` com RLS |
-| `supabase/functions/generate-theme/index.ts` | Criar | Edge Function para gerar tema via IA |
-| `supabase/config.toml` | Modificar | Adicionar config da nova função |
-| `src/hooks/useDailyTheme.ts` | Criar | Hook para buscar/gerar tema |
-| `src/pages/Home.tsx` | Modificar | Usar hook dinâmico |
-| `src/pages/Essay.tsx` | Modificar | Usar hook dinâmico |
-| `src/data/dailyThemes.ts` | Modificar | Manter como fallback/tipos |
-
----
-
-## Detalhes Técnicos
-
-### Estrutura da Tabela (SQL)
+### 1.1 Criar Enum e Tabela user_roles
 
 ```sql
-CREATE TABLE public.daily_themes (
+-- Criar enum para roles
+CREATE TYPE public.app_role AS ENUM ('admin', 'user');
+
+-- Criar tabela de roles
+CREATE TABLE public.user_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  date DATE NOT NULL UNIQUE,
-  title TEXT NOT NULL,
-  motivating_text TEXT NOT NULL,
-  context TEXT NOT NULL,
-  guiding_questions JSONB NOT NULL DEFAULT '[]',
-  structure_guide JSONB NOT NULL DEFAULT '[]',
-  is_ai_generated BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  role app_role NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, role)
 );
 
--- RLS: todos podem ler
-ALTER TABLE public.daily_themes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Anyone can read themes" ON public.daily_themes
-  FOR SELECT USING (true);
+-- Habilitar RLS
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+
+-- Apenas admins podem ver a tabela de roles
+CREATE POLICY "Admins can view roles" ON public.user_roles
+  FOR SELECT USING (
+    public.has_role(auth.uid(), 'admin')
+  );
 ```
 
-### Custo Estimado por Geração de Tema
+### 1.2 Criar Funcao has_role (Security Definer)
 
-- Input: ~500 tokens (prompt)
-- Output: ~1500 tokens (tema completo)
-- Custo: ~$0.003 por tema gerado
-- Se gerar 1 tema por dia = ~$0.09/mês
+```sql
+CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = _user_id AND role = _role
+  )
+$$;
+```
+
+### 1.3 Adicionar Politicas RLS na Tabela daily_themes
+
+```sql
+-- Admins podem inserir temas
+CREATE POLICY "Admins can insert themes" ON public.daily_themes
+  FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+-- Admins podem atualizar temas
+CREATE POLICY "Admins can update themes" ON public.daily_themes
+  FOR UPDATE USING (public.has_role(auth.uid(), 'admin'));
+
+-- Admins podem deletar temas
+CREATE POLICY "Admins can delete themes" ON public.daily_themes
+  FOR DELETE USING (public.has_role(auth.uid(), 'admin'));
+```
+
+### 1.4 Inserir Voce como Admin
+
+Apos a migracao, sera necessario inserir seu usuario como admin. Isso sera feito buscando seu ID na tabela profiles pelo email e inserindo na user_roles.
 
 ---
 
-## Benefícios do Sistema Híbrido
+## Etapa 2: Criar Hook useIsAdmin
 
-1. **Controle total**: você pode cadastrar temas específicos antecipadamente
-2. **Nunca fica sem tema**: IA gera automaticamente se esquecer de cadastrar
-3. **Custo baixo**: apenas gera via IA quando necessário
-4. **Flexibilidade**: pode desativar geração automática se quiser
-5. **Rastreabilidade**: campo `is_ai_generated` identifica a origem
+Verificar server-side se o usuario logado e admin.
+
+**Arquivo:** `src/hooks/useIsAdmin.ts`
+
+**Funcionalidades:**
+- Consulta a tabela `user_roles` para verificar se o usuario tem role 'admin'
+- Retorna `{ isAdmin, isLoading }`
+- Cache para evitar consultas repetidas
 
 ---
 
-## Ordem de Implementação
+## Etapa 3: Criar Hook useAdminThemes
 
-1. Criar tabela `daily_themes` via migration
-2. Criar Edge Function `generate-theme`
-3. Criar hook `useDailyTheme`
-4. Atualizar `Home.tsx` e `Essay.tsx`
-5. (Opcional) Criar painel admin para cadastrar temas
+Gerenciar operacoes CRUD de temas.
+
+**Arquivo:** `src/hooks/useAdminThemes.ts`
+
+**Funcionalidades:**
+- `themes`: Lista de todos os temas cadastrados
+- `isLoading`: Estado de carregamento
+- `createTheme(data)`: Criar novo tema
+- `updateTheme(id, data)`: Atualizar tema existente
+- `deleteTheme(id)`: Excluir tema
+- Ordenacao por data (mais recentes primeiro)
+
+---
+
+## Etapa 4: Criar Componente ThemeForm
+
+Formulario para criar/editar temas.
+
+**Arquivo:** `src/components/admin/ThemeForm.tsx`
+
+**Campos:**
+| Campo | Tipo | Validacao |
+|-------|------|-----------|
+| Data | DatePicker | Obrigatorio, unico |
+| Titulo | Input | Obrigatorio, min 10 chars |
+| Texto Motivador | Textarea | Obrigatorio, min 100 chars |
+| Contexto | Textarea | Obrigatorio, min 50 chars |
+| Perguntas Norteadoras | Array dinamico | Min 3, max 7 perguntas |
+
+**Recursos:**
+- Validacao com Zod
+- Campos dinamicos para perguntas (adicionar/remover)
+- Skeleton de estrutura pre-preenchido
+- Botoes Cancelar e Salvar
+
+---
+
+## Etapa 5: Criar Componente ThemesPanel
+
+Lista e gerenciamento de temas.
+
+**Arquivo:** `src/components/admin/ThemesPanel.tsx`
+
+**Interface:**
+```text
++----------------------------------------------------------+
+|  Temas Cadastrados                    [+ Novo Tema]      |
++----------------------------------------------------------+
+|  Data       | Titulo                   | Origem | Acoes  |
++----------------------------------------------------------+
+|  03/02/2026 | Violencia contra mulher  | Manual |  X  X  |
+|  02/02/2026 | Crise climatica          | IA     |  X  X  |
++----------------------------------------------------------+
+```
+
+**Funcionalidades:**
+- Tabela com todos os temas ordenados por data
+- Badge colorido indicando origem (IA = azul, Manual = verde)
+- Botoes de edicao e exclusao
+- Modal de confirmacao para exclusao
+- Dialog/Sheet para formulario de criacao/edicao
+
+---
+
+## Etapa 6: Atualizar Admin.tsx
+
+Adicionar sistema de abas e protecao de acesso.
+
+**Modificacoes:**
+1. Importar `useIsAdmin` para verificar permissao
+2. Redirecionar para Home se nao for admin
+3. Adicionar `Tabs` com duas abas:
+   - "Tokens" (dashboard atual)
+   - "Temas" (novo painel)
+4. Mover conteudo atual para TabsContent "tokens"
+5. Adicionar ThemesPanel em TabsContent "temas"
+
+---
+
+## Estrutura de Arquivos
+
+| Arquivo | Acao | Descricao |
+|---------|------|-----------|
+| Migration SQL | Criar | user_roles, has_role(), politicas RLS |
+| `src/hooks/useIsAdmin.ts` | Criar | Verificar se usuario e admin |
+| `src/hooks/useAdminThemes.ts` | Criar | CRUD de temas |
+| `src/components/admin/ThemeForm.tsx` | Criar | Formulario de tema |
+| `src/components/admin/ThemesPanel.tsx` | Criar | Lista de temas |
+| `src/pages/Admin.tsx` | Modificar | Abas + protecao de acesso |
+
+---
+
+## Fluxo de Seguranca
+
+```text
+1. Usuario acessa /admin
+        |
+        v
+2. useIsAdmin consulta user_roles
+        |
+        v
+3. RLS verifica se usuario e admin
+        |
+   +----+----+
+   |         |
+  Sim       Nao
+   |         |
+   v         v
+4. Mostra   Redireciona
+   painel   para /
+```
+
+**Camadas de Seguranca:**
+1. **Frontend**: Hook `useIsAdmin` esconde UI para nao-admins
+2. **Backend (RLS)**: Politicas bloqueiam INSERT/UPDATE/DELETE mesmo se alguem tentar burlar o frontend
+3. **Funcao Security Definer**: `has_role()` evita recursao infinita e garante verificacao segura
+
+---
+
+## Ordem de Implementacao
+
+1. Criar migration com tabela `user_roles` e funcao `has_role()`
+2. Adicionar politicas RLS para admin na tabela `daily_themes`
+3. Criar hook `useIsAdmin`
+4. Criar hook `useAdminThemes`
+5. Criar componente `ThemeForm`
+6. Criar componente `ThemesPanel`
+7. Atualizar `Admin.tsx` com abas e protecao
+8. Inserir seu usuario como admin (manual via SQL)
+
+---
+
+## Como Tornar seu Usuario Admin
+
+Apos a implementacao, sera necessario rodar este comando SQL para adicionar seu usuario como admin:
+
+```sql
+-- Buscar seu user_id pelo email
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, 'admin'
+FROM auth.users
+WHERE email = 'brenobitencourt123@gmail.com';
+```
+
+Voce pode executar isso via Lovable Cloud > Run SQL.
+
+---
+
+## Beneficios da Abordagem
+
+1. **Seguranca Maxima**: Verificacao server-side via RLS, impossivel burlar pelo frontend
+2. **Acesso Exclusivo**: Apenas seu email tera acesso ao painel admin
+3. **Escalavel**: Facil adicionar novos admins no futuro (basta INSERT na user_roles)
+4. **UX Profissional**: Interface integrada com abas e formulario validado
+5. **Rastreabilidade**: Campo `is_ai_generated` diferencia temas manuais de IA
