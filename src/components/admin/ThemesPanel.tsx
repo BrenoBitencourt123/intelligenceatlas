@@ -7,10 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Calendar, Bot, User } from 'lucide-react';
+import { Plus, Pencil, Trash2, Calendar, Bot, User, Upload } from 'lucide-react';
 import { format, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ThemeForm from './ThemeForm';
+import ThemeImport from './ThemeImport';
 
 interface ThemeFormData {
   date: string;
@@ -23,6 +24,7 @@ interface ThemeFormData {
 const ThemesPanel = () => {
   const { themes, isLoading, createTheme, updateTheme, deleteTheme } = useAdminThemes();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingTheme, setEditingTheme] = useState<(ThemeFormData & { id: string }) | null>(null);
   const [deletingThemeId, setDeletingThemeId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -81,10 +83,16 @@ const ThemesPanel = () => {
             <Calendar className="h-5 w-5" />
             Temas Cadastrados
           </CardTitle>
-          <Button onClick={() => setIsFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Tema
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Importar JSON
+            </Button>
+            <Button onClick={() => setIsFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Tema
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -170,6 +178,20 @@ const ThemesPanel = () => {
           <ThemeForm
             onSubmit={handleCreate}
             onCancel={closeForm}
+            isSubmitting={isSubmitting}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Importar Tema via JSON</DialogTitle>
+          </DialogHeader>
+          <ThemeImport
+            onImport={handleCreate}
+            onCancel={() => setIsImportOpen(false)}
             isSubmitting={isSubmitting}
           />
         </DialogContent>
