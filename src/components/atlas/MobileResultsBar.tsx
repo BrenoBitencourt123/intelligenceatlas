@@ -50,7 +50,7 @@ export const MobileResultsBar = ({
   const displayScore = state.totalScore > 0 ? state.totalScore : estimatedScore;
   
   return (
-    <div className="fixed bottom-16 left-0 right-0 z-40 bg-background border-t border-border p-4 md:hidden shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+    <div className="fixed left-0 right-0 z-40 bg-background border-t border-border p-4 md:hidden shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
       <div className="flex items-center gap-3">
         {/* Score preview */}
         <Sheet open={open} onOpenChange={setOpen}>
