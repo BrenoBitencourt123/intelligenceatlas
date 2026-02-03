@@ -16,14 +16,17 @@ export const useIsAdmin = () => {
       }
 
       try {
+        console.log('[useIsAdmin] Checking admin for user:', user.id);
         // Use the has_role function via RPC - it's SECURITY DEFINER so it bypasses RLS
         const { data, error } = await supabase.rpc('has_role', {
           _user_id: user.id,
           _role: 'admin'
         });
 
+        console.log('[useIsAdmin] RPC result:', { data, error });
+
         if (error) {
-          console.error('Admin check error:', error.message);
+          console.error('[useIsAdmin] Admin check error:', error.message);
           setIsAdmin(false);
         } else {
           setIsAdmin(data === true);
