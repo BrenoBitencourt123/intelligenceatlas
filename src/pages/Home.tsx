@@ -3,16 +3,22 @@ import { DailyThemeCard } from '@/components/home/DailyThemeCard';
 import { ProgressCard } from '@/components/home/ProgressCard';
 import { StatsCard } from '@/components/home/StatsCard';
 import { getDailyTheme } from '@/data/dailyThemes';
+import { useUserStats } from '@/hooks/useUserStats';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Home = () => {
   const dailyTheme = getDailyTheme();
+  const { 
+    totalEssays, 
+    lastScore, 
+    monthlyAverage, 
+    monthlyEssays,
+    hasWrittenToday,
+    isLoading 
+  } = useUserStats();
   
-  // Mock data - futuramente virá do banco/localStorage
-  const hasWrittenToday = false;
-  const usedEssays = 12;
-  const totalEssays = 30;
-  const lastScore = 840;
-  const monthlyAverage = 760;
+  // Monthly limit based on plan (basic = 30)
+  const monthlyLimit = 30;
 
   return (
     <MainLayout>
@@ -34,9 +40,25 @@ const Home = () => {
 
           {/* Stats grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ProgressCard used={usedEssays} total={totalEssays} />
-            <StatsCard lastScore={lastScore} monthlyAverage={monthlyAverage} />
+            {isLoading ? (
+              <>
+                <Skeleton className="h-32 rounded-lg" />
+                <Skeleton className="h-32 rounded-lg" />
+              </>
+            ) : (
+              <>
+                <ProgressCard used={monthlyEssays} total={monthlyLimit} />
+                <StatsCard lastScore={lastScore} monthlyAverage={monthlyAverage} />
+              </>
+            )}
           </div>
+
+          {/* Total essays info */}
+          {!isLoading && totalEssays > 0 && (
+            <p className="text-sm text-muted-foreground text-center">
+              Você já escreveu {totalEssays} {totalEssays === 1 ? 'redação' : 'redações'} no total
+            </p>
+          )}
         </div>
       </div>
     </MainLayout>
