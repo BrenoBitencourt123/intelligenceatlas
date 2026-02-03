@@ -3,25 +3,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface StructureItem {
   id: string;
   label: string;
   description: string;
-}
-
-interface DailyTheme {
-  id: string;
-  date: string;
-  title: string;
-  motivating_text: string;
-  context: string;
-  guiding_questions: string[];
-  structure_guide: StructureItem[];
-  is_ai_generated: boolean;
-  created_at: string;
 }
 
 const DEFAULT_STRUCTURE_GUIDE: StructureItem[] = [
@@ -47,6 +35,11 @@ const DEFAULT_STRUCTURE_GUIDE: StructureItem[] = [
   },
 ];
 
+const logStep = (step: string, details?: unknown) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[generate-theme] ${step}${detailsStr}`);
+};
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -55,9 +48,56 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const openaiKey = Deno.env.get("OPENAI_API_KEY")!;
 
+    // ============ AUTHENTICATION CHECK ============
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      logStep("ERROR: No authorization header");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized. Authentication required." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Create client for auth verification
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: authError } = await supabaseAuth.auth.getUser(token);
+    
+    if (authError || !userData?.user) {
+      logStep("ERROR: Invalid session", { error: authError?.message });
+      return new Response(
+        JSON.stringify({ error: "Invalid session. Please log in." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logStep("User authenticated", { userId: userData.user.id, email: userData.user.email });
+
+    // Check if user is admin
+    const { data: isAdmin, error: roleError } = await supabaseAuth.rpc('has_role', {
+      _user_id: userData.user.id,
+      _role: 'admin'
+    });
+
+    if (roleError || !isAdmin) {
+      logStep("ERROR: Admin access required", { error: roleError?.message });
+      return new Response(
+        JSON.stringify({ error: "Admin access required." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logStep("Admin access verified");
+    // ============ END AUTHENTICATION CHECK ============
+
+    // Use service role client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get date from request body or use today
@@ -69,7 +109,16 @@ Deno.serve(async (req) => {
       targetDate = new Date().toISOString().split("T")[0];
     }
 
-    console.log("[generate-theme] Looking for theme on date:", targetDate);
+    // Validate date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(targetDate)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid date format. Use YYYY-MM-DD" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logStep("Looking for theme on date", { targetDate });
 
     // Check if theme already exists for this date
     const { data: existingTheme, error: fetchError } = await supabase
@@ -84,14 +133,14 @@ Deno.serve(async (req) => {
     }
 
     if (existingTheme) {
-      console.log("[generate-theme] Found existing theme:", existingTheme.title);
+      logStep("Found existing theme", { title: existingTheme.title });
       return new Response(JSON.stringify({ theme: existingTheme, generated: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // No theme exists - generate with AI
-    console.log("[generate-theme] No theme found, generating with AI...");
+    logStep("No theme found, generating with AI...");
 
     const systemPrompt = `Você é um especialista em elaborar temas de redação no estilo ENEM. Sua tarefa é criar temas relevantes, atuais e que estimulem a reflexão crítica sobre problemas sociais brasileiros.
 
@@ -151,7 +200,7 @@ Gere um tema atual e relevante. Evite temas muito comuns como violência contra 
       throw new Error("No content returned from AI");
     }
 
-    console.log("[generate-theme] AI response:", generatedContent);
+    logStep("AI response received");
 
     // Parse the AI response
     let parsedTheme: {
@@ -200,13 +249,13 @@ Gere um tema atual e relevante. Evite temas muito comuns como violência contra 
       throw new Error("Failed to save generated theme");
     }
 
-    console.log("[generate-theme] Theme generated and saved:", insertedTheme.title);
+    logStep("Theme generated and saved", { title: insertedTheme.title });
 
     // Log token usage
     const usage = openaiData.usage;
     if (usage) {
       const estimatedCost = (usage.prompt_tokens * 0.00015 + usage.completion_tokens * 0.0006) / 1000;
-      console.log("[generate-theme] Token usage:", {
+      logStep("Token usage", {
         prompt: usage.prompt_tokens,
         completion: usage.completion_tokens,
         total: usage.total_tokens,
