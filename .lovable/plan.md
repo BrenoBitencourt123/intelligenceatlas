@@ -1,176 +1,215 @@
 
-# Plano: Camada Pedagógica de Contexto
+# Plano: Dados Reais e Funcionais
 
-## Objetivo
-Adicionar uma seção de apoio pedagógico acima dos blocos de escrita para reduzir bloqueio criativo e orientar o aluno, sem alterar nenhum comportamento do editor atual.
+## Situação Atual
 
-## O que será adicionado
+Atualmente, todos os dados exibidos nas telas são **mockados** (fictícios):
+- **12/30 redações usadas** → número fixo no código
+- **Última nota: 840** → número fixo no código
+- **Média do mês: 760** → número fixo no código
+- **Próxima renovação: 15 de fevereiro** → texto fixo
 
-### 1. Card: Tema do Dia (Fixo)
-- Exibe o tema no formato ENEM com texto motivador
-- Não editável pelo usuário
-- Badge indicando "Tema liberado automaticamente no plano básico"
-- Design destaque com ícone de calendário
+O único dado real sendo gravado é o `token_usage` (custo de IA por análise), mas não está vinculado a nenhum usuário.
 
-### 2. Card: Contexto do Tema
-- Texto conceitual explicando o problema social
-- Foco em informar, não em dar modelo de redação
-- Abordagem contextual sem estruturar como introdução
-- Tom educacional e acolhedor
+---
 
-### 3. Card Colapsável: Perguntas Norteadoras
-- Lista de 4-5 perguntas reflexivas
-- Foco em estimular argumentação
-- Texto auxiliar: "São apenas guias para reflexão"
-- Inicia colapsado para não sobrecarregar visualmente
+## O que é Necessário para Dados Reais
 
-### 4. Card Colapsável: Estrutura Sugerida
-- Checklist visual orientativo da estrutura ENEM
-- Sem texto pronto, apenas orientação mental
-- Itens: Introdução (contextualização + tese), Desenvolvimento 1 (argumento 1), etc.
-- Inicia colapsado
+### 1. Sistema de Autenticação (Obrigatório)
+Sem saber quem é o usuário, não é possível rastrear:
+- Quantas redações ELE usou
+- Quais notas ELE tirou
+- Qual plano ELE tem
 
-## Layout Visual
+**Implementação:**
+- Tela de login/cadastro
+- Verificação de email
+- Contexto de autenticação global
+- Rotas protegidas (redirecionar para login se não logado)
+
+### 2. Novas Tabelas no Banco de Dados
+
+```text
+TABELA: profiles
+├── id (UUID, referência ao auth.users)
+├── email
+├── name
+├── plan_type ('basic' | 'pro')
+├── plan_started_at (data início do plano)
+├── created_at
+
+TABELA: essays (redações)
+├── id (UUID)
+├── user_id (referência ao profile)
+├── theme (tema da redação)
+├── blocks (JSON com os blocos de texto)
+├── analysis (JSON com resultado da análise)
+├── total_score (nota final 0-1000)
+├── created_at
+├── analyzed_at
+
+TABELA: subscriptions (para uso futuro com Stripe)
+├── id
+├── user_id
+├── plan_type
+├── status ('active' | 'cancelled')
+├── current_period_start
+├── current_period_end
+```
+
+### 3. Lógica de Contagem Mensal
+
+Calcular automaticamente:
+```text
+Redações usadas este mês = COUNT de essays 
+                           WHERE user_id = current_user 
+                           AND analyzed_at >= início do ciclo
+```
+
+O ciclo renova baseado em `plan_started_at` ou `subscription.current_period_start`.
+
+### 4. Cálculo de Estatísticas Reais
+
+- **Última nota**: `SELECT total_score FROM essays WHERE user_id = X ORDER BY created_at DESC LIMIT 1`
+- **Média do mês**: `SELECT AVG(total_score) FROM essays WHERE user_id = X AND created_at >= início do mês`
+
+---
+
+## Fluxo Proposto
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────┐
-│  📅 TEMA DO DIA                                  [Plano Básico]     │
-│  ───────────────────────────────────────────────────────────────── │
-│  "A persistência da violência contra a mulher na sociedade         │
-│   brasileira"                                                       │
-│                                                                     │
-│  [Texto motivador ENEM - contextualização do tema]                 │
-└─────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────┐
-│  💡 CONTEXTO DO TEMA                                                │
-│  ───────────────────────────────────────────────────────────────── │
-│  Explicação conceitual sobre o problema social abordado.           │
-│  Dados relevantes e contexto histórico sem dar modelo de texto.    │
-└─────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────┐
-│  ❓ PERGUNTAS NORTEADORAS                                    [▼]   │
+│                         USUÁRIO NÃO LOGADO                          │
 ├─────────────────────────────────────────────────────────────────────┤
-│  • Quais são as principais causas desse problema?                  │
-│  • Quem são os agentes responsáveis pela mudança?                  │
-│  • Que exemplos ilustram essa realidade?                           │
-│  • Qual seria uma proposta de intervenção viável?                  │
 │                                                                     │
-│  ⚠️ São apenas guias para reflexão, não há respostas certas.      │
+│   ┌─────────────────────────────────────────────────────────────┐  │
+│   │                    TELA DE LOGIN                             │  │
+│   │  ┌─────────────────────────────────────────────────────────┐│  │
+│   │  │  Email: ____________________                            ││  │
+│   │  │  Senha: ____________________                            ││  │
+│   │  │                                                         ││  │
+│   │  │  [Entrar]                                               ││  │
+│   │  │                                                         ││  │
+│   │  │  Não tem conta? [Criar conta]                           ││  │
+│   │  └─────────────────────────────────────────────────────────┘│  │
+│   └─────────────────────────────────────────────────────────────┘  │
+│                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
+
+                              ↓ Login bem-sucedido
 
 ┌─────────────────────────────────────────────────────────────────────┐
-│  📋 ESTRUTURA SUGERIDA                                       [▼]   │
+│                          USUÁRIO LOGADO                             │
 ├─────────────────────────────────────────────────────────────────────┤
-│  ○ Introdução: Contextualizar tema + apresentar tese               │
-│  ○ Desenvolvimento 1: Primeiro argumento + exemplos                │
-│  ○ Desenvolvimento 2: Segundo argumento + exemplos                 │
-│  ○ Conclusão: Proposta de intervenção (agente, ação, meio, fim)    │
+│                                                                     │
+│  Dashboard com dados REAIS do banco:                               │
+│  • Redações usadas: calculado do banco                             │
+│  • Última nota: última redação analisada                           │
+│  • Média: média das notas do mês atual                             │
+│  • Próxima renovação: calculado pela data de assinatura            │
+│                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
-
-─────────────────────────────────────────────────────────────────────
-
-[ BLOCOS DE ESCRITA - Introdução, Dev 1, Dev 2, Conclusão ]
-(Editor atual permanece 100% igual)
 ```
 
-## O que NÃO muda
-- Blocos de escrita (Introdução, Desenvolvimento, Conclusão)
-- Botão "Analisar tudo" e seu comportamento
-- Aba de Resumo e Competências
-- Fluxo de análise e geração de versão melhorada
-- Contabilização de uso (apenas no "Analisar tudo")
-- Paleta de cores P&B
-- Responsividade mobile
+---
 
-## Estrutura de Arquivos
+## Etapas de Implementação
 
-```text
-src/
-├── components/
-│   └── atlas/
-│       ├── ThemeCard.tsx           ← Novo: Card do tema do dia
-│       ├── ContextCard.tsx         ← Novo: Card de contexto
-│       ├── GuidingQuestionsCard.tsx← Novo: Card de perguntas (colapsável)
-│       ├── StructureGuideCard.tsx  ← Novo: Card de estrutura (colapsável)
-│       ├── PedagogicalSection.tsx  ← Novo: Wrapper que agrupa os 4 cards
-│       └── ... (existentes)
-├── data/
-│   └── dailyThemes.ts              ← Novo: Dados mockados de temas diários
-└── pages/
-    └── Index.tsx                   ← Apenas adiciona PedagogicalSection
-```
+### Etapa 1: Autenticação
+- Criar tabela `profiles` (com trigger para criar automaticamente no signup)
+- Criar páginas `/login` e `/cadastro`
+- Criar `AuthContext` para gerenciar estado do usuário
+- Proteger rotas principais (redirecionar se não logado)
+
+### Etapa 2: Persistência de Redações
+- Criar tabela `essays`
+- Modificar o fluxo de "Analisar tudo" para salvar no banco
+- Vincular cada análise ao `user_id`
+
+### Etapa 3: Dashboard com Dados Reais
+- Criar hook `useUserStats()` que busca:
+  - Total de redações usadas no ciclo
+  - Limite do plano (30 para básico)
+  - Última nota
+  - Média do mês
+  - Data de renovação
+- Substituir dados mockados por dados reais
+
+### Etapa 4: Controle de Limite
+- Verificar se usuário ainda tem créditos antes de analisar
+- Mostrar mensagem "Você atingiu o limite do mês" se acabou
+- Sugerir upgrade para Pro
+
+### Etapa 5 (Futuro): Pagamentos com Stripe
+- Integrar Stripe para cobrar assinaturas
+- Gerenciar upgrades e downgrades
+- Webhooks para atualizar status do plano
 
 ---
 
 ## Detalhes Técnicos
 
-### 1. Dados do Tema (dailyThemes.ts)
-Estrutura de dados para temas mockados:
-```typescript
-interface DailyTheme {
-  id: string;
-  date: string;
-  title: string;           // Tema principal
-  motivatingText: string;  // Texto motivador estilo ENEM
-  context: string;         // Contextualização do problema
-  guidingQuestions: string[];
-  structureGuide: StructureItem[];
-}
+### Estrutura de Arquivos
+
+```text
+src/
+├── contexts/
+│   └── AuthContext.tsx        ← Estado global de autenticação
+├── hooks/
+│   └── useUserStats.ts        ← Hook para buscar estatísticas
+├── pages/
+│   ├── Login.tsx              ← Tela de login
+│   ├── Signup.tsx             ← Tela de cadastro
+│   └── ... (existentes)
+├── components/
+│   └── ProtectedRoute.tsx     ← Wrapper para rotas protegidas
+└── lib/
+    └── supabase.ts            ← Helpers para auth/database
 ```
 
-### 2. ThemeCard.tsx
-- Card destacado com ícone de calendário
-- Exibe título do tema em destaque
-- Texto motivador em blockquote
-- Badge "Plano Básico" no canto
+### Políticas de Segurança (RLS)
 
-### 3. ContextCard.tsx
-- Card simples com ícone de lâmpada
-- Texto explicativo do contexto social
-- Design clean, apenas informativo
+```sql
+-- Profiles: usuário só vê/edita o próprio perfil
+CREATE POLICY "Users can view own profile" ON profiles
+  FOR SELECT USING (auth.uid() = id);
 
-### 4. GuidingQuestionsCard.tsx
-- Usa Collapsible do Radix (já instalado)
-- Lista de perguntas com bullet points
-- Nota de rodapé explicativa
-- Inicia fechado (defaultOpen={false})
+-- Essays: usuário só vê/cria as próprias redações
+CREATE POLICY "Users can view own essays" ON essays
+  FOR SELECT USING (auth.uid() = user_id);
 
-### 5. StructureGuideCard.tsx
-- Usa Collapsible do Radix
-- Lista visual com círculos vazios (orientação, não checklist)
-- Descrição breve de cada parte
-- Inicia fechado
-
-### 6. PedagogicalSection.tsx
-- Componente wrapper que:
-  - Recebe o tema do dia como prop
-  - Renderiza os 4 cards em sequência
-  - Adiciona espaçamento adequado
-  - Responsivo (funciona em mobile)
-
-### 7. Integração em Index.tsx
-Mínima alteração:
-```tsx
-<div className="lg:w-[62%] space-y-4">
-  {/* NOVA SEÇÃO - acima dos blocos */}
-  <PedagogicalSection theme={dailyTheme} />
-  
-  {/* Blocos existentes - sem alteração */}
-  {state.blocks.map((block) => (
-    <BlockCard ... />
-  ))}
-</div>
+CREATE POLICY "Users can insert own essays" ON essays
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 ```
 
-### 8. Tema mockado inicial
-Um tema de exemplo será incluído para demonstração:
-- Tema: "A persistência da violência contra a mulher na sociedade brasileira"
-- Com texto motivador, contexto, perguntas e estrutura
+### Trigger para Criar Profile
 
-### 9. Estilização
-- Segue paleta P&B existente
-- Cards com borda sutil e fundo card
-- Cards colapsáveis com animação suave
-- Ícones lucide-react (Calendar, Lightbulb, HelpCircle, List)
+```sql
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, plan_type)
+  VALUES (new.id, new.email, 'basic');
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+```
+
+---
+
+## Resumo: O que Precisa ser Feito
+
+| Componente | Status Atual | Necessário |
+|------------|--------------|------------|
+| Autenticação | Não existe | Implementar login/cadastro |
+| Tabela profiles | Não existe | Criar com trigger |
+| Tabela essays | Não existe | Criar e vincular análises |
+| Dados do dashboard | Mockados | Buscar do banco |
+| Limite de uso | Não existe | Validar antes de analisar |
+| Pagamentos (Stripe) | Não existe | Implementar futuramente |
+
+A autenticação é o primeiro passo obrigatório - sem ela, não há como saber "quem é o usuário" para vincular os dados.
