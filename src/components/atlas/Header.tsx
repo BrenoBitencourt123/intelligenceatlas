@@ -43,31 +43,36 @@ export const Header = ({
           </div>
           
           {/* Actions */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onPasteDivide}
-              className="text-muted-foreground"
-            >
-              <Scissors className="h-4 w-4 mr-1.5" />
-              Colar e dividir
-            </Button>
+          <div className="flex flex-col gap-2 w-full md:w-auto">
+            {/* Top row: 2 buttons side by side */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onPasteDivide}
+                className="text-muted-foreground flex-1 md:flex-none"
+              >
+                <Scissors className="h-4 w-4 mr-1.5" />
+                Colar e dividir
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onAddDevelopment}
+                className="flex-1 md:flex-none"
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                Desenvolvimento
+              </Button>
+            </div>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onAddDevelopment}
-            >
-              <Plus className="h-4 w-4 mr-1.5" />
-              Adicionar desenvolvimento
-            </Button>
-            
+            {/* Bottom row: full width analyze button on mobile */}
             <Button
               size="sm"
               onClick={onAnalyzeAll}
               disabled={!canAnalyze || isAnalyzing}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isAnalyzing ? (
                 <>
@@ -77,7 +82,7 @@ export const Header = ({
               ) : (
                 <>
                   <Sparkles className="h-4 w-4 mr-1.5" />
-                  Analisar tudo
+                  Analisar redação
                 </>
               )}
             </Button>
