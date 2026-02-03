@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useEssayState } from '@/hooks/useEssayState';
+import { useDailyTheme } from '@/hooks/useDailyTheme';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { BlockCard } from '@/components/atlas/BlockCard';
 import { ResultPanel } from '@/components/atlas/ResultPanel';
@@ -7,17 +8,16 @@ import { PasteDivideModal } from '@/components/atlas/PasteDivideModal';
 import { MobileResultsBar } from '@/components/atlas/MobileResultsBar';
 import { PedagogicalSection } from '@/components/atlas/PedagogicalSection';
 import { analyzeEssay, generateImprovedVersion } from '@/lib/ai';
-import { getDailyTheme } from '@/data/dailyThemes';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Sparkles, Scissors, Plus, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-const dailyTheme = getDailyTheme();
-
 const Essay = () => {
   const { user } = useAuth();
+  const { theme, isLoading: isThemeLoading } = useDailyTheme();
   const {
     state,
     updateBlockText,
@@ -58,7 +58,7 @@ const Essay = () => {
   
   // Save essay to database
   const saveEssayToDatabase = useCallback(async (
-    theme: string,
+    essayTheme: string,
     blocks: typeof state.blocks,
     analysis: Record<string, unknown>,
     totalScore: number
@@ -79,7 +79,7 @@ const Essay = () => {
 
       const { error } = await supabase.from('essays').insert([{
         user_id: user.id,
-        theme,
+        theme: essayTheme,
         blocks: blocksData as unknown as import('@/integrations/supabase/types').Json,
         analysis: analysis as unknown as import('@/integrations/supabase/types').Json,
         total_score: totalScore,
@@ -198,6 +198,29 @@ const Essay = () => {
   
   // Get development blocks count for remove logic
   const devBlocksCount = state.blocks.filter(b => b.type === 'development').length;
+
+  // Show loading skeleton while theme is loading
+  if (isThemeLoading) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen bg-background">
+          <main className="container max-w-7xl mx-auto px-4 py-6">
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="lg:w-[62%] space-y-4">
+                <Skeleton className="h-48 rounded-lg" />
+                <Skeleton className="h-12 rounded-lg" />
+                <Skeleton className="h-40 rounded-lg" />
+                <Skeleton className="h-40 rounded-lg" />
+              </div>
+              <div className="hidden lg:block lg:w-[38%]">
+                <Skeleton className="h-96 rounded-lg" />
+              </div>
+            </div>
+          </main>
+        </div>
+      </MainLayout>
+    );
+  }
   
   return (
     <MainLayout>
@@ -208,7 +231,7 @@ const Essay = () => {
             {/* Left column - Editor */}
             <div className="lg:w-[62%] space-y-4">
               {/* Pedagogical context section */}
-              <PedagogicalSection theme={dailyTheme} />
+              <PedagogicalSection theme={theme} />
               
               {/* Action buttons - above blocks */}
               <div className="flex items-center justify-end gap-2 flex-wrap py-2">

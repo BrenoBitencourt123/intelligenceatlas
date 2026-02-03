@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_themes: {
+        Row: {
+          context: string
+          created_at: string
+          date: string
+          guiding_questions: Json
+          id: string
+          is_ai_generated: boolean
+          motivating_text: string
+          structure_guide: Json
+          title: string
+        }
+        Insert: {
+          context: string
+          created_at?: string
+          date: string
+          guiding_questions?: Json
+          id?: string
+          is_ai_generated?: boolean
+          motivating_text: string
+          structure_guide?: Json
+          title: string
+        }
+        Update: {
+          context?: string
+          created_at?: string
+          date?: string
+          guiding_questions?: Json
+          id?: string
+          is_ai_generated?: boolean
+          motivating_text?: string
+          structure_guide?: Json
+          title?: string
+        }
+        Relationships: []
+      }
       essays: {
         Row: {
           analysis: Json | null
