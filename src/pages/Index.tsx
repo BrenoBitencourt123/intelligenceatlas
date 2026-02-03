@@ -5,8 +5,12 @@ import { BlockCard } from '@/components/atlas/BlockCard';
 import { ResultPanel } from '@/components/atlas/ResultPanel';
 import { PasteDivideModal } from '@/components/atlas/PasteDivideModal';
 import { MobileResultsBar } from '@/components/atlas/MobileResultsBar';
+import { PedagogicalSection } from '@/components/atlas/PedagogicalSection';
 import { analyzeEssay, generateImprovedVersion } from '@/lib/ai';
+import { getDailyTheme } from '@/data/dailyThemes';
 import { toast } from 'sonner';
+
+const dailyTheme = getDailyTheme();
 
 const Index = () => {
   const {
@@ -152,6 +156,10 @@ const Index = () => {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left column - Editor */}
           <div className="lg:w-[62%] space-y-4">
+            {/* Pedagogical context section */}
+            <PedagogicalSection theme={dailyTheme} />
+            
+            {/* Essay blocks */}
             {state.blocks.map((block) => (
               <BlockCard
                 key={block.id}
