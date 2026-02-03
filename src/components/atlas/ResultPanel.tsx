@@ -12,8 +12,10 @@ import {
   Award,
   Wand2,
   Loader2,
+  Lock,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface ResultPanelProps {
   state: EssayState;
@@ -24,6 +26,7 @@ interface ResultPanelProps {
   onGenerateImproved: () => void;
   onToggleOriginal: () => void;
   isGenerating?: boolean;
+  hasImprovedVersionAccess?: boolean;
 }
 
 export const ResultPanel = ({
@@ -35,7 +38,9 @@ export const ResultPanel = ({
   onGenerateImproved,
   onToggleOriginal,
   isGenerating = false,
+  hasImprovedVersionAccess = true,
 }: ResultPanelProps) => {
+  const navigate = useNavigate();
   const progress = (analyzedCount / totalCount) * 100;
   const hasImproved = !!state.improvedVersion;
   
@@ -48,7 +53,7 @@ export const ResultPanel = ({
   
   const fullText = state.blocks.map(b => b.text).join('\n\n');
   
-  const nextSteps = getNextSteps(state);
+  const nextSteps = getNextSteps(state, hasImprovedVersionAccess);
   
   return (
     <div className="bg-card rounded-xl border border-border shadow-panel overflow-hidden">
@@ -82,7 +87,7 @@ export const ResultPanel = ({
             <p className="text-sm text-muted-foreground">
               {state.totalScore > 0 
                 ? 'Nota estimada (ENEM)' 
-                : 'Clique em "Analisar todos" para ver a nota'}
+                : 'Clique em "Analisar redação" para ver a nota'}
             </p>
           </div>
           
@@ -118,27 +123,45 @@ export const ResultPanel = ({
           {/* Generate improved button - show when no improved version */}
           {!hasImproved && (
             <div className="pt-4 space-y-4">
-              <Button
-                className="w-full h-12 text-base font-medium"
-                size="lg"
-                onClick={onGenerateImproved}
-                disabled={!canGenerateImproved || isGenerating}
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Gerando...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-5 w-5 mr-2" />
-                    Gerar versão melhorada
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-muted-foreground text-center leading-relaxed px-2">
-                Gere a versão melhorada para aprender com uma escrita mais clara mantendo suas ideias.
-              </p>
+              {hasImprovedVersionAccess ? (
+                <>
+                  <Button
+                    className="w-full h-12 text-base font-medium"
+                    size="lg"
+                    onClick={onGenerateImproved}
+                    disabled={!canGenerateImproved || isGenerating}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Gerando...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-5 w-5 mr-2" />
+                        Gerar versão melhorada
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center leading-relaxed px-2">
+                    Gere a versão melhorada para aprender com uma escrita mais clara mantendo suas ideias.
+                  </p>
+                </>
+              ) : (
+                <div className="text-center p-4 bg-muted/30 rounded-lg space-y-3">
+                  <Lock className="h-6 w-6 mx-auto text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Versão melhorada disponível no Plano Básico
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigate('/plano')}
+                  >
+                    Ver planos
+                  </Button>
+                </div>
+              )}
             </div>
           )}
           
@@ -260,7 +283,7 @@ const CompetencyCard = ({ competency }: { competency: Competency }) => {
   );
 };
 
-const getNextSteps = (state: EssayState): string[] => {
+const getNextSteps = (state: EssayState, hasImprovedVersionAccess: boolean): string[] => {
   const steps: string[] = [];
   
   const emptyBlocks = state.blocks.filter(b => b.status === 'empty');
@@ -279,7 +302,7 @@ const getNextSteps = (state: EssayState): string[] => {
     steps.push('Complete a análise de todos os blocos para nota mais precisa');
   }
   
-  if (analyzedBlocks.length === state.blocks.length && !state.improvedVersion) {
+  if (analyzedBlocks.length === state.blocks.length && !state.improvedVersion && hasImprovedVersionAccess) {
     steps.push('Gere a versão melhorada para comparar e aprender');
   }
   

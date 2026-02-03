@@ -14,7 +14,7 @@ const logStep = (step: string, details?: unknown) => {
 };
 
 // Map Stripe product IDs to plan types
-const PRODUCT_TO_PLAN: Record<string, "basic" | "pro"> = {
+const PRODUCT_TO_PLAN: Record<string, "free" | "basic" | "pro"> = {
   prod_TuYV8OLHKPqp3Y: "basic",
   prod_TuYWj1Y0ffKgoX: "pro",
 };
@@ -52,11 +52,11 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 
     if (customers.data.length === 0) {
-      logStep("No customer found, returning unsubscribed state");
+      logStep("No customer found, returning free state");
       return new Response(
         JSON.stringify({
           subscribed: false,
-          plan_type: "basic",
+          plan_type: "free",
           product_id: null,
           subscription_end: null,
         }),
@@ -78,7 +78,7 @@ serve(async (req) => {
 
     const hasActiveSub = subscriptions.data.length > 0;
     let productId: string | null = null;
-    let planType: "basic" | "pro" = "basic";
+    let planType: "free" | "basic" | "pro" = "free";
     let subscriptionEnd: string | null = null;
 
     if (hasActiveSub) {
@@ -105,7 +105,7 @@ serve(async (req) => {
         logStep("Profile updated with plan type", { planType });
       }
     } else {
-      logStep("No active subscription found");
+      logStep("No active subscription found, keeping current plan");
     }
 
     return new Response(

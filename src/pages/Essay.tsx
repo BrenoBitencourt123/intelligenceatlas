@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useEssayState } from '@/hooks/useEssayState';
 import { useDailyTheme } from '@/hooks/useDailyTheme';
+import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { BlockCard } from '@/components/atlas/BlockCard';
 import { ResultPanel } from '@/components/atlas/ResultPanel';
@@ -16,9 +17,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Essay = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { theme, isLoading: isThemeLoading } = useDailyTheme();
-  const isPro = profile?.plan_type === 'pro';
+  const { planType, hasPedagogicalAccess, hasImprovedVersionAccess } = usePlanFeatures();
   const {
     state,
     updateBlockText,
@@ -232,44 +233,49 @@ const Essay = () => {
             {/* Left column - Editor */}
             <div className="lg:w-[62%] space-y-4">
               {/* Pedagogical context section */}
-              <PedagogicalSection theme={theme} isLocked={!isPro} />
+              <PedagogicalSection theme={theme} isLocked={!hasPedagogicalAccess} />
               
-              {/* Action buttons - above blocks */}
-              <div className="flex items-center justify-end gap-2 flex-wrap py-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPasteModalOpen(true)}
-                  className="text-muted-foreground"
-                >
-                  <Scissors className="h-4 w-4 mr-1.5" />
-                  Colar e dividir
-                </Button>
+              {/* Action buttons - reorganized with hierarchy */}
+              <div className="space-y-3 py-2">
+                {/* Secondary buttons */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPasteModalOpen(true)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Scissors className="h-4 w-4 mr-1.5" />
+                    Colar e dividir
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={addDevelopment}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    Desenvolvimento
+                  </Button>
+                </div>
                 
+                {/* Primary button */}
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addDevelopment}
-                >
-                  <Plus className="h-4 w-4 mr-1.5" />
-                  Adicionar desenvolvimento
-                </Button>
-                
-                <Button
-                  size="sm"
+                  size="lg"
                   onClick={handleAnalyzeAll}
                   disabled={!canAnalyze || isAnalyzingAll}
-                  className="bg-foreground hover:bg-foreground/90 text-background"
+                  className="w-full md:w-auto bg-foreground hover:bg-foreground/90 text-background"
                 >
                   {isAnalyzingAll ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                       Analisando...
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-4 w-4 mr-1.5" />
-                      Analisar tudo
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      Analisar redação
                     </>
                   )}
                 </Button>
@@ -297,10 +303,11 @@ const Essay = () => {
                   analyzedCount={analyzedBlockCount}
                   totalCount={totalBlockCount}
                   estimatedScore={estimatedScore}
-                  canGenerateImproved={canGenerateImproved}
+                  canGenerateImproved={canGenerateImproved && hasImprovedVersionAccess}
                   onGenerateImproved={handleGenerateImproved}
                   onToggleOriginal={toggleShowOriginal}
                   isGenerating={isGeneratingImproved}
+                  hasImprovedVersionAccess={hasImprovedVersionAccess}
                 />
               </div>
             </div>
@@ -313,13 +320,14 @@ const Essay = () => {
           analyzedCount={analyzedBlockCount}
           totalCount={totalBlockCount}
           estimatedScore={estimatedScore}
-          canGenerateImproved={canGenerateImproved}
+          canGenerateImproved={canGenerateImproved && hasImprovedVersionAccess}
           onGenerateImproved={handleGenerateImproved}
           onToggleOriginal={toggleShowOriginal}
           onAnalyzeAll={handleAnalyzeAll}
           isAnalyzing={isAnalyzingAll}
           isGenerating={isGeneratingImproved}
           canAnalyze={canAnalyze}
+          hasImprovedVersionAccess={hasImprovedVersionAccess}
         />
         
         {/* Paste & Divide Modal */}

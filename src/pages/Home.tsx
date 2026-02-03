@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const Home = () => {
   const { theme, isLoading: isThemeLoading } = useDailyTheme();
-  const { isPro, monthlyLimit } = usePlanFeatures();
+  const { hasThemeAccess, isFree, monthlyLimit } = usePlanFeatures();
   const { 
     totalEssays, 
     lastScore, 
@@ -19,6 +19,9 @@ const Home = () => {
     hasWrittenToday,
     isLoading: isStatsLoading 
   } = useUserStats();
+
+  // For free users, show total essays used vs limit of 1
+  const usedCount = isFree ? totalEssays : monthlyEssays;
 
   return (
     <MainLayout>
@@ -35,7 +38,7 @@ const Home = () => {
           {/* Daily theme CTA */}
           {isThemeLoading ? (
             <Skeleton className="h-32 rounded-lg" />
-          ) : isPro ? (
+          ) : hasThemeAccess ? (
             <DailyThemeCard 
               title={theme.title} 
               hasWrittenToday={hasWrittenToday} 
@@ -53,7 +56,7 @@ const Home = () => {
               </>
             ) : (
               <>
-                <ProgressCard used={monthlyEssays} total={monthlyLimit} />
+                <ProgressCard used={usedCount} total={monthlyLimit} isFree={isFree} />
                 <StatsCard lastScore={lastScore} monthlyAverage={monthlyAverage} />
               </>
             )}
