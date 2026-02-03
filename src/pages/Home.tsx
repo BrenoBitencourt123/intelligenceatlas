@@ -2,19 +2,19 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { DailyThemeCard } from '@/components/home/DailyThemeCard';
 import { ProgressCard } from '@/components/home/ProgressCard';
 import { StatsCard } from '@/components/home/StatsCard';
-import { getDailyTheme } from '@/data/dailyThemes';
+import { useDailyTheme } from '@/hooks/useDailyTheme';
 import { useUserStats } from '@/hooks/useUserStats';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Home = () => {
-  const dailyTheme = getDailyTheme();
+  const { theme, isLoading: isThemeLoading } = useDailyTheme();
   const { 
     totalEssays, 
     lastScore, 
     monthlyAverage, 
     monthlyEssays,
     hasWrittenToday,
-    isLoading 
+    isLoading: isStatsLoading 
   } = useUserStats();
   
   // Monthly limit based on plan (basic = 30)
@@ -33,14 +33,18 @@ const Home = () => {
           </div>
 
           {/* Daily theme CTA */}
-          <DailyThemeCard 
-            title={dailyTheme.title} 
-            hasWrittenToday={hasWrittenToday} 
-          />
+          {isThemeLoading ? (
+            <Skeleton className="h-32 rounded-lg" />
+          ) : (
+            <DailyThemeCard 
+              title={theme.title} 
+              hasWrittenToday={hasWrittenToday} 
+            />
+          )}
 
           {/* Stats grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {isLoading ? (
+            {isStatsLoading ? (
               <>
                 <Skeleton className="h-32 rounded-lg" />
                 <Skeleton className="h-32 rounded-lg" />
@@ -54,7 +58,7 @@ const Home = () => {
           </div>
 
           {/* Total essays info */}
-          {!isLoading && totalEssays > 0 && (
+          {!isStatsLoading && totalEssays > 0 && (
             <p className="text-sm text-muted-foreground text-center">
               Você já escreveu {totalEssays} {totalEssays === 1 ? 'redação' : 'redações'} no total
             </p>
