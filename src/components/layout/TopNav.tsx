@@ -1,0 +1,45 @@
+import { Home, PenLine, CreditCard } from 'lucide-react';
+import { NavLink } from '@/components/NavLink';
+import { cn } from '@/lib/utils';
+
+const navItems = [
+  { title: 'Início', path: '/', icon: Home },
+  { title: 'Redação', path: '/redacao', icon: PenLine },
+  { title: 'Plano', path: '/plano', icon: CreditCard },
+];
+
+export const TopNav = () => {
+  return (
+    <header className="hidden md:block sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
+      <div className="container max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-between h-14">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">A</span>
+            </div>
+            <span className="font-semibold text-foreground">Atlas</span>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex items-center gap-1">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === '/'}
+                className={cn(
+                  'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+                )}
+                activeClassName="bg-muted text-foreground"
+              >
+                <item.icon className="h-4 w-4" />
+                <span>{item.title}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+      </div>
+    </header>
+  );
+};

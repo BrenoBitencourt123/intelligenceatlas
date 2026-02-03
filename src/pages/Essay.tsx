@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useEssayState } from '@/hooks/useEssayState';
+import { MainLayout } from '@/components/layout/MainLayout';
 import { Header } from '@/components/atlas/Header';
 import { BlockCard } from '@/components/atlas/BlockCard';
 import { ResultPanel } from '@/components/atlas/ResultPanel';
@@ -12,7 +13,7 @@ import { toast } from 'sonner';
 
 const dailyTheme = getDailyTheme();
 
-const Index = () => {
+const Essay = () => {
   const {
     state,
     updateBlockText,
@@ -141,79 +142,81 @@ const Index = () => {
   const devBlocksCount = state.blocks.filter(b => b.type === 'development').length;
   
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-0">
-      {/* Header */}
-      <Header
-        onAnalyzeAll={handleAnalyzeAll}
-        onPasteDivide={() => setPasteModalOpen(true)}
-        onAddDevelopment={addDevelopment}
-        isAnalyzing={isAnalyzingAll}
-        canAnalyze={canAnalyze}
-      />
-      
-      {/* Main content */}
-      <main className="container max-w-7xl mx-auto px-4 py-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left column - Editor */}
-          <div className="lg:w-[62%] space-y-4">
-            {/* Pedagogical context section */}
-            <PedagogicalSection theme={dailyTheme} />
+    <MainLayout>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <Header
+          onAnalyzeAll={handleAnalyzeAll}
+          onPasteDivide={() => setPasteModalOpen(true)}
+          onAddDevelopment={addDevelopment}
+          isAnalyzing={isAnalyzingAll}
+          canAnalyze={canAnalyze}
+        />
+        
+        {/* Main content */}
+        <main className="container max-w-7xl mx-auto px-4 py-6">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Left column - Editor */}
+            <div className="lg:w-[62%] space-y-4">
+              {/* Pedagogical context section */}
+              <PedagogicalSection theme={dailyTheme} />
+              
+              {/* Essay blocks */}
+              {state.blocks.map((block) => (
+                <BlockCard
+                  key={block.id}
+                  block={block}
+                  onTextChange={(text) => updateBlockText(block.id, text)}
+                  onClear={() => clearBlock(block.id)}
+                  onRemove={block.type === 'development' ? () => removeDevelopment(block.id) : undefined}
+                  canRemove={block.type === 'development' && devBlocksCount > 1}
+                  isAnalyzing={isAnalyzingAll}
+                />
+              ))}
+            </div>
             
-            {/* Essay blocks */}
-            {state.blocks.map((block) => (
-              <BlockCard
-                key={block.id}
-                block={block}
-                onTextChange={(text) => updateBlockText(block.id, text)}
-                onClear={() => clearBlock(block.id)}
-                onRemove={block.type === 'development' ? () => removeDevelopment(block.id) : undefined}
-                canRemove={block.type === 'development' && devBlocksCount > 1}
-                isAnalyzing={isAnalyzingAll}
-              />
-            ))}
-          </div>
-          
-          {/* Right column - Results (desktop) */}
-          <div className="hidden lg:block lg:w-[38%]">
-            <div className="sticky top-24">
-              <ResultPanel
-                state={state}
-                analyzedCount={analyzedBlockCount}
-                totalCount={totalBlockCount}
-                estimatedScore={estimatedScore}
-                canGenerateImproved={canGenerateImproved}
-                onGenerateImproved={handleGenerateImproved}
-                onToggleOriginal={toggleShowOriginal}
-                isGenerating={isGeneratingImproved}
-              />
+            {/* Right column - Results (desktop) */}
+            <div className="hidden lg:block lg:w-[38%]">
+              <div className="sticky top-24">
+                <ResultPanel
+                  state={state}
+                  analyzedCount={analyzedBlockCount}
+                  totalCount={totalBlockCount}
+                  estimatedScore={estimatedScore}
+                  canGenerateImproved={canGenerateImproved}
+                  onGenerateImproved={handleGenerateImproved}
+                  onToggleOriginal={toggleShowOriginal}
+                  isGenerating={isGeneratingImproved}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </main>
-      
-      {/* Mobile results bar */}
-      <MobileResultsBar
-        state={state}
-        analyzedCount={analyzedBlockCount}
-        totalCount={totalBlockCount}
-        estimatedScore={estimatedScore}
-        canGenerateImproved={canGenerateImproved}
-        onGenerateImproved={handleGenerateImproved}
-        onToggleOriginal={toggleShowOriginal}
-        onAnalyzeAll={handleAnalyzeAll}
-        isAnalyzing={isAnalyzingAll}
-        isGenerating={isGeneratingImproved}
-        canAnalyze={canAnalyze}
-      />
-      
-      {/* Paste & Divide Modal */}
-      <PasteDivideModal
-        open={pasteModalOpen}
-        onOpenChange={setPasteModalOpen}
-        onApply={applyDividedText}
-      />
-    </div>
+        </main>
+        
+        {/* Mobile results bar */}
+        <MobileResultsBar
+          state={state}
+          analyzedCount={analyzedBlockCount}
+          totalCount={totalBlockCount}
+          estimatedScore={estimatedScore}
+          canGenerateImproved={canGenerateImproved}
+          onGenerateImproved={handleGenerateImproved}
+          onToggleOriginal={toggleShowOriginal}
+          onAnalyzeAll={handleAnalyzeAll}
+          isAnalyzing={isAnalyzingAll}
+          isGenerating={isGeneratingImproved}
+          canAnalyze={canAnalyze}
+        />
+        
+        {/* Paste & Divide Modal */}
+        <PasteDivideModal
+          open={pasteModalOpen}
+          onOpenChange={setPasteModalOpen}
+          onApply={applyDividedText}
+        />
+      </div>
+    </MainLayout>
   );
 };
 
-export default Index;
+export default Essay;
