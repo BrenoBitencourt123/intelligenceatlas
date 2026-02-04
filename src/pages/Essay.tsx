@@ -12,10 +12,12 @@ import { PedagogicalSection } from '@/components/atlas/PedagogicalSection';
 import { QuotaExceededModal } from '@/components/atlas/QuotaExceededModal';
 import { analyzeEssay, generateImprovedVersion } from '@/lib/ai';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Scissors, Plus, Loader2 } from 'lucide-react';
+import { Sparkles, Scissors, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { EssaySkeleton } from '@/components/skeletons/EssaySkeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,7 +26,7 @@ const Essay = () => {
   const { user } = useAuth();
   const { theme: dailyTheme, isLoading: isThemeLoading } = useDailyTheme();
   const { planType, hasPedagogicalAccess, hasImprovedVersionAccess } = usePlanFeatures();
-  const { canAnalyze: hasQuota, reason: quotaReason, isLoading: isQuotaLoading } = useQuotaCheck();
+  const { canAnalyze: hasQuota, reason: quotaReason, isLoading: isQuotaLoading, dailyUsed, dailyLimit } = useQuotaCheck();
   const {
     state,
     updateBlockText,
@@ -281,6 +283,17 @@ const Essay = () => {
                 </p>
               </div>
               
+              {/* Daily limit warning */}
+              {quotaReason === 'daily_limit' && (
+                <Alert className="border-accent bg-accent/10">
+                  <AlertCircle className="h-4 w-4 text-accent-foreground" />
+                  <AlertDescription className="text-foreground">
+                    Você atingiu o limite de {dailyLimit} {dailyLimit === 1 ? 'correção' : 'correções'} por dia. 
+                    Volte amanhã para continuar praticando!
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Action buttons - all in one line */}
               <div className="flex items-center gap-2 flex-wrap py-2">
                 <Button
