@@ -91,6 +91,36 @@ export type Database = {
           },
         ]
       }
+      passkey_credentials: {
+        Row: {
+          counter: number | null
+          created_at: string | null
+          credential_id: string
+          device_name: string | null
+          id: string
+          public_key: string
+          user_id: string
+        }
+        Insert: {
+          counter?: number | null
+          created_at?: string | null
+          credential_id: string
+          device_name?: string | null
+          id?: string
+          public_key: string
+          user_id: string
+        }
+        Update: {
+          counter?: number | null
+          created_at?: string | null
+          credential_id?: string
+          device_name?: string | null
+          id?: string
+          public_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
