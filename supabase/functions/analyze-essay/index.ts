@@ -167,10 +167,10 @@ serve(async (req) => {
     const user = claimsData.user;
 
     // ===== QUOTA VALIDATION =====
-    // Get user's plan type
+    // Get user's plan type and flexible quota setting
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('plan_type')
+      .select('plan_type, flexible_quota')
       .eq('id', user.id)
       .single();
 
@@ -183,6 +183,7 @@ serve(async (req) => {
     }
 
     const planType = profile.plan_type || 'free';
+    const isFlexibleMode = profile.flexible_quota === true;
     
     // Define limits per plan
     const limits: Record<string, { monthly: number; daily: number }> = {
@@ -241,28 +242,31 @@ serve(async (req) => {
         );
       }
 
-      // Count today's analyzed essays
-      const { count: todayCount, error: todayError } = await supabaseClient
-        .from('essays')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .not('analyzed_at', 'is', null)
-        .gte('analyzed_at', startOfToday.toISOString());
+      // Only check daily limit if flexible mode is NOT enabled
+      if (!isFlexibleMode) {
+        // Count today's analyzed essays
+        const { count: todayCount, error: todayError } = await supabaseClient
+          .from('essays')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .not('analyzed_at', 'is', null)
+          .gte('analyzed_at', startOfToday.toISOString());
 
-      if (todayError) {
-        console.error("Failed to count today's essays:", todayError);
-      }
+        if (todayError) {
+          console.error("Failed to count today's essays:", todayError);
+        }
 
-      // Check daily limit
-      if ((todayCount ?? 0) >= userLimits.daily) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Limite diário de correções atingido. Volte amanhã!',
-            code: 'QUOTA_EXCEEDED',
-            limit_type: 'daily'
-          }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // Check daily limit
+        if ((todayCount ?? 0) >= userLimits.daily) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Limite diário de correções atingido. Volte amanhã!',
+              code: 'QUOTA_EXCEEDED',
+              limit_type: 'daily'
+            }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
     }
     // ===== END QUOTA VALIDATION =====
