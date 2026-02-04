@@ -421,14 +421,14 @@ export default function Profile() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="space-y-1">
+              <div className="space-y-1">
                   <Label htmlFor="flexible-quota" className="font-medium">
                     Modo Flexível
                   </Label>
                   <p className="text-sm text-muted-foreground">
                     {flexibleQuota 
                       ? 'Use todas as correções quando quiser, sem limite diário'
-                      : `Limite de ${profile.plan_type === 'pro' ? '2' : '1'} ${profile.plan_type === 'pro' ? 'correções' : 'correção'} por dia`
+                      : `Modo atual: limite de ${profile.plan_type === 'pro' ? '2 correções' : '1 correção'} por dia`
                     }
                   </p>
                 </div>
