@@ -1,83 +1,212 @@
 
-# Plano: Corrigir Checkout + Info sobre Pagamentos Móveis
+# Plano: Face ID, Apple Pay e Destaque no Card Bloqueado
 
-## Correção Principal: Erro Intermitente no Checkout
+## 1. Sobre Apple Pay / Google Pay no Checkout
 
-### Diagnóstico
-O `EmbeddedCheckoutProvider` chama `fetchClientSecret` imediatamente ao montar, antes da sessão estar disponível, causando erro 403.
+### Situacao Atual
+O Stripe Embedded Checkout ja suporta Apple Pay e Google Pay **automaticamente**. Voce confirmou que habilitou no Stripe Dashboard.
 
-### Solução
-Verificar sessão antes de renderizar o checkout.
+### Por que nao aparece como um "double-click" igual app nativo?
 
-**Arquivo:** `src/components/checkout/EmbeddedCheckoutModal.tsx`
+O comportamento que voce descreve (clicar 2x no botao lateral do iPhone para pagar com Face ID) e exclusivo de **apps nativos** usando o Apple Pay SDK nativo. No navegador web:
 
-**Mudanças:**
-1. Importar `useAuth` do contexto de autenticação
-2. Obter a sessão atual
-3. Mostrar loading enquanto sessão não estiver pronta
-4. Só renderizar o `EmbeddedCheckoutProvider` após sessão confirmada
+- Apple Pay aparece como um botao dentro do checkout
+- Ao clicar, abre o sheet nativo do Apple Pay
+- Usuario confirma com Face ID/Touch ID
+
+Para ter a experiencia nativa completa (double-click no botao lateral), seria necessario:
+1. Transformar o app em nativo via **Capacitor**
+2. Usar o plugin `@capacitor-community/stripe` ou `cordova-plugin-stripe-apple-pay`
+
+**Limitacao web**: O navegador nao consegue interceptar o gesto de double-click fisico do iPhone - isso so funciona em apps instalados via App Store.
+
+---
+
+## 2. Face ID / Touch ID para Login (WebAuthn/Passkeys)
+
+### O que vamos implementar
+
+Um sistema de login biometrico via **WebAuthn** que permite:
+- Usuarios registrarem uma passkey (Face ID/Touch ID)
+- Login rapido com biometria, sem digitar senha
+
+### Bibliotecas Necessarias
+
+```bash
+npm install @simplewebauthn/browser
+```
+
+### Arquitetura
+
+```text
+Frontend (React)                    Backend (Edge Function)
++------------------+                +----------------------+
+| Login Page       |                | webauthn-register    |
+|   - Botao FaceID | ---register--> | - Gera challenge     |
+|                  | <--options---- | - Salva credencial   |
+|   - Biometria    | ---verify----> +----------------------+
+|                  |                | webauthn-authenticate|
+|                  | <--session---- | - Verifica assinatura|
++------------------+                +----------------------+
+```
+
+### Arquivos a Criar
+
+| Arquivo | Descricao |
+|---------|-----------|
+| `supabase/functions/webauthn-register/index.ts` | Edge function para registrar passkey |
+| `supabase/functions/webauthn-authenticate/index.ts` | Edge function para autenticar |
+| `src/hooks/usePasskey.ts` | Hook para gerenciar passkeys |
+| `src/components/auth/PasskeyButton.tsx` | Botao de login com Face ID |
+
+### Tabela Nova no Banco
+
+```sql
+CREATE TABLE passkey_credentials (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  credential_id TEXT UNIQUE NOT NULL,
+  public_key TEXT NOT NULL,
+  counter INTEGER DEFAULT 0,
+  device_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE passkey_credentials ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own passkeys"
+ON passkey_credentials FOR ALL
+USING (auth.uid() = user_id);
+```
+
+### Fluxo de Registro
+
+1. Usuario faz login normal (email/senha)
+2. No perfil, botao "Adicionar Face ID"
+3. Frontend chama `startRegistration()` do simplewebauthn
+4. Navegador mostra prompt de Face ID/Touch ID
+5. Credencial salva no banco
+
+### Fluxo de Login
+
+1. Tela de login mostra botao "Entrar com Face ID"
+2. Frontend chama `startAuthentication()`
+3. Navegador mostra prompt de Face ID/Touch ID
+4. Backend verifica e retorna sessao
+
+### Codigo do Botao (Preview)
 
 ```tsx
-import { useAuth } from '@/contexts/AuthContext';
+// src/components/auth/PasskeyButton.tsx
+import { startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/browser';
+import { Fingerprint } from 'lucide-react';
 
-// Dentro do componente:
-const { session } = useAuth();
+export const PasskeyButton = ({ onSuccess }) => {
+  const [supported, setSupported] = useState(false);
+  
+  useEffect(() => {
+    setSupported(browserSupportsWebAuthn());
+  }, []);
 
-// No return, antes do checkout:
-{!session ? (
-  <div className="text-center py-8">
-    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-    <p className="text-sm text-muted-foreground mt-2">Carregando...</p>
-  </div>
-) : error ? (
-  <div className="text-center py-8">
-    <p className="text-destructive text-sm">{error}</p>
-  </div>
-) : (
-  <EmbeddedCheckoutProvider stripe={stripePromise} options={options}>
-    <EmbeddedCheckout />
-  </EmbeddedCheckoutProvider>
-)}
+  if (!supported) return null;
+
+  const handlePasskeyLogin = async () => {
+    const options = await supabase.functions.invoke('webauthn-authenticate', {
+      body: { action: 'start' }
+    });
+    
+    const credential = await startAuthentication(options.data);
+    
+    const result = await supabase.functions.invoke('webauthn-authenticate', {
+      body: { action: 'verify', credential }
+    });
+    
+    if (result.data?.session) {
+      onSuccess(result.data.session);
+    }
+  };
+
+  return (
+    <Button variant="outline" onClick={handlePasskeyLogin}>
+      <Fingerprint className="h-5 w-5 mr-2" />
+      Entrar com Face ID
+    </Button>
+  );
+};
 ```
 
 ---
 
-## Sobre Apple Pay e Google Pay
+## 3. Destaque no LockedThemeCard
 
-O Stripe Embedded Checkout **já suporta** ambos automaticamente. Eles aparecem quando:
+### Mudancas no Componente
 
-| Requisito | Apple Pay | Google Pay |
-|-----------|-----------|------------|
-| Dispositivo | iPhone, iPad, Mac | Android, Chrome |
-| Navegador | Safari | Chrome, Edge |
-| Cartão cadastrado | Apple Wallet | Google Pay |
-| Habilitado no Stripe | Dashboard → Payment Methods | Dashboard → Payment Methods |
+Aplicar o mesmo estilo amber do card Pro na pagina de planos:
 
-**Ação necessária:** Verificar no [Stripe Dashboard](https://dashboard.stripe.com/settings/payment_methods) se Apple Pay e Google Pay estão habilitados.
+**Arquivo:** `src/components/home/LockedThemeCard.tsx`
+
+### De (atual):
+```tsx
+<Card className="border-2 border-dashed border-muted-foreground/30">
+```
+
+### Para (novo):
+```tsx
+<Card className="border-2 border-amber-500/70 bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-950/20 dark:to-transparent">
+```
+
+### Icone do cadeado tambem em amber:
+```tsx
+<div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
+  <Lock className="h-6 w-6 text-amber-500" />
+</div>
+```
+
+### Botao com estilo Pro:
+```tsx
+<Button 
+  onClick={() => navigate('/plano')} 
+  className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white"
+  size="lg"
+>
+  Ver Plano Pro
+  <ArrowRight className="h-4 w-4" />
+</Button>
+```
 
 ---
 
-## Sobre Face ID para Login
+## Resumo dos Arquivos
 
-Face ID/Touch ID para login web é possível via **WebAuthn/Passkeys**, mas:
+### Tarefa 1: Face ID para Login
 
-- Requer implementação específica (não é nativo do Supabase)
-- Envolve registro de credenciais biométricas no dispositivo
-- Para apps nativos (Capacitor), usa-se plugin de biometria
+| Arquivo | Acao |
+|---------|------|
+| `supabase/migrations/xxx_passkeys.sql` | Criar tabela passkey_credentials |
+| `supabase/functions/webauthn-register/index.ts` | Criar edge function de registro |
+| `supabase/functions/webauthn-authenticate/index.ts` | Criar edge function de autenticacao |
+| `src/hooks/usePasskey.ts` | Criar hook de gerenciamento |
+| `src/components/auth/PasskeyButton.tsx` | Criar componente de botao |
+| `src/pages/Login.tsx` | Adicionar botao de Face ID |
+| `src/pages/Profile.tsx` | Adicionar opcao de registrar passkey |
 
-**Recomendação:** Implementar como projeto separado depois das correções atuais.
+### Tarefa 2: Destaque no Card Bloqueado
+
+| Arquivo | Acao |
+|---------|------|
+| `src/components/home/LockedThemeCard.tsx` | Atualizar estilos para amber |
 
 ---
 
-## Arquivos a Modificar
+## Dependencias a Instalar
 
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/components/checkout/EmbeddedCheckoutModal.tsx` | Verificar sessão antes de renderizar checkout |
+```bash
+npm install @simplewebauthn/browser @simplewebauthn/server
+```
 
-## Resultado Esperado
+## Observacoes Importantes
 
-- Modal de checkout só carrega após sessão confirmada
-- Elimina erros "No authorization header"
-- Funciona consistentemente em preview e produção
-- Apple Pay/Google Pay aparecem automaticamente nos dispositivos compatíveis
+1. **WebAuthn so funciona em HTTPS** - Funciona no preview e producao, mas nao em localhost HTTP
+2. **Apple Pay no navegador** - Aparece como botao, nao como double-click nativo
+3. **Para experiencia nativa completa** - Seria necessario converter para app via Capacitor
+
