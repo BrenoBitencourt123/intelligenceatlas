@@ -24,6 +24,8 @@ export const usePlanFeatures = () => {
     hasPedagogicalAccess: isPro || freeHasQuota,
     // Versão melhorada: Basic, Pro, OU Free com cota (trial)
     hasImprovedVersionAccess: isBasic || isPro || freeHasQuota,
+    // Fontes de dados: apenas Pro
+    hasSourcesAccess: isPro,
     // Limites
     monthlyLimit: isPro ? 60 : isBasic ? 30 : 1,
     dailyLimit: isPro ? 2 : 1,

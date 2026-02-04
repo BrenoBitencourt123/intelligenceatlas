@@ -25,7 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const Essay = () => {
   const { user } = useAuth();
   const { theme: dailyTheme, isLoading: isThemeLoading } = useDailyTheme();
-  const { planType, hasPedagogicalAccess, hasImprovedVersionAccess } = usePlanFeatures();
+  const { planType, hasPedagogicalAccess, hasImprovedVersionAccess, hasSourcesAccess } = usePlanFeatures();
   const { canAnalyze: hasQuota, reason: quotaReason, isLoading: isQuotaLoading, dailyUsed, dailyLimit } = useQuotaCheck();
   const {
     state,
@@ -264,7 +264,7 @@ const Essay = () => {
             {/* Left column - Editor */}
             <div className="lg:w-[62%] space-y-4">
               {/* Pedagogical context section */}
-              <PedagogicalSection theme={dailyTheme} isLocked={!hasPedagogicalAccess} planType={planType} />
+              <PedagogicalSection theme={dailyTheme} isLocked={!hasPedagogicalAccess} planType={planType} hasSourcesAccess={hasSourcesAccess} />
               
               {/* Custom theme input */}
               <div className="space-y-2">

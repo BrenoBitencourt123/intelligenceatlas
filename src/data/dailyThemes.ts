@@ -1,3 +1,5 @@
+import type { Source } from '@/types/atlas';
+
 export interface StructureItem {
   id: string;
   label: string;
@@ -12,6 +14,7 @@ export interface DailyTheme {
   context: string;
   guidingQuestions: string[];
   structureGuide: StructureItem[];
+  sources?: Source[];
 }
 
 // Tema mockado para demonstração

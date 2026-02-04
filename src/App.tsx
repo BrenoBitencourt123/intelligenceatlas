@@ -10,6 +10,7 @@ import Essay from "./pages/Essay";
 import Plan from "./pages/Plan";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import History from "./pages/History";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
@@ -39,6 +40,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Essay />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/historico"
+              element={
+                <ProtectedRoute>
+                  <History />
                 </ProtectedRoute>
               }
             />

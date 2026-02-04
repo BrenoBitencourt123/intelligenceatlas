@@ -165,8 +165,22 @@ O JSON deve ter exatamente esta estrutura:
     "Pergunta 3 sobre dados/exemplos",
     "Pergunta 4 sobre obstáculos para solução",
     "Pergunta 5 sobre proposta de intervenção"
+  ],
+  "sources": [
+    {
+      "title": "Título do artigo, estudo ou notícia",
+      "url": "https://url-real-da-fonte.com.br",
+      "excerpt": "Trecho relevante que pode ser citado na redação (1-2 frases)",
+      "type": "artigo|estatistica|legislacao|noticia"
+    }
   ]
 }
+
+IMPORTANTE sobre sources:
+- Inclua 3-5 fontes reais e verificáveis (artigos, estatísticas oficiais, legislações, notícias)
+- Os URLs devem ser de sites brasileiros confiáveis (IBGE, IPEA, jornais, portais do governo)
+- Os trechos devem ser úteis para citação direta na redação
+- Tipos válidos: "artigo", "estatistica", "legislacao", "noticia"
 
 Gere um tema atual e relevante. Evite temas muito comuns como violência contra a mulher, racismo estrutural, ou educação básica - busque temas menos explorados mas igualmente importantes.`;
 
@@ -208,6 +222,7 @@ Gere um tema atual e relevante. Evite temas muito comuns como violência contra 
       motivating_text: string;
       context: string;
       guiding_questions: string[];
+      sources?: { title: string; url: string; excerpt: string; type: string }[];
     };
 
     try {
@@ -235,6 +250,7 @@ Gere um tema atual e relevante. Evite temas muito comuns como violência contra 
       context: parsedTheme.context,
       guiding_questions: parsedTheme.guiding_questions,
       structure_guide: DEFAULT_STRUCTURE_GUIDE,
+      sources: parsedTheme.sources || [],
       is_ai_generated: true,
     };
 
