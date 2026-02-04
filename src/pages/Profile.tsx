@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Camera, LogOut, Mail, User, Key, Crown, Loader2, Fingerprint, Trash2 } from 'lucide-react';
+import { ProfileSkeleton } from '@/components/skeletons/ProfileSkeleton';
 import { usePasskey } from '@/hooks/usePasskey';
 
 const getInitials = (name: string | null, email: string) => {
@@ -245,13 +246,7 @@ export default function Profile() {
   };
 
   if (!user || !profile) {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </MainLayout>
-    );
+    return <ProfileSkeleton />;
   }
 
   return (

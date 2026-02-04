@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
+import { PlanSkeleton } from '@/components/skeletons/PlanSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmbeddedCheckoutModal } from '@/components/checkout/EmbeddedCheckoutModal';
 import { useUserStats } from '@/hooks/useUserStats';
@@ -107,16 +107,7 @@ const Plan = () => {
   ];
 
   if (isCheckingSubscription) {
-    return (
-      <MainLayout>
-        <div className="container max-w-5xl mx-auto px-4 py-8">
-          <div className="flex flex-col items-center justify-center py-12 gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Verificando sua assinatura...</p>
-          </div>
-        </div>
-      </MainLayout>
-    );
+    return <PlanSkeleton />;
   }
 
   return (
