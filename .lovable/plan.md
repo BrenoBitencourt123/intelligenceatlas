@@ -1,209 +1,325 @@
 
-
-# Plano: Corrigir Bugs de UX + Campo de Tema + Free como Pro
+# Plano: Avisos de Limite + Historico + Fontes de Dados
 
 ## Resumo das Mudancas
 
-1. **Badge "Plano Básico" Hardcoded** → Mostrar plano correto com destaque Pro
-2. **"Concluída" incorreto na Home** → Verificar tema + analise completa
-3. **Versão Melhorada antiga persistindo** → Limpar estado quando tema mudar
-4. **Campo de Tema customizado** → Permitir usuario definir tema proprio
-5. **Free = Pro na 1a redacao** → Experiencia completa para degustacao
+1. **Aviso de limite diario/mensal na Home** - Badge e texto explicativo
+2. **Tela de Historico de Redacoes** - Nova pagina `/historico`
+3. **Botao "Ver historico" no StatsCard** - Link para historico
+4. **"Ver correcao" carrega redacao do banco** - Navega para historico com detalhes
+5. **Fontes de dados no tema** - Campo `sources` + geracao via IA + gating por plano
 
 ---
 
-## Implementacao Detalhada
+## 1. Aviso de Limite na Home (DailyThemeCard)
 
-### 1. ThemeCard - Badge Dinamico com Destaque Pro
+**Arquivo:** `src/components/home/DailyThemeCard.tsx`
 
-**Arquivo:** `src/components/atlas/ThemeCard.tsx`
-
-Adicionar prop `planType` e estilizar Pro com cores amber:
+Adicionar props para mostrar quando limite foi atingido:
 
 ```tsx
-interface ThemeCardProps {
+interface DailyThemeCardProps {
   title: string;
-  motivatingText: string;
-  planType?: 'free' | 'basic' | 'pro';
+  hasWrittenToday: boolean;
+  quotaReason?: 'limit_reached' | 'monthly_limit' | 'daily_limit' | null;
+  dailyLimit?: number;
 }
 
-export const ThemeCard = ({ title, motivatingText, planType = 'pro' }: ThemeCardProps) => {
-  const isPro = planType === 'pro';
-  const isBasic = planType === 'basic';
+export const DailyThemeCard = ({ 
+  title, 
+  hasWrittenToday,
+  quotaReason,
+  dailyLimit = 2,
+}: DailyThemeCardProps) => {
+  const navigate = useNavigate();
   
-  const getBadgeLabel = () => {
-    if (isPro) return 'Plano Pro';
-    if (isBasic) return 'Plano Básico';
-    return 'Plano Free';
-  };
-  
+  const isBlocked = quotaReason === 'daily_limit' || quotaReason === 'monthly_limit';
+
   return (
-    <Card className={cn(
-      "border-2",
-      isPro ? "border-amber-500/40 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20" 
-            : "border-foreground/20"
-    )}>
-      {/* ... */}
-      <Badge 
-        variant="secondary" 
-        className={cn(
-          "text-xs shrink-0",
-          isPro && "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+    <Card>
+      {/* ... header ... */}
+      <CardContent className="space-y-4">
+        <h2>"{title}"</h2>
+        
+        {/* Warning when limit reached */}
+        {isBlocked && (
+          <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+            <Clock className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800 dark:text-amber-200">
+              {quotaReason === 'daily_limit' 
+                ? `Limite de ${dailyLimit} analises por dia atingido. Volte amanha!`
+                : 'Limite mensal atingido. Faca upgrade para continuar.'}
+            </AlertDescription>
+          </Alert>
         )}
-      >
-        {getBadgeLabel()}
-      </Badge>
+        
+        <Button 
+          onClick={() => navigate(hasWrittenToday ? '/historico' : '/redacao')} 
+          disabled={isBlocked && !hasWrittenToday}
+        >
+          {hasWrittenToday ? 'Ver correcao' : 'Escrever redacao de hoje'}
+        </Button>
+      </CardContent>
     </Card>
   );
 };
 ```
 
-### 2. PedagogicalSection - Passar planType
+**Arquivo:** `src/pages/Home.tsx`
 
-**Arquivo:** `src/components/atlas/PedagogicalSection.tsx`
+Passar dados de quota:
 
 ```tsx
-interface PedagogicalSectionProps {
-  theme: DailyTheme;
-  isLocked?: boolean;
-  planType?: 'free' | 'basic' | 'pro';
-}
+const { reason: quotaReason, dailyLimit } = useQuotaCheck();
 
-export const PedagogicalSection = ({ theme, isLocked = false, planType = 'pro' }: PedagogicalSectionProps) => {
-  // ...
-  <ThemeCard 
-    title={theme.title} 
-    motivatingText={theme.motivatingText} 
-    planType={planType}
-  />
+<DailyThemeCard 
+  title={theme.title} 
+  hasWrittenToday={hasWrittenToday}
+  quotaReason={quotaReason}
+  dailyLimit={dailyLimit}
+/>
+```
+
+---
+
+## 2. Nova Pagina de Historico
+
+**Novo arquivo:** `src/pages/History.tsx`
+
+```tsx
+const History = () => {
+  const { user } = useAuth();
+  const [essays, setEssays] = useState<Essay[]>([]);
+  const [selectedEssay, setSelectedEssay] = useState<Essay | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch essays from database ordered by created_at desc
+    const fetchEssays = async () => {
+      const { data } = await supabase
+        .from('essays')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      setEssays(data || []);
+    };
+    fetchEssays();
+  }, [user]);
+
+  return (
+    <MainLayout>
+      {/* Left: List of essays with date, theme, score */}
+      {/* Right: Selected essay details with blocks, competencies, analysis */}
+    </MainLayout>
+  );
 };
 ```
 
-### 3. useUserStats - Corrigir hasWrittenToday
+**Arquivo:** `src/App.tsx`
 
-**Arquivo:** `src/hooks/useUserStats.ts`
-
-Mudar logica para exigir redacao COM analise e nota > 0:
+Adicionar rota:
 
 ```tsx
-// Antes
-const hasWrittenToday = essays?.some(e => {
-  const essayDate = new Date(e.created_at);
-  return essayDate >= startOfToday;
-}) || false;
-
-// Depois
-const hasWrittenToday = essays?.some(e => {
-  if (!e.analyzed_at || !e.total_score || e.total_score <= 0) return false;
-  const analyzedDate = new Date(e.analyzed_at);
-  return analyzedDate >= startOfToday;
-}) || false;
+<Route path="/historico" element={<ProtectedRoute><History /></ProtectedRoute>} />
 ```
 
-### 4. Essay.tsx - Reset Estado + Campo de Tema
+---
 
-**Arquivo:** `src/pages/Essay.tsx`
+## 3. Botao no StatsCard
 
-Adicionar:
-- useEffect para resetar quando tema do dia mudar
-- Campo de tema customizado editavel
+**Arquivo:** `src/components/home/StatsCard.tsx`
 
 ```tsx
-const { theme: dailyTheme, isLoading: isThemeLoading } = useDailyTheme();
-const [customTheme, setCustomTheme] = useState('');
+import { Button } from '@/components/ui/button';
+import { History } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-// Determinar tema efetivo (customizado ou do dia)
-const effectiveTheme = customTheme.trim() || state.theme || dailyTheme?.title || '';
-
-// Reset quando tema do dia mudar (mas nao quando usuario define tema custom)
-useEffect(() => {
-  if (!dailyTheme?.title) return;
+export const StatsCard = ({ lastScore, monthlyAverage }: StatsCardProps) => {
+  const navigate = useNavigate();
   
-  // Se ja tem tema salvo e e diferente do tema do dia (e nao e customizado)
-  if (state.theme && state.theme !== dailyTheme.title && !customTheme) {
-    resetAll();
-  }
-}, [dailyTheme?.title]);
-
-// UI: Campo de tema acima dos blocos
-<div className="mb-4">
-  <label className="text-sm font-medium text-muted-foreground mb-2 block">
-    Tema da redacao
-  </label>
-  <Input
-    value={customTheme || state.theme || dailyTheme?.title || ''}
-    onChange={(e) => setCustomTheme(e.target.value)}
-    placeholder="Digite ou use o tema do dia"
-    className="text-base"
-  />
-  <p className="text-xs text-muted-foreground mt-1">
-    Voce pode usar o tema do dia ou digitar seu proprio tema
-  </p>
-</div>
+  return (
+    <Card>
+      {/* ... existing content ... */}
+      <CardContent>
+        {/* Stats grid */}
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/historico')}
+          className="w-full mt-3"
+        >
+          <History className="h-4 w-4 mr-2" />
+          Ver historico
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
 ```
 
-### 5. usePlanFeatures - Free = Pro na 1a Redacao
+---
+
+## 4. "Ver correcao" Navega para Historico
+
+Quando `hasWrittenToday` e true, o botao "Ver correcao" navega para `/historico` em vez de `/redacao`:
+
+```tsx
+// DailyThemeCard.tsx
+<Button onClick={() => navigate(hasWrittenToday ? '/historico' : '/redacao')}>
+  {hasWrittenToday ? 'Ver correcao' : 'Escrever redacao de hoje'}
+</Button>
+```
+
+Opcionalmente, passar query param com a data para pre-selecionar a redacao de hoje:
+```tsx
+navigate('/historico?date=2026-02-04')
+```
+
+---
+
+## 5. Fontes de Dados (Feature Premium)
+
+### 5.1 Migracao de Banco
+
+Adicionar coluna `sources` na tabela `daily_themes`:
+
+```sql
+ALTER TABLE daily_themes 
+ADD COLUMN sources jsonb DEFAULT '[]'::jsonb;
+
+COMMENT ON COLUMN daily_themes.sources IS 
+'Array de fontes: [{title, url, excerpt, type}]';
+```
+
+### 5.2 Atualizar Edge Function generate-theme
+
+```tsx
+// supabase/functions/generate-theme/index.ts
+
+// Adicionar ao prompt:
+const userPrompt = `...
+  "sources": [
+    {
+      "title": "Titulo do artigo/estudo",
+      "url": "https://...",
+      "excerpt": "Trecho relevante para citacao",
+      "type": "artigo|estatistica|legislacao|noticia"
+    }
+  ]
+...`;
+
+// Adicionar ao newTheme:
+const newTheme = {
+  ...parsedTheme,
+  sources: parsedTheme.sources || [],
+};
+```
+
+### 5.3 Gating por Plano
 
 **Arquivo:** `src/hooks/usePlanFeatures.ts`
 
-Modificar para que usuarios Free tenham acesso completo se ainda nao usaram a cota:
+```tsx
+return {
+  ...existing,
+  // Fontes de dados: apenas Pro ou add-on especifico
+  hasSourcesAccess: isPro,
+};
+```
+
+### 5.4 UI para Fontes
+
+Criar componente `SourcesCard.tsx` similar ao `ContextCard`:
 
 ```tsx
-import { useAuth } from '@/contexts/AuthContext';
-import { useUserStats } from './useUserStats';
+interface Source {
+  title: string;
+  url: string;
+  excerpt: string;
+  type: 'artigo' | 'estatistica' | 'legislacao' | 'noticia';
+}
 
-export const usePlanFeatures = () => {
-  const { profile } = useAuth();
-  const { totalEssays } = useUserStats();
-  const planType = (profile?.plan_type || 'free') as 'free' | 'basic' | 'pro';
+export const SourcesCard = ({ sources, isLocked }: Props) => {
+  if (isLocked) {
+    return <LockedPedagogicalCard ... />;
+  }
   
-  const isFree = planType === 'free';
-  const isBasic = planType === 'basic';
-  const isPro = planType === 'pro';
-  
-  // Free users get Pro-like experience on their first (and only) essay
-  const freeHasQuota = isFree && totalEssays < 1;
-  
-  return {
-    planType,
-    isFree,
-    isBasic,
-    isPro,
-    // Tema do dia: Pro OU Free com cota disponivel
-    hasThemeAccess: isPro || freeHasQuota,
-    // Pedagogico: Pro OU Free com cota disponivel
-    hasPedagogicalAccess: isPro || freeHasQuota,
-    // Versao melhorada: Basic, Pro, OU Free com cota disponivel
-    hasImprovedVersionAccess: isBasic || isPro || freeHasQuota,
-    // Limites
-    monthlyLimit: isPro ? 60 : isBasic ? 30 : 1,
-    dailyLimit: isPro ? 2 : 1,
-    // Para UI saber se esta no modo "degustacao Pro"
-    isFreeTrial: freeHasQuota,
-  };
+  return (
+    <Card>
+      <CardHeader>
+        <BookOpen className="h-5 w-5" />
+        <span>Fontes para sua redacao</span>
+      </CardHeader>
+      <CardContent>
+        {sources.map(source => (
+          <div key={source.url}>
+            <Badge>{source.type}</Badge>
+            <a href={source.url}>{source.title}</a>
+            <p>"{source.excerpt}"</p>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
 };
 ```
 
 ---
 
-## Arquivos a Modificar
+## Arquivos a Modificar/Criar
 
-| Arquivo | Mudanca |
-|---------|---------|
-| `src/components/atlas/ThemeCard.tsx` | Prop planType + estilo Pro |
-| `src/components/atlas/PedagogicalSection.tsx` | Passar planType |
-| `src/hooks/useUserStats.ts` | Corrigir hasWrittenToday |
-| `src/hooks/usePlanFeatures.ts` | Free = Pro na 1a redacao |
-| `src/pages/Essay.tsx` | Reset estado + campo tema custom + passar planType |
+| Arquivo | Acao |
+|---------|------|
+| `src/components/home/DailyThemeCard.tsx` | Modificar - adicionar avisos de limite |
+| `src/pages/Home.tsx` | Modificar - passar quotaReason e dailyLimit |
+| `src/components/home/StatsCard.tsx` | Modificar - adicionar botao Ver historico |
+| `src/pages/History.tsx` | **CRIAR** - nova pagina de historico |
+| `src/App.tsx` | Modificar - adicionar rota /historico |
+| `src/types/atlas.ts` | Modificar - adicionar interface Source |
+| `src/components/atlas/SourcesCard.tsx` | **CRIAR** - card de fontes |
+| `src/components/atlas/PedagogicalSection.tsx` | Modificar - incluir SourcesCard |
+| `src/hooks/usePlanFeatures.ts` | Modificar - adicionar hasSourcesAccess |
+| `supabase/functions/generate-theme/index.ts` | Modificar - gerar sources |
+| **Migracao SQL** | Adicionar coluna sources |
 
 ---
 
-## Resultado Esperado
+## Fluxo Final
 
-1. Badge mostra "Plano Pro" com gradiente amber dourado
-2. Home so mostra "Concluida" quando existe redacao analisada com nota > 0 hoje
-3. Estado da redacao resetado automaticamente quando tema do dia muda
-4. Campo de tema permite usuario informar tema customizado (para verificar fuga de tema)
-5. Usuarios Free tem experiencia completa Pro na unica redacao gratuita (tema, pedagogico, versao melhorada)
-6. Apos usar a cota gratuita, usuario Free ve todo o conteudo bloqueado (incentivo para upgrade)
+```text
+Home
+ |
+ +-- DailyThemeCard
+ |     |-- Mostra badge "Concluida" se hasWrittenToday
+ |     |-- Mostra aviso de limite se quotaReason != null
+ |     +-- Botao "Ver correcao" -> navega para /historico
+ |
+ +-- StatsCard
+       +-- Botao "Ver historico" -> navega para /historico
 
+/historico
+ |
+ +-- Lista de redacoes (data, tema, nota)
+ +-- Detalhes da redacao selecionada
+       |-- Blocos com texto
+       |-- Competencias com notas
+       +-- Versao melhorada (se existir)
+```
+
+---
+
+## Monetizacao das Fontes
+
+Sua ideia faz sentido! Sugestao de implementacao:
+
+1. **Custo estimado**: Gerar fontes adiciona ~500 tokens ao prompt = ~$0.0003/tema
+2. **Plano atual**: Pro ja inclui fontes (diferencial)
+3. **Alternativa**: Criar add-on "Fontes Pro" por $5/mes para usuarios Basic
+
+A logica de gating seria:
+```tsx
+hasSourcesAccess: isPro || hasSourcesAddon
+```
+
+Onde `hasSourcesAddon` seria um campo no profile ou uma subscription separada no Stripe.
