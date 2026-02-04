@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useEssayState } from '@/hooks/useEssayState';
 import { useDailyTheme } from '@/hooks/useDailyTheme';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
@@ -13,6 +13,8 @@ import { QuotaExceededModal } from '@/components/atlas/QuotaExceededModal';
 import { analyzeEssay, generateImprovedVersion } from '@/lib/ai';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Sparkles, Scissors, Plus, Loader2 } from 'lucide-react';
 import { EssaySkeleton } from '@/components/skeletons/EssaySkeleton';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,7 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const Essay = () => {
   const { user } = useAuth();
-  const { theme, isLoading: isThemeLoading } = useDailyTheme();
+  const { theme: dailyTheme, isLoading: isThemeLoading } = useDailyTheme();
   const { planType, hasPedagogicalAccess, hasImprovedVersionAccess } = usePlanFeatures();
   const { canAnalyze: hasQuota, reason: quotaReason, isLoading: isQuotaLoading } = useQuotaCheck();
   const {
@@ -35,6 +37,8 @@ const Essay = () => {
     setImprovedVersion,
     toggleShowOriginal,
     applyDividedText,
+    setTheme,
+    resetAll,
     analysisProgress,
     analyzedBlockCount,
     totalBlockCount,
@@ -46,6 +50,33 @@ const Essay = () => {
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
   const [isGeneratingImproved, setIsGeneratingImproved] = useState(false);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const [customTheme, setCustomTheme] = useState('');
+  
+  // Determine effective theme (custom > saved > daily)
+  const effectiveTheme = customTheme.trim() || state.theme || dailyTheme?.title || '';
+  
+  // Reset state when daily theme changes (but not if user has a custom theme)
+  useEffect(() => {
+    if (!dailyTheme?.title) return;
+    
+    // If saved theme exists and is different from daily theme (and no custom theme set)
+    if (state.theme && state.theme !== dailyTheme.title && !customTheme) {
+      console.log('[Essay] Daily theme changed, resetting state');
+      resetAll();
+    }
+  }, [dailyTheme?.title, state.theme, customTheme, resetAll]);
+  
+  // Sync effective theme to state when it changes
+  useEffect(() => {
+    if (effectiveTheme && effectiveTheme !== state.theme) {
+      setTheme(effectiveTheme);
+    }
+  }, [effectiveTheme, state.theme, setTheme]);
+  
+  // Handle custom theme input change
+  const handleCustomThemeChange = (value: string) => {
+    setCustomTheme(value);
+  };
   
   // Check if can analyze (any block has content AND has quota)
   const canAnalyze = state.blocks.some(b => b.text.trim().length > 0) && hasQuota;
@@ -127,7 +158,7 @@ const Essay = () => {
       
       const response = await analyzeEssay(
         blocksWithContent.map(b => ({ id: b.id, type: b.type, text: b.text })),
-        state.theme
+        effectiveTheme
       );
       
       console.log('[Analyze Essay] Response:', response);
@@ -158,7 +189,7 @@ const Essay = () => {
 
       // Save to database after successful analysis
       await saveEssayToDatabase(
-        state.theme,
+        effectiveTheme,
         state.blocks,
         {
           blockAnalyses: response.blockAnalyses,
@@ -186,7 +217,7 @@ const Essay = () => {
     } finally {
       setIsAnalyzingAll(false);
     }
-  }, [state.blocks, state.theme, hasQuota, setBlockAnalysis, setCompetencies, setTotalScore, saveEssayToDatabase]);
+  }, [state.blocks, effectiveTheme, hasQuota, setBlockAnalysis, setCompetencies, setTotalScore, saveEssayToDatabase]);
   
   // Generate improved version
   const handleGenerateImproved = useCallback(async () => {
@@ -198,7 +229,7 @@ const Essay = () => {
     setIsGeneratingImproved(true);
     
     try {
-      const response = await generateImprovedVersion(state.blocks, state.theme);
+      const response = await generateImprovedVersion(state.blocks, effectiveTheme);
       setImprovedVersion(response.improvedText);
       
       // Log usage if available (for testing/debugging)
@@ -212,7 +243,7 @@ const Essay = () => {
     } finally {
       setIsGeneratingImproved(false);
     }
-  }, [canGenerateImproved, state.blocks, state.theme, setImprovedVersion]);
+  }, [canGenerateImproved, state.blocks, effectiveTheme, setImprovedVersion]);
   
   // Get development blocks count for remove logic
   const devBlocksCount = state.blocks.filter(b => b.type === 'development').length;
@@ -231,7 +262,24 @@ const Essay = () => {
             {/* Left column - Editor */}
             <div className="lg:w-[62%] space-y-4">
               {/* Pedagogical context section */}
-              <PedagogicalSection theme={theme} isLocked={!hasPedagogicalAccess} />
+              <PedagogicalSection theme={dailyTheme} isLocked={!hasPedagogicalAccess} planType={planType} />
+              
+              {/* Custom theme input */}
+              <div className="space-y-2">
+                <Label htmlFor="theme-input" className="text-sm font-medium text-muted-foreground">
+                  Tema da redação
+                </Label>
+                <Input
+                  id="theme-input"
+                  value={customTheme || state.theme || dailyTheme?.title || ''}
+                  onChange={(e) => handleCustomThemeChange(e.target.value)}
+                  placeholder="Digite ou use o tema do dia"
+                  className="text-base"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Você pode usar o tema do dia ou digitar seu próprio tema
+                </p>
+              </div>
               
               {/* Action buttons - all in one line */}
               <div className="flex items-center gap-2 flex-wrap py-2">

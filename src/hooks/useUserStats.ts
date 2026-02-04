@@ -70,10 +70,11 @@ export const useUserStats = (): UserStats => {
           ? Math.round(monthlyScores.reduce((a, b) => a + b, 0) / monthlyScores.length)
           : null;
 
-        // Check if user has written today
+        // Check if user has a fully analyzed essay today (with score > 0)
         const hasWrittenToday = essays?.some(e => {
-          const essayDate = new Date(e.created_at);
-          return essayDate >= startOfToday;
+          if (!e.analyzed_at || !e.total_score || e.total_score <= 0) return false;
+          const analyzedDate = new Date(e.analyzed_at);
+          return analyzedDate >= startOfToday;
         }) || false;
 
         // Count today's analyzed essays (essays with analyzed_at in today)
