@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -10,10 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Camera, LogOut, Mail, User, Key, Crown, Loader2, Fingerprint, Trash2 } from 'lucide-react';
+import { Camera, LogOut, Mail, User, Key, Crown, Loader2, Fingerprint, Trash2, Zap } from 'lucide-react';
 import { ProfileSkeleton } from '@/components/skeletons/ProfileSkeleton';
 import { usePasskey } from '@/hooks/usePasskey';
+import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 
 const getInitials = (name: string | null, email: string) => {
   if (name) {
@@ -134,13 +136,48 @@ const SecuritySection = ({ handlePasswordReset, isSendingPasswordReset }: Securi
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const quotaSectionRef = useRef<HTMLDivElement>(null);
+  const { isFree } = usePlanFeatures();
   
   const [name, setName] = useState(profile?.name || '');
   const [isUpdatingName, setIsUpdatingName] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || null);
+  const [flexibleQuota, setFlexibleQuota] = useState(profile?.flexible_quota ?? false);
+  const [isUpdatingQuota, setIsUpdatingQuota] = useState(false);
+
+  // Scroll to quota section if coming from limit warning
+  useEffect(() => {
+    if (location.hash === '#quota' && quotaSectionRef.current) {
+      setTimeout(() => {
+        quotaSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [location.hash]);
+
+  const handleToggleFlexibleQuota = async (checked: boolean) => {
+    if (!user) return;
+    
+    setIsUpdatingQuota(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ flexible_quota: checked })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      setFlexibleQuota(checked);
+      toast.success(checked ? 'Modo flexível ativado!' : 'Limite diário ativado!');
+    } catch (error) {
+      console.error('Error updating flexible quota:', error);
+      toast.error('Erro ao atualizar configuração');
+    } finally {
+      setIsUpdatingQuota(false);
+    }
+  };
 
   const handleUpdateName = async () => {
     if (!user) return;
@@ -355,7 +392,7 @@ export default function Profile() {
             <div className="flex items-center justify-between">
               <div>
                 <Badge variant={profile.plan_type === 'pro' ? 'default' : 'secondary'} className="mb-2">
-                  {profile.plan_type === 'pro' ? 'Pro' : 'Básico'}
+                  {profile.plan_type === 'pro' ? 'Pro' : profile.plan_type === 'basic' ? 'Básico' : 'Grátis'}
                 </Badge>
                 <p className="text-sm text-muted-foreground">
                   Membro desde {new Date(profile.created_at).toLocaleDateString('pt-BR')}
@@ -369,6 +406,42 @@ export default function Profile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Quota Settings - Only for paying users */}
+        {!isFree && (
+          <Card className="mb-6" ref={quotaSectionRef} id="quota">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Modo de Uso
+              </CardTitle>
+              <CardDescription>
+                Escolha como usar suas correções mensais
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="flexible-quota" className="font-medium">
+                    Modo Flexível
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    {flexibleQuota 
+                      ? 'Use todas as correções quando quiser, sem limite diário'
+                      : `Limite de ${profile.plan_type === 'pro' ? '2' : '1'} ${profile.plan_type === 'pro' ? 'correções' : 'correção'} por dia`
+                    }
+                  </p>
+                </div>
+                <Switch
+                  id="flexible-quota"
+                  checked={flexibleQuota}
+                  onCheckedChange={handleToggleFlexibleQuota}
+                  disabled={isUpdatingQuota}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Security */}
         <SecuritySection 
