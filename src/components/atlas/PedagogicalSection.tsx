@@ -8,16 +8,17 @@ import type { DailyTheme } from '@/data/dailyThemes';
 interface PedagogicalSectionProps {
   theme: DailyTheme;
   isLocked?: boolean;
+  planType?: 'free' | 'basic' | 'pro';
 }
 
-export const PedagogicalSection = ({ theme, isLocked = false }: PedagogicalSectionProps) => {
+export const PedagogicalSection = ({ theme, isLocked = false, planType = 'pro' }: PedagogicalSectionProps) => {
   if (isLocked) {
     return <LockedPedagogicalCard />;
   }
 
   return (
     <div className="space-y-4">
-      <ThemeCard title={theme.title} motivatingText={theme.motivatingText} />
+      <ThemeCard title={theme.title} motivatingText={theme.motivatingText} planType={planType} />
       <ContextCard context={theme.context} />
       <GuidingQuestionsCard questions={theme.guidingQuestions} />
       <StructureGuideCard structureGuide={theme.structureGuide} />
