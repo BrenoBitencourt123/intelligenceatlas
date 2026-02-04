@@ -9,10 +9,17 @@ interface PasskeyButtonProps {
 }
 
 export const PasskeyButton = ({ onSuccess, email, variant = 'login' }: PasskeyButtonProps) => {
-  const { isSupported, isPlatformAvailable, isLoading, authenticateWithPasskey, registerPasskey } = usePasskey();
+  const { isSupported, isPlatformAvailable, isLoading, authenticateWithPasskey, registerPasskey, credentials } = usePasskey();
 
   // Don't show if not supported or platform authenticator not available
+  // For login, only show if user has registered passkeys
   if (!isSupported || (variant === 'register' && !isPlatformAvailable)) {
+    return null;
+  }
+  
+  // For login variant, only show if there are registered credentials
+  // This prevents showing the Face ID button when user hasn't registered any passkey yet
+  if (variant === 'login' && credentials.length === 0) {
     return null;
   }
 
