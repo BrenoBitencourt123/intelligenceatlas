@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Load Stripe with publishable key
 const stripePromise = loadStripe('pk_live_51SwmwuLCrHbXOvxe3vDTpLjWPUqI8L0FPx3p1jgQy8NmXDT0DdJYuqVzFHQ3EvFQFfGe45g7UJGJSJhVl8fhXjzU00xLJvNzjz');
@@ -30,6 +31,7 @@ export const EmbeddedCheckoutModal = ({
   planName,
 }: EmbeddedCheckoutModalProps) => {
   const [error, setError] = useState<string | null>(null);
+  const { session } = useAuth();
 
   const fetchClientSecret = useCallback(async () => {
     setError(null);
@@ -59,7 +61,12 @@ export const EmbeddedCheckoutModal = ({
         </DialogHeader>
         
         <div className="p-6 pt-4">
-          {error ? (
+          {!session ? (
+            <div className="text-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+              <p className="text-sm text-muted-foreground mt-2">Carregando...</p>
+            </div>
+          ) : error ? (
             <div className="text-center py-8">
               <p className="text-destructive text-sm">{error}</p>
             </div>
