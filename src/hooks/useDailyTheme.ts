@@ -10,6 +10,7 @@ interface DbDailyTheme {
   context: string;
   guiding_questions: string[];
   structure_guide: { id: string; label: string; description: string }[];
+  sources?: { title: string; url: string; excerpt: string; type: string }[];
   is_ai_generated: boolean;
   created_at: string;
 }
@@ -32,6 +33,7 @@ function mapDbThemeToFrontend(dbTheme: DbDailyTheme): DailyTheme {
     context: dbTheme.context,
     guidingQuestions: dbTheme.guiding_questions,
     structureGuide: dbTheme.structure_guide,
+    sources: dbTheme.sources as DailyTheme['sources'],
   };
 }
 
@@ -76,7 +78,7 @@ export function useDailyTheme(): UseDailyThemeResult {
       if (dbTheme) {
         // Theme exists in database
         console.log('[useDailyTheme] Found theme in database:', dbTheme.title);
-        const mappedTheme = mapDbThemeToFrontend(dbTheme as DbDailyTheme);
+        const mappedTheme = mapDbThemeToFrontend(dbTheme as unknown as DbDailyTheme);
         setTheme(mappedTheme);
         setIsAiGenerated(dbTheme.is_ai_generated);
         

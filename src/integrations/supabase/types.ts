@@ -23,6 +23,7 @@ export type Database = {
           id: string
           is_ai_generated: boolean
           motivating_text: string
+          sources: Json | null
           structure_guide: Json
           title: string
         }
@@ -34,6 +35,7 @@ export type Database = {
           id?: string
           is_ai_generated?: boolean
           motivating_text: string
+          sources?: Json | null
           structure_guide?: Json
           title: string
         }
@@ -45,6 +47,7 @@ export type Database = {
           id?: string
           is_ai_generated?: boolean
           motivating_text?: string
+          sources?: Json | null
           structure_guide?: Json
           title?: string
         }

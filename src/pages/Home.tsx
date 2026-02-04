@@ -6,11 +6,13 @@ import { StatsCard } from '@/components/home/StatsCard';
 import { useDailyTheme } from '@/hooks/useDailyTheme';
 import { useUserStats } from '@/hooks/useUserStats';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
+import { useQuotaCheck } from '@/hooks/useQuotaCheck';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Home = () => {
   const { theme, isLoading: isThemeLoading } = useDailyTheme();
   const { hasThemeAccess, isFree, monthlyLimit } = usePlanFeatures();
+  const { reason: quotaReason, dailyLimit } = useQuotaCheck();
   const { 
     totalEssays, 
     lastScore, 
@@ -41,7 +43,9 @@ const Home = () => {
           ) : hasThemeAccess ? (
             <DailyThemeCard 
               title={theme.title} 
-              hasWrittenToday={hasWrittenToday} 
+              hasWrittenToday={hasWrittenToday}
+              quotaReason={quotaReason}
+              dailyLimit={dailyLimit}
             />
           ) : (
             <LockedThemeCard />

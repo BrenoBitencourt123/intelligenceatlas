@@ -1,5 +1,7 @@
-import { TrendingUp, Award } from 'lucide-react';
+import { TrendingUp, Award, History } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface StatsCardProps {
   lastScore: number | null;
@@ -7,6 +9,8 @@ interface StatsCardProps {
 }
 
 export const StatsCard = ({ lastScore, monthlyAverage }: StatsCardProps) => {
+  const navigate = useNavigate();
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -15,7 +19,7 @@ export const StatsCard = ({ lastScore, monthlyAverage }: StatsCardProps) => {
           <span className="text-sm font-medium text-muted-foreground">Suas Notas</span>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Última nota</p>
@@ -36,6 +40,16 @@ export const StatsCard = ({ lastScore, monthlyAverage }: StatsCardProps) => {
             </div>
           </div>
         </div>
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/historico')}
+          className="w-full"
+        >
+          <History className="h-4 w-4 mr-2" />
+          Ver histórico
+        </Button>
       </CardContent>
     </Card>
   );

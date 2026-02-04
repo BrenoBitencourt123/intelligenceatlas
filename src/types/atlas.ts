@@ -157,3 +157,11 @@ export const createInitialCompetencies = (): Competency[] =>
     score: 0,
     explanation: 'Aguardando análise dos blocos.',
   }));
+
+// Source type for premium data sources feature
+export interface Source {
+  title: string;
+  url: string;
+  excerpt: string;
+  type: 'artigo' | 'estatistica' | 'legislacao' | 'noticia';
+}
