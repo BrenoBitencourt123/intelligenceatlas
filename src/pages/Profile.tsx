@@ -134,7 +134,7 @@ const SecuritySection = ({ handlePasswordReset, isSendingPasswordReset }: Securi
 };
 
 export default function Profile() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -148,6 +148,13 @@ export default function Profile() {
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || null);
   const [flexibleQuota, setFlexibleQuota] = useState(profile?.flexible_quota ?? false);
   const [isUpdatingQuota, setIsUpdatingQuota] = useState(false);
+
+  // Sync flexibleQuota when profile changes
+  useEffect(() => {
+    if (profile?.flexible_quota !== undefined) {
+      setFlexibleQuota(profile.flexible_quota);
+    }
+  }, [profile?.flexible_quota]);
 
   // Scroll to quota section if coming from limit warning
   useEffect(() => {
@@ -170,6 +177,7 @@ export default function Profile() {
 
       if (error) throw error;
       setFlexibleQuota(checked);
+      await refreshProfile(); // Refresh profile to sync with context
       toast.success(checked ? 'Modo flexível ativado!' : 'Limite diário ativado!');
     } catch (error) {
       console.error('Error updating flexible quota:', error);
@@ -416,20 +424,17 @@ export default function Profile() {
                 Modo de Uso
               </CardTitle>
               <CardDescription>
-                Escolha como usar suas correções mensais
+                Por padrão o sistema vem limitado para se tornar um hábito de escrever entre uma a duas redações por dia.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-              <div className="space-y-1">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
                   <Label htmlFor="flexible-quota" className="font-medium">
                     Modo Flexível
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    {flexibleQuota 
-                      ? 'Use todas as correções quando quiser, sem limite diário'
-                      : `Modo atual: limite de ${profile.plan_type === 'pro' ? '2 correções' : '1 correção'} por dia`
-                    }
+                    Use todas as correções quando quiser, sem limite diário
                   </p>
                 </div>
                 <Switch
@@ -439,6 +444,11 @@ export default function Profile() {
                   disabled={isUpdatingQuota}
                 />
               </div>
+              {flexibleQuota && (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                  ✓ Modo flexível ativo
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
