@@ -52,10 +52,13 @@ const Essay = () => {
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
   const [isGeneratingImproved, setIsGeneratingImproved] = useState(false);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
-  const [customTheme, setCustomTheme] = useState('');
+  const [customTheme, setCustomTheme] = useState<string | null>(null);
   
-  // Determine effective theme (custom > saved > daily)
-  const effectiveTheme = customTheme.trim() || state.theme || dailyTheme?.title || '';
+  // Determine effective theme: if user has touched input, use customTheme (even if empty)
+  // Otherwise fall back to saved state or daily theme
+  const effectiveTheme = customTheme !== null 
+    ? customTheme.trim() 
+    : (state.theme || dailyTheme?.title || '');
   
   // Reset state when daily theme changes (but not if user has a custom theme)
   useEffect(() => {
@@ -273,7 +276,7 @@ const Essay = () => {
                 </Label>
                 <Input
                   id="theme-input"
-                  value={customTheme || state.theme || dailyTheme?.title || ''}
+                  value={customTheme !== null ? customTheme : (state.theme || dailyTheme?.title || '')}
                   onChange={(e) => handleCustomThemeChange(e.target.value)}
                   placeholder="Digite ou use o tema do dia"
                   className="text-base"

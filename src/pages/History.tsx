@@ -219,8 +219,8 @@ const History = () => {
                 <>
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg leading-tight">
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <CardTitle className="text-lg leading-tight line-clamp-2">
                           {selectedEssay.theme}
                         </CardTitle>
                         <div className="flex items-center gap-3 text-sm text-muted-foreground">

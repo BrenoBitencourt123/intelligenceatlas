@@ -47,22 +47,40 @@ export const DailyThemeCard = ({
     }
   };
 
+  // Compact card when essay is completed
+  if (hasWrittenToday) {
+    return (
+      <Card className="border border-muted">
+        <CardContent className="py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <span className="font-medium text-foreground">Redação do dia concluída</span>
+          </div>
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={handleButtonClick}
+            className="gap-2 shrink-0"
+          >
+            Ver correção
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Full card when essay is not completed
   return (
     <Card className="border-2 border-foreground/20">
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-foreground" />
-            <span className="text-sm font-semibold uppercase tracking-wide text-foreground">
-              Tema do Dia
-            </span>
-          </div>
-          {hasWrittenToday && (
-            <Badge variant="secondary" className="gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-              <CheckCircle2 className="h-3 w-3" />
-              Concluída
-            </Badge>
-          )}
+        <div className="flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-foreground" />
+          <span className="text-sm font-semibold uppercase tracking-wide text-foreground">
+            Tema do Dia
+          </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -98,19 +116,10 @@ export const DailyThemeCard = ({
           onClick={handleButtonClick}
           className="w-full gap-2"
           size="lg"
-          disabled={isBlocked && !hasWrittenToday}
+          disabled={isBlocked}
         >
-          {hasWrittenToday ? (
-            <>
-              Ver correção
-              <ArrowRight className="h-4 w-4" />
-            </>
-          ) : (
-            <>
-              Escrever redação de hoje
-              <ArrowRight className="h-4 w-4" />
-            </>
-          )}
+          Escrever redação de hoje
+          <ArrowRight className="h-4 w-4" />
         </Button>
       </CardContent>
     </Card>
