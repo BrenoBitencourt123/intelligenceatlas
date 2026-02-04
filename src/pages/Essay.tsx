@@ -13,8 +13,8 @@ import { QuotaExceededModal } from '@/components/atlas/QuotaExceededModal';
 import { analyzeEssay, generateImprovedVersion } from '@/lib/ai';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Sparkles, Scissors, Plus, Loader2 } from 'lucide-react';
+import { EssaySkeleton } from '@/components/skeletons/EssaySkeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -219,25 +219,7 @@ const Essay = () => {
 
   // Show loading skeleton while theme is loading
   if (isThemeLoading) {
-    return (
-      <MainLayout>
-        <div className="min-h-screen bg-background">
-          <main className="container max-w-7xl mx-auto px-4 py-6">
-            <div className="flex flex-col lg:flex-row gap-6">
-              <div className="lg:w-[62%] space-y-4">
-                <Skeleton className="h-48 rounded-lg" />
-                <Skeleton className="h-12 rounded-lg" />
-                <Skeleton className="h-40 rounded-lg" />
-                <Skeleton className="h-40 rounded-lg" />
-              </div>
-              <div className="hidden lg:block lg:w-[38%]">
-                <Skeleton className="h-96 rounded-lg" />
-              </div>
-            </div>
-          </main>
-        </div>
-      </MainLayout>
-    );
+    return <EssaySkeleton />;
   }
   
   return (
