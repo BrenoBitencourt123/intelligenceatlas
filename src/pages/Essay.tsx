@@ -28,7 +28,7 @@ const Essay = () => {
   const { theme: dailyTheme, isLoading: isThemeLoading } = useDailyTheme();
   const { planType, hasPedagogicalAccess, hasImprovedVersionAccess, hasSourcesAccess } = usePlanFeatures();
   const { canAnalyze: hasQuota, reason: quotaReason, isLoading: isQuotaLoading, dailyUsed, dailyLimit } = useQuotaCheck();
-  const { hasWrittenToday } = useUserStats();
+  const { hasWrittenToday, isLoading: isStatsLoading } = useUserStats();
   const {
     state,
     updateBlockText,
@@ -54,11 +54,13 @@ const Essay = () => {
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
   const [isGeneratingImproved, setIsGeneratingImproved] = useState(false);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  // Track if user has touched the theme input this session
+  const [hasUserTouchedTheme, setHasUserTouchedTheme] = useState(false);
   const [customTheme, setCustomTheme] = useState<string | null>(null);
   
-  // Determine effective theme: if user has touched input, use customTheme (even if empty)
-  // Otherwise fall back to saved state or daily theme
-  const effectiveTheme = customTheme !== null 
+  // Determine effective theme: if user has touched input this session, use customTheme
+  // Otherwise fall back to saved state (if exists) or daily theme
+  const effectiveTheme = hasUserTouchedTheme && customTheme !== null
     ? customTheme.trim() 
     : (state.theme || dailyTheme?.title || '');
   
@@ -83,6 +85,7 @@ const Essay = () => {
   // Handle custom theme input change
   const handleCustomThemeChange = (value: string) => {
     setCustomTheme(value);
+    setHasUserTouchedTheme(true);
   };
   
   // Check if can analyze (any block has content AND has quota)
@@ -255,8 +258,8 @@ const Essay = () => {
   // Get development blocks count for remove logic
   const devBlocksCount = state.blocks.filter(b => b.type === 'development').length;
 
-  // Show loading skeleton while theme is loading
-  if (isThemeLoading) {
+  // Show loading skeleton while theme or stats are loading
+  if (isThemeLoading || isStatsLoading) {
     return <EssaySkeleton />;
   }
   
