@@ -3,6 +3,7 @@ import { useEssayState } from '@/hooks/useEssayState';
 import { useDailyTheme } from '@/hooks/useDailyTheme';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { useQuotaCheck } from '@/hooks/useQuotaCheck';
+import { useUserStats } from '@/hooks/useUserStats';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { BlockCard } from '@/components/atlas/BlockCard';
 import { ResultPanel } from '@/components/atlas/ResultPanel';
@@ -27,6 +28,7 @@ const Essay = () => {
   const { theme: dailyTheme, isLoading: isThemeLoading } = useDailyTheme();
   const { planType, hasPedagogicalAccess, hasImprovedVersionAccess, hasSourcesAccess } = usePlanFeatures();
   const { canAnalyze: hasQuota, reason: quotaReason, isLoading: isQuotaLoading, dailyUsed, dailyLimit } = useQuotaCheck();
+  const { hasWrittenToday } = useUserStats();
   const {
     state,
     updateBlockText,
@@ -267,7 +269,14 @@ const Essay = () => {
             {/* Left column - Editor */}
             <div className="lg:w-[62%] space-y-4">
               {/* Pedagogical context section */}
-              <PedagogicalSection theme={dailyTheme} isLocked={!hasPedagogicalAccess} planType={planType} hasSourcesAccess={hasSourcesAccess} />
+              <PedagogicalSection 
+                theme={dailyTheme} 
+                isLocked={!hasPedagogicalAccess} 
+                planType={planType} 
+                hasSourcesAccess={hasSourcesAccess}
+                hasWrittenToday={hasWrittenToday}
+                onRedo={resetAll}
+              />
               
               {/* Custom theme input */}
               <div className="space-y-2">
