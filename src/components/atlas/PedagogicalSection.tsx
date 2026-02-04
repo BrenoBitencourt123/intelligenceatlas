@@ -11,6 +11,8 @@ interface PedagogicalSectionProps {
   isLocked?: boolean;
   planType?: 'free' | 'basic' | 'pro';
   hasSourcesAccess?: boolean;
+  hasWrittenToday?: boolean;
+  onRedo?: () => void;
 }
 
 export const PedagogicalSection = ({ 
@@ -18,6 +20,8 @@ export const PedagogicalSection = ({
   isLocked = false, 
   planType = 'pro',
   hasSourcesAccess = false,
+  hasWrittenToday = false,
+  onRedo,
 }: PedagogicalSectionProps) => {
   if (isLocked) {
     return <LockedPedagogicalCard />;
@@ -25,12 +29,22 @@ export const PedagogicalSection = ({
 
   return (
     <div className="space-y-4">
-      <ThemeCard title={theme.title} motivatingText={theme.motivatingText} planType={planType} />
-      <ContextCard context={theme.context} />
-      <GuidingQuestionsCard questions={theme.guidingQuestions} />
-      <StructureGuideCard structureGuide={theme.structureGuide} />
-      {hasSourcesAccess && theme.sources && theme.sources.length > 0 && (
-        <SourcesCard sources={theme.sources} />
+      <ThemeCard 
+        title={theme.title} 
+        motivatingText={theme.motivatingText} 
+        planType={planType}
+        hasWrittenToday={hasWrittenToday}
+        onRedo={onRedo}
+      />
+      {!hasWrittenToday && (
+        <>
+          <ContextCard context={theme.context} />
+          <GuidingQuestionsCard questions={theme.guidingQuestions} />
+          <StructureGuideCard structureGuide={theme.structureGuide} />
+          {hasSourcesAccess && theme.sources && theme.sources.length > 0 && (
+            <SourcesCard sources={theme.sources} />
+          )}
+        </>
       )}
     </div>
   );
