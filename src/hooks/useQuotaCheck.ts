@@ -1,5 +1,6 @@
 import { useUserStats } from './useUserStats';
 import { usePlanFeatures } from './usePlanFeatures';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type QuotaReason = 'limit_reached' | 'monthly_limit' | 'daily_limit' | null;
 
@@ -12,11 +13,15 @@ interface QuotaCheckResult {
   monthlyLimit: number;
   dailyUsed: number;
   dailyLimit: number;
+  isFlexibleMode: boolean;
 }
 
 export const useQuotaCheck = (): QuotaCheckResult => {
+  const { profile } = useAuth();
   const { totalEssays, monthlyEssays, todayAnalyzedCount, isLoading } = useUserStats();
   const { isFree, monthlyLimit, dailyLimit } = usePlanFeatures();
+  
+  const isFlexibleMode = profile?.flexible_quota ?? false;
 
   // While loading, allow analyze (will be validated on backend)
   if (isLoading) {
@@ -29,6 +34,7 @@ export const useQuotaCheck = (): QuotaCheckResult => {
       monthlyLimit,
       dailyUsed: 0,
       dailyLimit,
+      isFlexibleMode,
     };
   }
 
@@ -44,6 +50,7 @@ export const useQuotaCheck = (): QuotaCheckResult => {
         monthlyLimit: 1,
         dailyUsed: todayAnalyzedCount,
         dailyLimit: 1,
+        isFlexibleMode: false,
       };
     }
     return {
@@ -55,6 +62,7 @@ export const useQuotaCheck = (): QuotaCheckResult => {
       monthlyLimit: 1,
       dailyUsed: todayAnalyzedCount,
       dailyLimit: 1,
+      isFlexibleMode: false,
     };
   }
 
@@ -69,10 +77,26 @@ export const useQuotaCheck = (): QuotaCheckResult => {
       monthlyLimit,
       dailyUsed: todayAnalyzedCount,
       dailyLimit,
+      isFlexibleMode,
     };
   }
 
-  // Basic/Pro: check daily limit
+  // If flexible mode is ON, skip daily limit check
+  if (isFlexibleMode) {
+    return {
+      canAnalyze: true,
+      reason: null,
+      remaining: monthlyLimit - monthlyEssays,
+      isLoading: false,
+      monthlyUsed: monthlyEssays,
+      monthlyLimit,
+      dailyUsed: todayAnalyzedCount,
+      dailyLimit,
+      isFlexibleMode,
+    };
+  }
+
+  // Basic/Pro with daily limit: check daily limit
   if (todayAnalyzedCount >= dailyLimit) {
     return {
       canAnalyze: false,
@@ -83,6 +107,7 @@ export const useQuotaCheck = (): QuotaCheckResult => {
       monthlyLimit,
       dailyUsed: todayAnalyzedCount,
       dailyLimit,
+      isFlexibleMode,
     };
   }
 
@@ -96,5 +121,6 @@ export const useQuotaCheck = (): QuotaCheckResult => {
     monthlyLimit,
     dailyUsed: todayAnalyzedCount,
     dailyLimit,
+    isFlexibleMode,
   };
 };

@@ -1,4 +1,4 @@
-import { Calendar, ArrowRight, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, ArrowRight, CheckCircle2, Clock, Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ interface DailyThemeCardProps {
   hasWrittenToday: boolean;
   quotaReason?: QuotaReason;
   dailyLimit?: number;
+  isFlexibleMode?: boolean;
 }
 
 export const DailyThemeCard = ({ 
@@ -18,6 +19,7 @@ export const DailyThemeCard = ({
   hasWrittenToday,
   quotaReason,
   dailyLimit = 2,
+  isFlexibleMode = false,
 }: DailyThemeCardProps) => {
   const navigate = useNavigate();
   
@@ -26,7 +28,7 @@ export const DailyThemeCard = ({
   const getWarningMessage = () => {
     switch (quotaReason) {
       case 'daily_limit':
-        return `Você atingiu o limite de ${dailyLimit} ${dailyLimit === 1 ? 'análise' : 'análises'} por dia. Volte amanhã!`;
+        return `Você atingiu o limite de ${dailyLimit} ${dailyLimit === 1 ? 'análise' : 'análises'} por dia.`;
       case 'monthly_limit':
         return 'Limite mensal atingido. Faça upgrade para continuar praticando.';
       case 'limit_reached':
@@ -73,7 +75,21 @@ export const DailyThemeCard = ({
           <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
             <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             <AlertDescription className="text-amber-800 dark:text-amber-200 text-sm">
-              {getWarningMessage()}
+              <span>{getWarningMessage()}</span>
+              {quotaReason === 'daily_limit' && !isFlexibleMode && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 ml-1 text-amber-800 dark:text-amber-200 underline"
+                  onClick={() => navigate('/perfil#quota')}
+                >
+                  <Settings className="h-3 w-3 mr-1" />
+                  Alterar limite
+                </Button>
+              )}
+              {quotaReason === 'daily_limit' && isFlexibleMode === false && (
+                <span className="block mt-1 text-xs opacity-80">Volte amanhã ou ative o modo flexível.</span>
+              )}
             </AlertDescription>
           </Alert>
         )}

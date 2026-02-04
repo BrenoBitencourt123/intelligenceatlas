@@ -129,6 +129,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           email: string
+          flexible_quota: boolean
           id: string
           name: string | null
           plan_started_at: string
@@ -138,6 +139,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email: string
+          flexible_quota?: boolean
           id: string
           name?: string | null
           plan_started_at?: string
@@ -147,6 +149,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email?: string
+          flexible_quota?: boolean
           id?: string
           name?: string | null
           plan_started_at?: string

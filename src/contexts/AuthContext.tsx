@@ -10,6 +10,7 @@ interface Profile {
   plan_type: 'free' | 'basic' | 'pro';
   plan_started_at: string;
   created_at: string;
+  flexible_quota: boolean;
 }
 
 interface AuthContextType {
