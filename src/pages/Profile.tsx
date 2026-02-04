@@ -11,13 +11,123 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Camera, LogOut, Mail, User, Key, Crown, Loader2 } from 'lucide-react';
+import { Camera, LogOut, Mail, User, Key, Crown, Loader2, Fingerprint, Trash2 } from 'lucide-react';
+import { usePasskey } from '@/hooks/usePasskey';
 
 const getInitials = (name: string | null, email: string) => {
   if (name) {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   }
   return email[0].toUpperCase();
+};
+
+interface SecuritySectionProps {
+  handlePasswordReset: () => Promise<void>;
+  isSendingPasswordReset: boolean;
+}
+
+const SecuritySection = ({ handlePasswordReset, isSendingPasswordReset }: SecuritySectionProps) => {
+  const { 
+    isSupported, 
+    isPlatformAvailable, 
+    isLoading, 
+    credentials, 
+    registerPasskey, 
+    deletePasskey 
+  } = usePasskey();
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Key className="h-5 w-5" />
+          Segurança
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Password Reset */}
+        <div>
+          <Button 
+            variant="outline" 
+            onClick={handlePasswordReset}
+            disabled={isSendingPasswordReset}
+          >
+            {isSendingPasswordReset ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              'Alterar Senha'
+            )}
+          </Button>
+          <p className="text-xs text-muted-foreground mt-2">
+            Enviaremos um email com o link para redefinir sua senha
+          </p>
+        </div>
+
+        {/* Passkeys / Face ID Section */}
+        {isSupported && isPlatformAvailable && (
+          <>
+            <Separator />
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Fingerprint className="h-5 w-5" />
+                <span className="font-medium">Face ID / Touch ID</span>
+              </div>
+              
+              {credentials.length > 0 ? (
+                <div className="space-y-2">
+                  {credentials.map((cred) => (
+                    <div 
+                      key={cred.id} 
+                      className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Fingerprint className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">{cred.device_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Adicionado em {new Date(cred.created_at).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deletePasskey(cred.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum dispositivo biométrico cadastrado
+                </p>
+              )}
+              
+              <Button
+                variant="outline"
+                onClick={() => registerPasskey()}
+                disabled={isLoading}
+                className="w-full gap-2"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Fingerprint className="h-4 w-4" />
+                )}
+                Adicionar Face ID / Touch ID
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
 };
 
 export default function Profile() {
@@ -266,33 +376,10 @@ export default function Profile() {
         </Card>
 
         {/* Security */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Key className="h-5 w-5" />
-              Segurança
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              variant="outline" 
-              onClick={handlePasswordReset}
-              disabled={isSendingPasswordReset}
-            >
-              {isSendingPasswordReset ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                'Alterar Senha'
-              )}
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2">
-              Enviaremos um email com o link para redefinir sua senha
-            </p>
-          </CardContent>
-        </Card>
+        <SecuritySection 
+          handlePasswordReset={handlePasswordReset}
+          isSendingPasswordReset={isSendingPasswordReset}
+        />
 
         <Separator className="my-6" />
 
