@@ -38,8 +38,8 @@ const Home = () => {
           </div>
 
           {/* Daily theme CTA */}
-          {isThemeLoading ? (
-            <Skeleton className="h-32 rounded-lg" />
+          {isThemeLoading || isStatsLoading ? (
+            <Skeleton className="h-40 rounded-lg" />
           ) : hasThemeAccess ? (
             <DailyThemeCard 
               title={theme.title} 
