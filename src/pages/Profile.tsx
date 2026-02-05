@@ -406,11 +406,9 @@ export default function Profile() {
                   Membro desde {new Date(profile.created_at).toLocaleDateString('pt-BR')}
                 </p>
               </div>
-              {profile.plan_type !== 'pro' && (
-                <Button variant="outline" onClick={() => navigate('/plano')}>
-                  Fazer Upgrade
-                </Button>
-              )}
+              <Button variant="outline" onClick={() => navigate('/plano')}>
+                {profile.plan_type === 'pro' ? 'Ver Planos' : 'Fazer Upgrade'}
+              </Button>
             </div>
           </CardContent>
         </Card>
