@@ -1,11 +1,11 @@
-import { Home, PenLine, CreditCard, User } from 'lucide-react';
+import { Home, PenLine, History, User } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { title: 'Início', path: '/', icon: Home },
   { title: 'Redação', path: '/redacao', icon: PenLine },
-  { title: 'Plano', path: '/plano', icon: CreditCard },
+  { title: 'Histórico', path: '/historico', icon: History },
   { title: 'Perfil', path: '/perfil', icon: User },
 ];
 
