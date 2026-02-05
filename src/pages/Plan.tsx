@@ -68,14 +68,30 @@ const Plan = () => {
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
 
-      if (error) throw error;
+      if (error) {
+        // Check if it's a "no customer found" error
+        const errorData = error.message ? JSON.parse(error.message) : null;
+        if (errorData?.error?.includes('No Stripe customer found')) {
+          toast.error('Nenhuma assinatura encontrada. Entre em contato com o suporte.');
+          return;
+        }
+        throw error;
+      }
+
+      if (data?.error) {
+        if (data.error.includes('No Stripe customer found')) {
+          toast.error('Nenhuma assinatura encontrada. Entre em contato com o suporte.');
+          return;
+        }
+        throw new Error(data.error);
+      }
 
       if (data?.url) {
         window.location.href = data.url;
       }
     } catch (error) {
       console.error('Error opening customer portal:', error);
-      toast.error('Erro ao abrir portal. Tente novamente.');
+      toast.error('Erro ao abrir portal. Entre em contato com o suporte.');
     } finally {
       setIsOpeningPortal(false);
     }
