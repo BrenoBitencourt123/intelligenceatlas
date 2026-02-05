@@ -54,26 +54,12 @@ const Essay = () => {
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
   const [isGeneratingImproved, setIsGeneratingImproved] = useState(false);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
-  // Track if user has touched the theme input this session
-  const [hasUserTouchedTheme, setHasUserTouchedTheme] = useState(false);
-  const [customTheme, setCustomTheme] = useState<string | null>(null);
+  // Theme starts empty - user must fill it (no auto-fill from daily theme)
+  const [customTheme, setCustomTheme] = useState<string>(state.theme || '');
+  const [showThemeWarning, setShowThemeWarning] = useState(false);
   
-  // Determine effective theme: if user has touched input this session, use customTheme
-  // Otherwise fall back to saved state (if exists) or daily theme
-  const effectiveTheme = hasUserTouchedTheme && customTheme !== null
-    ? customTheme.trim() 
-    : (state.theme || dailyTheme?.title || '');
-  
-  // Reset state when daily theme changes (but not if user has a custom theme)
-  useEffect(() => {
-    if (!dailyTheme?.title) return;
-    
-    // If saved theme exists and is different from daily theme (and no custom theme set)
-    if (state.theme && state.theme !== dailyTheme.title && !customTheme) {
-      console.log('[Essay] Daily theme changed, resetting state');
-      resetAll();
-    }
-  }, [dailyTheme?.title, state.theme, customTheme, resetAll]);
+  // Effective theme is just what user typed
+  const effectiveTheme = customTheme.trim();
   
   // Sync effective theme to state when it changes
   useEffect(() => {
@@ -85,7 +71,6 @@ const Essay = () => {
   // Handle custom theme input change
   const handleCustomThemeChange = (value: string) => {
     setCustomTheme(value);
-    setHasUserTouchedTheme(true);
   };
   
   // Check if can analyze (any block has content AND has quota)
@@ -147,7 +132,7 @@ const Essay = () => {
   }, [user]);
 
   // Unified analysis: analyzes all blocks + evaluates competencies in ONE AI call
-  const handleAnalyzeAll = useCallback(async () => {
+  const handleAnalyzeAll = useCallback(async (skipThemeCheck = false) => {
     // Check quota first
     if (!hasQuota) {
       setShowQuotaModal(true);
@@ -161,6 +146,13 @@ const Essay = () => {
       return;
     }
     
+    // Check if theme is empty and show warning (unless user confirmed)
+    if (!effectiveTheme && !skipThemeCheck) {
+      setShowThemeWarning(true);
+      return;
+    }
+    
+    setShowThemeWarning(false);
     setIsAnalyzingAll(true);
     
     try {
@@ -281,34 +273,6 @@ const Essay = () => {
                 onRedo={resetAll}
               />
               
-              {/* Custom theme input */}
-              <div className="space-y-2">
-                <Label htmlFor="theme-input" className="text-sm font-medium text-muted-foreground">
-                  Tema da redação
-                </Label>
-                <Input
-                  id="theme-input"
-                  value={customTheme !== null ? customTheme : (state.theme || dailyTheme?.title || '')}
-                  onChange={(e) => handleCustomThemeChange(e.target.value)}
-                  placeholder="Digite ou use o tema do dia"
-                  className="text-base"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Você pode usar o tema do dia ou digitar seu próprio tema
-                </p>
-              </div>
-              
-              {/* Daily limit warning */}
-              {quotaReason === 'daily_limit' && (
-                <Alert className="border-accent bg-accent/10">
-                  <AlertCircle className="h-4 w-4 text-accent-foreground" />
-                  <AlertDescription className="text-foreground">
-                    Você atingiu o limite de {dailyLimit} {dailyLimit === 1 ? 'correção' : 'correções'} por dia. 
-                    Volte amanhã para continuar praticando!
-                  </AlertDescription>
-                </Alert>
-              )}
-
               {/* Action buttons - all in one line */}
               <div className="flex items-center gap-2 flex-wrap py-2">
                 <Button
@@ -333,7 +297,7 @@ const Essay = () => {
                 
                 <Button
                   size="sm"
-                  onClick={handleAnalyzeAll}
+                  onClick={() => handleAnalyzeAll()}
                   disabled={!canAnalyze || isAnalyzingAll}
                   className="bg-foreground hover:bg-foreground/80 text-background"
                 >
@@ -350,6 +314,57 @@ const Essay = () => {
                   )}
                 </Button>
               </div>
+              
+              {/* Theme input - below action buttons */}
+              <div className="space-y-2">
+                <Label htmlFor="theme-input" className="text-sm font-medium text-muted-foreground">
+                  Tema da redação
+                </Label>
+                <Input
+                  id="theme-input"
+                  value={customTheme}
+                  onChange={(e) => handleCustomThemeChange(e.target.value)}
+                  placeholder="Digite o tema da sua redação"
+                  className={`text-base ${showThemeWarning ? 'border-destructive ring-1 ring-destructive' : ''}`}
+                />
+                {showThemeWarning ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-destructive">
+                      Você não preencheu o tema. Deseja continuar sem tema?
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowThemeWarning(false)}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleAnalyzeAll(true)}
+                      >
+                        Continuar sem tema
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Informe o tema para que a análise possa avaliar a aderência ao tema proposto
+                  </p>
+                )}
+              </div>
+              
+              {/* Daily limit warning */}
+              {quotaReason === 'daily_limit' && (
+                <Alert className="border-accent bg-accent/10">
+                  <AlertCircle className="h-4 w-4 text-accent-foreground" />
+                  <AlertDescription className="text-foreground">
+                    Você atingiu o limite de {dailyLimit} {dailyLimit === 1 ? 'correção' : 'correções'} por dia. 
+                    Volte amanhã para continuar praticando!
+                  </AlertDescription>
+                </Alert>
+              )}
               
               {/* Essay blocks */}
               {state.blocks.map((block) => (
@@ -393,7 +408,7 @@ const Essay = () => {
           canGenerateImproved={canGenerateImproved && hasImprovedVersionAccess}
           onGenerateImproved={handleGenerateImproved}
           onToggleOriginal={toggleShowOriginal}
-          onAnalyzeAll={handleAnalyzeAll}
+          onAnalyzeAll={() => handleAnalyzeAll()}
           isAnalyzing={isAnalyzingAll}
           isGenerating={isGeneratingImproved}
           canAnalyze={canAnalyze}

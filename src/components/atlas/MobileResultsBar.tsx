@@ -15,7 +15,7 @@ interface MobileResultsBarProps {
   canGenerateImproved: boolean;
   onGenerateImproved: () => void;
   onToggleOriginal: () => void;
-  onAnalyzeAll: () => void;
+  onAnalyzeAll: (skipThemeCheck?: boolean) => void;
   isAnalyzing: boolean;
   isGenerating: boolean;
   canAnalyze: boolean;
@@ -97,7 +97,7 @@ export const MobileResultsBar = ({
         
         {/* CTA */}
         <Button
-          onClick={onAnalyzeAll}
+          onClick={() => onAnalyzeAll()}
           disabled={!canAnalyze || isAnalyzing}
           size="lg"
           className="flex-shrink-0 bg-foreground hover:bg-foreground/90 text-background"
