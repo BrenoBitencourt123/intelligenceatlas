@@ -54,16 +54,17 @@ const Essay = () => {
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
   const [isGeneratingImproved, setIsGeneratingImproved] = useState(false);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
-  // Theme starts empty - user must fill it (no auto-fill from daily theme)
-  const [customTheme, setCustomTheme] = useState<string>(state.theme || '');
+  // Theme ALWAYS starts empty on page load - user must fill it manually
+  // This prevents auto-fill confusion for users doing multiple essays
+  const [customTheme, setCustomTheme] = useState<string>('');
   const [showThemeWarning, setShowThemeWarning] = useState(false);
   
   // Effective theme is just what user typed
   const effectiveTheme = customTheme.trim();
   
-  // Sync effective theme to state when it changes
+  // Sync theme to state when it changes (for saving to database on analysis)
   useEffect(() => {
-    if (effectiveTheme && effectiveTheme !== state.theme) {
+    if (effectiveTheme !== state.theme) {
       setTheme(effectiveTheme);
     }
   }, [effectiveTheme, state.theme, setTheme]);
