@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, Key, LogOut } from 'lucide-react';
+import { User, Key, LogOut, CreditCard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -67,6 +67,10 @@ export const ProfileMenu = () => {
         <DropdownMenuItem onClick={() => navigate('/perfil')} className="cursor-pointer">
           <User className="mr-2 h-4 w-4" />
           <span>Meu Perfil</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate('/plano')} className="cursor-pointer">
+          <CreditCard className="mr-2 h-4 w-4" />
+          <span>Planos</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handlePasswordReset} className="cursor-pointer">
           <Key className="mr-2 h-4 w-4" />
