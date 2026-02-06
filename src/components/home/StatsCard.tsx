@@ -19,7 +19,7 @@ export const StatsCard = ({ lastScore, monthlyAverage }: StatsCardProps) => {
           <span className="text-sm font-medium text-muted-foreground">Suas Notas</span>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 flex flex-col flex-1">
+      <CardContent className="gap-3 flex flex-col flex-1">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Última nota</p>

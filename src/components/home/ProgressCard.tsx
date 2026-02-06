@@ -25,7 +25,7 @@ export const ProgressCard = ({ used, total, isFree = false }: ProgressCardProps)
           </span>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 flex flex-col flex-1">
+      <CardContent className="gap-3 flex flex-col flex-1">
         <div className="flex items-baseline gap-1">
           <span className="text-3xl font-bold text-foreground">{used}</span>
           <span className="text-muted-foreground">/ {total} {isFree ? 'redação' : 'redações'}</span>
