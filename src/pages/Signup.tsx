@@ -34,9 +34,13 @@ export default function Signup() {
     const { error } = await signUp(email, password);
 
     if (error) {
-      toast.error('Erro ao criar conta', {
-        description: error.message,
-      });
+      let description = error.message;
+      if (error.message?.toLowerCase().includes('rate limit')) {
+        description = 'Muitas tentativas de cadastro. Aguarde alguns minutos e tente novamente.';
+      } else if (error.message?.toLowerCase().includes('already registered')) {
+        description = 'Este email já está cadastrado. Tente fazer login.';
+      }
+      toast.error('Erro ao criar conta', { description });
       setLoading(false);
       return;
     }
