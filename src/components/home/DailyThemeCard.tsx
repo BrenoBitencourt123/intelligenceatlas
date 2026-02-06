@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import type { QuotaReason } from '@/hooks/useQuotaCheck';
 
@@ -12,6 +13,7 @@ interface DailyThemeCardProps {
   quotaReason?: QuotaReason;
   dailyLimit?: number;
   isFlexibleMode?: boolean;
+  planType?: 'free' | 'basic' | 'pro';
 }
 
 export const DailyThemeCard = ({ 
@@ -20,8 +22,10 @@ export const DailyThemeCard = ({
   quotaReason,
   dailyLimit = 2,
   isFlexibleMode = false,
+  planType = 'pro',
 }: DailyThemeCardProps) => {
   const navigate = useNavigate();
+  const isPro = planType === 'pro';
   
   const isBlocked = quotaReason === 'daily_limit' || quotaReason === 'monthly_limit' || quotaReason === 'limit_reached';
 
@@ -48,12 +52,20 @@ export const DailyThemeCard = ({
   };
 
   return (
-    <Card className="border-2 border-foreground/20">
+    <Card className={cn(
+      "border-2",
+      isPro 
+        ? "border-amber-500/40 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20 dark:to-transparent" 
+        : "border-foreground/20"
+    )}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-foreground" />
-            <span className="text-sm font-semibold uppercase tracking-wide text-foreground">
+            <Calendar className={cn("h-5 w-5", isPro ? "text-amber-600 dark:text-amber-400" : "text-foreground")} />
+            <span className={cn(
+              "text-sm font-semibold uppercase tracking-wide",
+              isPro ? "text-amber-700 dark:text-amber-400" : "text-foreground"
+            )}>
               Tema do Dia
             </span>
           </div>
