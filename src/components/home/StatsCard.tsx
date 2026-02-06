@@ -42,10 +42,9 @@ export const StatsCard = ({ lastScore, monthlyAverage }: StatsCardProps) => {
         </div>
         
         <Button 
-          variant="ghost" 
-          size="sm" 
+          className="w-full mt-2" 
+          size="sm"
           onClick={() => navigate('/historico')}
-          className="w-full"
         >
           <History className="h-4 w-4 mr-2" />
           Ver histórico
