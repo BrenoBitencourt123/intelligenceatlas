@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const Home = () => {
   const { theme, isLoading: isThemeLoading } = useDailyTheme();
-  const { hasThemeAccess, isFree, monthlyLimit } = usePlanFeatures();
+  const { hasThemeAccess, isFree, monthlyLimit, planType } = usePlanFeatures();
   const { reason: quotaReason, dailyLimit, isFlexibleMode } = useQuotaCheck();
   const { 
     totalEssays, 
@@ -47,6 +47,7 @@ const Home = () => {
               quotaReason={quotaReason}
               dailyLimit={dailyLimit}
               isFlexibleMode={isFlexibleMode}
+              planType={planType}
             />
           ) : (
             <LockedThemeCard />
