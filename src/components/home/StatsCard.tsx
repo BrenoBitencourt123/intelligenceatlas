@@ -12,14 +12,14 @@ export const StatsCard = ({ lastScore, monthlyAverage }: StatsCardProps) => {
   const navigate = useNavigate();
 
   return (
-    <Card>
+    <Card className="flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium text-muted-foreground">Suas Notas</span>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 flex flex-col flex-1">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Última nota</p>
@@ -41,14 +41,16 @@ export const StatsCard = ({ lastScore, monthlyAverage }: StatsCardProps) => {
           </div>
         </div>
         
-        <Button 
-          className="w-full mt-2" 
-          size="sm"
-          onClick={() => navigate('/historico')}
-        >
-          <History className="h-4 w-4 mr-2" />
-          Ver histórico
-        </Button>
+        <div className="mt-auto pt-2">
+          <Button 
+            className="w-full" 
+            size="sm"
+            onClick={() => navigate('/historico')}
+          >
+            <History className="h-4 w-4 mr-2" />
+            Ver histórico
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
