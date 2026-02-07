@@ -1,4 +1,4 @@
-import { Calendar, CheckCircle2, ArrowRight, RotateCcw } from 'lucide-react';
+import { Calendar, CheckCircle2, ArrowRight, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -57,8 +57,8 @@ export const ThemeCard = ({
                 onClick={onRedo}
                 className="gap-2"
               >
-                <RotateCcw className="h-4 w-4" />
-                Refazer
+                <RefreshCw className="h-4 w-4" />
+                Tentar novamente
               </Button>
               <Button 
                 size="sm"
