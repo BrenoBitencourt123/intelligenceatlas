@@ -1,19 +1,57 @@
 
-## Alinhar botões dos cards na Home (desktop)
 
-### Problema
-Os botões "Escrever redacao" e "Ver historico" nao estao na mesma linha vertical no desktop. O card da esquerda (Progresso Mensal) tem mais conteudo que o da direita (Suas Notas), e apesar do layout flex estar configurado, o `space-y-3` esta interferindo com o `mt-auto`, impedindo o alinhamento correto.
+## Corrigir o botao "Refazer" e salvar ambas as tentativas no historico
 
-### Solucao
-Remover o `space-y-3` do `CardContent` dos dois cards e aplicar `gap-3` no lugar (mais compativel com flexbox). Isso garante que o `mt-auto` funcione corretamente, empurrando os botoes para o fundo dos cards.
+### Problema atual
+
+Quando o usuario clica em "Refazer", o `resetAll()` limpa o editor local (localStorage), mas o `hasWrittenToday` continua `true` porque vem do banco de dados. Resultado: a tela continua mostrando o card compacto "Redacao concluida" em vez de reabrir o editor.
+
+### O que muda
+
+1. **Ambas as redacoes ficam no historico** -- a primeira tentativa ja esta salva no banco. Ao clicar em "Tentar novamente", o editor reabre limpo para uma nova tentativa, que ao ser analisada tambem sera salva como um registro separado no historico.
+
+2. **Renomear o botao** -- trocar "Refazer" por "Tentar novamente", com icone mais adequado (seta pra frente em vez de "desfazer").
+
+3. **O editor reabre de verdade** -- ao clicar, o estado local e resetado e um override temporario ignora o `hasWrittenToday` do banco, permitindo que o editor completo apareca novamente.
 
 ### Alteracoes
 
-**1. `src/components/home/ProgressCard.tsx`**
-- Trocar `space-y-3` por `gap-3` no CardContent para compatibilidade com flex layout
+**1. `src/pages/Essay.tsx`**
+- Criar um estado local `redoOverride` (booleano, inicia como `false`)
+- Calcular `effectiveHasWrittenToday = hasWrittenToday && !redoOverride`
+- Criar funcao `handleRedo` que seta `redoOverride = true` e chama `resetAll()`
+- Passar `effectiveHasWrittenToday` para o `PedagogicalSection` no lugar de `hasWrittenToday`
+- Passar `handleRedo` como `onRedo`
 
-**2. `src/components/home/StatsCard.tsx`**
-- Trocar `space-y-3` por `gap-3` no CardContent para compatibilidade com flex layout
+**2. `src/components/atlas/ThemeCard.tsx`**
+- Trocar o texto do botao de "Refazer" para "Tentar novamente"
+- Trocar o icone de `RotateCcw` para `RefreshCw` (ou manter `RotateCcw` mas com texto atualizado, conforme preferencia)
 
 ### Detalhes tecnicos
-O `space-y-3` do Tailwind usa seletores CSS adjacentes (`> * + *`) para adicionar `margin-top`. Quando combinado com `mt-auto` em um container flex, o margin do space-y pode sobrescrever o `mt-auto`. Usando `gap-3` no flex container, o espacamento e tratado pelo proprio flexbox, permitindo que `mt-auto` funcione sem conflito e empurre os botoes para a base dos cards.
+
+Fluxo atual (com bug):
+
+```text
+Clique em "Refazer"
+  -> onRedo() = resetAll()
+    -> limpa localStorage
+    -> hasWrittenToday (do banco) ainda e true
+    -> PedagogicalSection mostra card compacto
+    -> editor nao reabre
+```
+
+Fluxo corrigido:
+
+```text
+Clique em "Tentar novamente"
+  -> handleRedo()
+    -> redoOverride = true
+    -> resetAll() (limpa localStorage)
+    -> effectiveHasWrittenToday = true && !true = false
+    -> PedagogicalSection mostra editor completo
+    -> usuario escreve nova tentativa
+    -> ao analisar, nova redacao e salva como registro separado no banco
+```
+
+Nenhuma alteracao no banco de dados e necessaria. A primeira redacao ja esta salva. A segunda sera salva automaticamente pela logica existente de `saveEssayToDatabase` quando o usuario analisar a nova tentativa.
+
