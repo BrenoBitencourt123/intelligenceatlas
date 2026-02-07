@@ -29,6 +29,8 @@ const Essay = () => {
   const { planType, hasPedagogicalAccess, hasImprovedVersionAccess, hasSourcesAccess } = usePlanFeatures();
   const { canAnalyze: hasQuota, reason: quotaReason, isLoading: isQuotaLoading, dailyUsed, dailyLimit } = useQuotaCheck();
   const { hasWrittenToday, isLoading: isStatsLoading } = useUserStats();
+  const [redoOverride, setRedoOverride] = useState(false);
+  const effectiveHasWrittenToday = hasWrittenToday && !redoOverride;
   const {
     state,
     updateBlockText,
@@ -270,8 +272,11 @@ const Essay = () => {
                 isLocked={!hasPedagogicalAccess} 
                 planType={planType} 
                 hasSourcesAccess={hasSourcesAccess}
-                hasWrittenToday={hasWrittenToday}
-                onRedo={resetAll}
+                hasWrittenToday={effectiveHasWrittenToday}
+                onRedo={() => {
+                  setRedoOverride(true);
+                  resetAll();
+                }}
               />
               
               {/* Action buttons - all in one line */}
