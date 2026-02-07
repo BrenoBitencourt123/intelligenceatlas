@@ -58,7 +58,7 @@ export const ThemeCard = ({
                 className="gap-2"
               >
                 <RefreshCw className="h-4 w-4" />
-                Tentar novamente
+                Fazer novamente
               </Button>
               <Button 
                 size="sm"
