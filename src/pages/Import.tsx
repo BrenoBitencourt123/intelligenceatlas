@@ -364,7 +364,7 @@ function ConfirmStage({
   );
 }
 
-export default function Import() {
+export default function Import({ embedded = false }: { embedded?: boolean }) {
   const {
     stage,
     questions,
@@ -380,64 +380,66 @@ export default function Import() {
     goBack,
   } = useImportExam();
 
-  return (
-    <MainLayout>
-      <div className="container max-w-2xl mx-auto px-4 py-8">
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Importar Prova ENEM</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {stage === 'upload' && 'Envie os PDFs da prova e gabarito de cada dia'}
-              {stage === 'preview' && 'Revise as questões extraídas pela IA'}
-              {stage === 'confirm' && 'Confirme o ano e importe'}
-            </p>
-          </div>
-
-          {/* Step indicator */}
-          <div className="flex items-center gap-2">
-            {['Upload', 'Preview', 'Importar'].map((label, i) => {
-              const stepStages = ['upload', 'preview', 'confirm'] as const;
-              const isActive = stepStages.indexOf(stage) >= i;
-              return (
-                <div key={label} className="flex items-center gap-2 flex-1">
-                  <div className={`h-2 flex-1 rounded-full ${isActive ? 'bg-primary' : 'bg-muted'}`} />
-                  <span className={`text-xs ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
-                    {label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          {stage === 'upload' && (
-            <UploadStage
-              onProcess={processUploads}
-              loading={loading}
-              loadingMessage={loadingMessage}
-              progress={progress}
-            />
-          )}
-          {stage === 'preview' && (
-            <PreviewStage
-              questions={questions}
-              onToggle={removeQuestion}
-              onUpdateArea={updateArea}
-              onConfirm={goToConfirm}
-              onBack={goBack}
-            />
-          )}
-          {stage === 'confirm' && (
-            <ConfirmStage
-              questions={questions}
-              detectedYear={detectedYear}
-              loading={loading}
-              progress={progress}
-              onSave={saveQuestions}
-              onBack={goBack}
-            />
-          )}
+  const content = (
+    <div className={embedded ? '' : 'container max-w-2xl mx-auto px-4 py-8'}>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Importar Prova ENEM</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {stage === 'upload' && 'Envie os PDFs da prova e gabarito de cada dia'}
+            {stage === 'preview' && 'Revise as questões extraídas pela IA'}
+            {stage === 'confirm' && 'Confirme o ano e importe'}
+          </p>
         </div>
+
+        {/* Step indicator */}
+        <div className="flex items-center gap-2">
+          {['Upload', 'Preview', 'Importar'].map((label, i) => {
+            const stepStages = ['upload', 'preview', 'confirm'] as const;
+            const isActive = stepStages.indexOf(stage) >= i;
+            return (
+              <div key={label} className="flex items-center gap-2 flex-1">
+                <div className={`h-2 flex-1 rounded-full ${isActive ? 'bg-primary' : 'bg-muted'}`} />
+                <span className={`text-xs ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  {label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {stage === 'upload' && (
+          <UploadStage
+            onProcess={processUploads}
+            loading={loading}
+            loadingMessage={loadingMessage}
+            progress={progress}
+          />
+        )}
+        {stage === 'preview' && (
+          <PreviewStage
+            questions={questions}
+            onToggle={removeQuestion}
+            onUpdateArea={updateArea}
+            onConfirm={goToConfirm}
+            onBack={goBack}
+          />
+        )}
+        {stage === 'confirm' && (
+          <ConfirmStage
+            questions={questions}
+            detectedYear={detectedYear}
+            loading={loading}
+            progress={progress}
+            onSave={saveQuestions}
+            onBack={goBack}
+          />
+        )}
       </div>
-    </MainLayout>
+    </div>
   );
+
+  if (embedded) return content;
+
+  return <MainLayout>{content}</MainLayout>;
 }

@@ -68,11 +68,10 @@ export function useStudyStats() {
         d.setDate(d.getDate() - 1);
       }
 
-      // Total questions in bank
+      // Total questions in bank (global, not user-specific)
       const { count: totalQuestions } = await supabase
         .from('questions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .select('*', { count: 'exact', head: true });
 
       return {
         questionsToday,
