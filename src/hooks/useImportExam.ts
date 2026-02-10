@@ -25,9 +25,13 @@ export function useImportExam() {
 
   function parseAnswerKey(text: string): Record<number, string> {
     const map: Record<number, string> = {};
-    const cleaned = text.trim().toUpperCase();
+    // Remove common headers from PDF gabarito tables
+    const cleaned = text
+      .replace(/QUEST[ÃA]O|GABARITO|INGL[ÊE]S|ESPANHOL|PORTUGU[ÊE]S|L[ÍI]NGUA/gi, '')
+      .trim()
+      .toUpperCase();
 
-    // Format: "DACBE..." (sequential letters)
+    // Format: "DACBE..." (sequential letters only)
     if (/^[A-E]+$/.test(cleaned.replace(/\s/g, ''))) {
       const letters = cleaned.replace(/\s/g, '');
       for (let i = 0; i < letters.length; i++) {
@@ -36,7 +40,7 @@ export function useImportExam() {
       return map;
     }
 
-    // Format: "1-D, 2-A, 3-C" or "1D 2A 3C" or "1-D 2-A" or "1.D, 2.A"
+    // Format: "1-D, 2-A, 3-C" or "1D 2A 3C" or tabular PDF "1 D 46 E 2 D 47 D"
     const patterns = cleaned.match(/(\d+)\s*[-.\s]?\s*([A-E])/g);
     if (patterns) {
       for (const p of patterns) {
@@ -48,6 +52,28 @@ export function useImportExam() {
     }
 
     return map;
+  }
+
+  async function extractAnswerKeyFromPdf(file: File): Promise<{ text: string; detectedYear: number | null }> {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+
+    // Auto-detect year
+    const yearMatch = fullText.match(/(?:Gabarito|GABARITO|ENEM)\s*(\d{4})/i);
+    const detectedYear = yearMatch ? parseInt(yearMatch[1]) : null;
+
+    return { text: fullText, detectedYear };
   }
 
   function applyAnswerKey(qs: ImportedQuestion[], answerKeyText: string): ImportedQuestion[] {
@@ -207,6 +233,8 @@ export function useImportExam() {
     progress,
     year,
     day,
+    setYear,
+    setDay,
     extractFromPdf,
     removeQuestion,
     updateArea,
@@ -215,5 +243,6 @@ export function useImportExam() {
     goBack,
     reset,
     parseAnswerKey,
+    extractAnswerKeyFromPdf,
   };
 }
