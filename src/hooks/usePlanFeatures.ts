@@ -31,5 +31,13 @@ export const usePlanFeatures = () => {
     dailyLimit: isPro ? 2 : 1,
     // Para UI saber se está no modo "degustação Pro"
     isFreeTrial: freeHasQuota,
+    // Objetivas: sessão completa (45 questões) para Basic e Pro, 5 para Free
+    hasFullSessionAccess: isBasic || isPro,
+    // Flashcards automáticos (gerados em erro): apenas Pro
+    hasAutoFlashcards: isPro,
+    // Cápsulas de conhecimento (explicação após resposta): apenas Pro
+    hasKnowledgeCapsules: isPro,
+    // Limite de questões por dia para Free
+    freeQuestionLimit: 5,
   };
 };
