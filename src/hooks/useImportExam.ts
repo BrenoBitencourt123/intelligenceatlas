@@ -22,6 +22,26 @@ export interface DayUpload {
 
 type Stage = 'upload' | 'preview' | 'confirm';
 
+function cleanPdfText(text: string): string {
+  // Remove repeated watermarks like "ENEM2025ENEM2025..."
+  let cleaned = text.replace(/(ENEM\d{4}){2,}/g, '');
+  // Remove repeated patterns like "2025ENEM" chains
+  cleaned = cleaned.replace(/(\d{4}ENEM){2,}/g, '');
+  // Remove page markers like "*010175AZ1*"
+  cleaned = cleaned.replace(/\*\d+[A-Z]+\d*\*/g, '');
+  // Collapse excessive whitespace
+  cleaned = cleaned.replace(/\s{3,}/g, ' ');
+  // Remove lines that are only whitespace or garbage chars
+  cleaned = cleaned.split('\n').filter(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    // Skip lines that are mostly non-letter characters (watermarks/noise)
+    const letterCount = (trimmed.match(/[a-zA-ZÀ-ÿ]/g) || []).length;
+    return letterCount > trimmed.length * 0.15 || trimmed.length < 10;
+  }).join('\n');
+  return cleaned.trim();
+}
+
 async function extractTextFromPdf(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
   const pdfjsLib = await import('pdfjs-dist');
@@ -37,7 +57,7 @@ async function extractTextFromPdf(file: File): Promise<string> {
     fullText += pageText + '\n';
   }
 
-  return fullText;
+  return cleanPdfText(fullText);
 }
 
 function parseAnswerKey(text: string): Record<number, string> {
