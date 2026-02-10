@@ -22,6 +22,9 @@ export interface DayUpload {
   day: number;
 }
 
+// Store original PDF files for upload during save
+let pendingPdfFiles: Map<number, File> = new Map();
+
 type Stage = 'upload' | 'preview' | 'confirm';
 
 function cleanPdfText(text: string): string {
@@ -125,6 +128,11 @@ export function useImportExam() {
         const dayUpload = activeDays[idx];
         const { examFile, gabaritoFile, gabaritoText, day } = dayUpload;
 
+        // Store original PDF for later upload
+        if (examFile) {
+          pendingPdfFiles.set(day, examFile);
+        }
+
         // 1. Extract exam PDF text
         setLoadingMessage(`Dia ${day}: extraindo texto da prova...`);
         const examText = await extractTextFromPdf(examFile!);
@@ -225,6 +233,12 @@ export function useImportExam() {
     setProgress(0);
 
     try {
+      // Upload pending PDF files to storage
+      for (const [day, file] of pendingPdfFiles.entries()) {
+        const path = `${year}/dia-${day}.pdf`;
+        await supabase.storage.from('exam-pdfs').upload(path, file, { upsert: true });
+      }
+
       const batchSize = 20;
       const batches = [];
       for (let i = 0; i < selected.length; i += batchSize) {
@@ -254,6 +268,7 @@ export function useImportExam() {
       toast.success(`${selected.length} questões importadas com sucesso!`);
       setStage('upload');
       setQuestions([]);
+      pendingPdfFiles.clear();
     } catch (err: any) {
       console.error('Save error:', err);
       toast.error(err.message || 'Erro ao salvar questões');
@@ -276,6 +291,7 @@ export function useImportExam() {
     setQuestions([]);
     setProgress(0);
     setDetectedYear(null);
+    pendingPdfFiles.clear();
   }
 
   return {

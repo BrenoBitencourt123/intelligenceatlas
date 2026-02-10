@@ -13,6 +13,7 @@ interface Question {
   explanation: string | null;
   tags: string[];
   image_url: string | null;
+  year: number;
 }
 
 interface SessionResult {
@@ -75,6 +76,7 @@ export function useStudySession() {
         explanation: q.explanation,
         tags: Array.isArray(q.tags) ? q.tags as string[] : [],
         image_url: q.image_url,
+        year: q.year,
       })));
       setCurrentIndex(0);
       setAnswers({});
