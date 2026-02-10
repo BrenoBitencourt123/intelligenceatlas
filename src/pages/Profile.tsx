@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Camera, LogOut, Mail, User, Key, Crown, Loader2, Fingerprint, Trash2, Zap } from 'lucide-react';
+import { Camera, LogOut, Mail, User, Key, Crown, Loader2, Fingerprint, Trash2, Zap, History } from 'lucide-react';
 import { ProfileSkeleton } from '@/components/skeletons/ProfileSkeleton';
 import { usePasskey } from '@/hooks/usePasskey';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
@@ -410,6 +410,22 @@ export default function Profile() {
                 {profile.plan_type === 'pro' ? 'Ver Planos' : 'Fazer Upgrade'}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Histórico de Redações */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Histórico de Redações
+            </CardTitle>
+            <CardDescription>Veja todas as suas redações corrigidas</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" onClick={() => navigate('/historico')} className="w-full">
+              Ver Histórico
+            </Button>
           </CardContent>
         </Card>
 
