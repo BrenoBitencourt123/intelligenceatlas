@@ -1,13 +1,13 @@
-import { Home, PenLine, History } from 'lucide-react';
+import { CalendarCheck, ListChecks, PenLine } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProfileMenu } from './ProfileMenu';
 
 const navItems = [
-  { title: 'Início', path: '/', icon: Home },
+  { title: 'Hoje', path: '/', icon: CalendarCheck },
+  { title: 'Objetivas', path: '/objetivas', icon: ListChecks },
   { title: 'Redação', path: '/redacao', icon: PenLine },
-  { title: 'Histórico', path: '/historico', icon: History },
 ];
 
 export const TopNav = () => {
