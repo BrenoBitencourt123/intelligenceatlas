@@ -1,9 +1,10 @@
-import { Check, Zap, Crown, Loader2, Settings, Sparkles, Star } from 'lucide-react';
+import { Check, Zap, Crown, Loader2, Settings, Sparkles, Star, Clock } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
 import { PlanSkeleton } from '@/components/skeletons/PlanSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmbeddedCheckoutModal } from '@/components/checkout/EmbeddedCheckoutModal';
@@ -13,7 +14,7 @@ import { useMemo, useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { STRIPE_PLANS } from '@/lib/stripe';
+import { STRIPE_PLANS, getMonthsUntilEnem, getDiscountTier } from '@/lib/stripe';
 
 const Plan = () => {
   const { planType, isFree, isBasic, isPro, monthlyLimit } = usePlanFeatures();
@@ -22,6 +23,11 @@ const Plan = () => {
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<'basic' | 'pro' | null>(null);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [useEnemDiscount, setUseEnemDiscount] = useState(false);
+
+  const monthsUntilEnem = useMemo(() => getMonthsUntilEnem(), []);
+  const discountTier = useMemo(() => getDiscountTier(monthsUntilEnem), [monthsUntilEnem]);
+  const [checkoutCouponId, setCheckoutCouponId] = useState<string | undefined>(undefined);
 
   // Calculate next reset date (first day of next month)
   const nextReset = useMemo(() => {
@@ -33,6 +39,11 @@ const Plan = () => {
   // Usage calculation
   const usedEssays = isFree ? totalEssays : monthlyEssays;
   const usagePercentage = Math.min(100, Math.round((usedEssays / monthlyLimit) * 100));
+
+  const getDiscountedPrice = (basePrice: number) => {
+    if (!useEnemDiscount || !discountTier) return basePrice;
+    return basePrice * (1 - discountTier.percent / 100);
+  };
 
   const checkSubscription = useCallback(async () => {
     setIsCheckingSubscription(true);
@@ -60,6 +71,7 @@ const Plan = () => {
   }, [searchParams, setSearchParams, checkSubscription]);
 
   const handleUpgrade = (targetPlan: 'basic' | 'pro') => {
+    setCheckoutCouponId(useEnemDiscount && discountTier ? discountTier.id : undefined);
     setCheckoutPlan(targetPlan);
   };
 
@@ -69,7 +81,6 @@ const Plan = () => {
       const { data, error } = await supabase.functions.invoke('customer-portal');
 
       if (error) {
-        // Check if it's a "no customer found" error
         const errorData = error.message ? JSON.parse(error.message) : null;
         if (errorData?.error?.includes('No Stripe customer found')) {
           toast.error('Nenhuma assinatura encontrada. Entre em contato com o suporte.');
@@ -102,6 +113,7 @@ const Plan = () => {
     '1 redação gratuita',
     'Editor completo',
     'Feedback resumido',
+    '5 questões por dia',
   ];
 
   const basicFeatures = [
@@ -109,6 +121,7 @@ const Plan = () => {
     'Análise das 5 competências ENEM',
     'Versão melhorada da redação',
     'Histórico de redações',
+    'Sessões completas (45 questões)',
   ];
 
   const proFeatures = [
@@ -120,6 +133,8 @@ const Plan = () => {
     'Análise das 5 competências ENEM',
     'Versão melhorada da redação',
     'Histórico de redações',
+    'Sessões completas + flashcards automáticos',
+    'Cápsulas de conhecimento',
   ];
 
   if (isCheckingSubscription) {
@@ -137,6 +152,31 @@ const Plan = () => {
               Prepare-se para o ENEM com a melhor plataforma de correção de redações do Brasil
             </p>
           </div>
+
+          {/* Discount toggle */}
+          {isFree && discountTier && monthsUntilEnem >= 3 && (
+            <Card className="border border-amber-500/30 bg-amber-500/5">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-amber-500" />
+                      <p className="text-sm font-medium text-foreground">
+                        Até o ENEM ({monthsUntilEnem} meses)
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Assine por {monthsUntilEnem} meses e ganhe {discountTier.percent}% de desconto
+                    </p>
+                  </div>
+                  <Switch
+                    checked={useEnemDiscount}
+                    onCheckedChange={setUseEnemDiscount}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Usage Card for paying users */}
           {!isFree && (
@@ -190,10 +230,26 @@ const Plan = () => {
                   <CardDescription>Preparação completa para o ENEM</CardDescription>
                 </div>
                 <div className="pt-2">
-                  <p className="text-3xl font-bold text-foreground">
-                    R$ {STRIPE_PLANS.pro.price.toFixed(2).replace('.', ',')}
-                  </p>
-                  <p className="text-xs text-muted-foreground">/mês</p>
+                  {useEnemDiscount && discountTier ? (
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground line-through">
+                        R$ {STRIPE_PLANS.pro.price.toFixed(2).replace('.', ',')}
+                      </p>
+                      <p className="text-3xl font-bold text-foreground">
+                        R$ {getDiscountedPrice(STRIPE_PLANS.pro.price).toFixed(2).replace('.', ',')}
+                      </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                        -{discountTier.percent}% por {monthsUntilEnem} meses
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-3xl font-bold text-foreground">
+                        R$ {STRIPE_PLANS.pro.price.toFixed(2).replace('.', ',')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">/mês</p>
+                    </>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col">
@@ -237,10 +293,26 @@ const Plan = () => {
                   <CardDescription>Para quem quer praticar mais</CardDescription>
                 </div>
                 <div className="pt-2">
-                  <p className="text-3xl font-bold text-foreground">
-                    R$ {STRIPE_PLANS.basic.price.toFixed(2).replace('.', ',')}
-                  </p>
-                  <p className="text-xs text-muted-foreground">/mês</p>
+                  {useEnemDiscount && discountTier ? (
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground line-through">
+                        R$ {STRIPE_PLANS.basic.price.toFixed(2).replace('.', ',')}
+                      </p>
+                      <p className="text-3xl font-bold text-foreground">
+                        R$ {getDiscountedPrice(STRIPE_PLANS.basic.price).toFixed(2).replace('.', ',')}
+                      </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                        -{discountTier.percent}% por {monthsUntilEnem} meses
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-3xl font-bold text-foreground">
+                        R$ {STRIPE_PLANS.basic.price.toFixed(2).replace('.', ',')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">/mês</p>
+                    </>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col">
@@ -368,6 +440,7 @@ const Plan = () => {
             onOpenChange={(open) => !open && setCheckoutPlan(null)}
             priceId={STRIPE_PLANS[checkoutPlan].price_id!}
             planName={STRIPE_PLANS[checkoutPlan].name}
+            couponId={checkoutCouponId}
           />
         )}
       </div>
