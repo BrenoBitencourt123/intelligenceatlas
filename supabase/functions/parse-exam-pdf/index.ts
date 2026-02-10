@@ -17,12 +17,21 @@ REGRAS:
 4. Textos compartilhados ("Texto para as questões X a Y") devem ser incluídos no enunciado de CADA questão que os referencia
 5. Mantenha formatação de poemas e citações
 
-CLASSIFICAÇÃO POR ÁREA (baseada no número da questão e dia):
-- Dia 1: questões 1-45 = "linguagens", questões 46-90 = "humanas"
-- Dia 2: questões 1-45 = "natureza", questões 46-90 = "matematica"
+CLASSIFICAÇÃO POR ÁREA:
+Detecte a área de conhecimento de cada questão com base no CONTEÚDO e CONTEXTO:
+- "linguagens": Língua Portuguesa, Literatura, Artes, Educação Física, Tecnologias da Informação, Língua Estrangeira (Inglês/Espanhol)
+- "humanas": História, Geografia, Filosofia, Sociologia
+- "natureza": Biologia, Química, Física
+- "matematica": Matemática e suas Tecnologias
+
+Use o conteúdo da questão para classificar. Se houver dúvida, use a posição: questões 1-45 são da primeira área do dia, 46-90 da segunda.
+
+DETECÇÃO DO ANO:
+Tente identificar o ano da prova a partir do texto (ex: "ENEM 2025", "Exame Nacional do Ensino Médio 2024"). Se encontrar, inclua no campo "detected_year".
 
 FORMATO DE RESPOSTA (JSON):
 {
+  "detected_year": 2025,
   "questions": [
     {
       "number": 1,
@@ -40,14 +49,6 @@ FORMATO DE RESPOSTA (JSON):
 }
 
 Retorne APENAS o JSON, sem texto adicional.`;
-
-function getAreaForQuestion(questionNumber: number, day: number): string {
-  if (day === 1) {
-    return questionNumber <= 45 ? "linguagens" : "humanas";
-  } else {
-    return questionNumber <= 45 ? "natureza" : "matematica";
-  }
-}
 
 function splitTextIntoChunks(text: string, maxChunkSize = 12000): string[] {
   const chunks: string[] = [];
@@ -75,9 +76,9 @@ serve(async (req) => {
   try {
     const { pdfText, year, day } = await req.json();
 
-    if (!pdfText || !year || !day) {
+    if (!pdfText) {
       return new Response(
-        JSON.stringify({ error: "Campos obrigatórios: pdfText, year, day" }),
+        JSON.stringify({ error: "Campo obrigatório: pdfText" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -88,7 +89,7 @@ serve(async (req) => {
     }
 
     const chunks = splitTextIntoChunks(pdfText);
-    console.log(`Processing ${chunks.length} chunks for ENEM ${year} Day ${day}`);
+    console.log(`Processing ${chunks.length} chunks${year ? ` for ENEM ${year}` : ''}${day ? ` Day ${day}` : ''}`);
 
     const allQuestions: Array<{
       number: number;
@@ -97,12 +98,17 @@ serve(async (req) => {
       alternatives: Array<{ letter: string; text: string }>;
     }> = [];
 
+    let detectedYear: number | null = null;
+
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
       
-      const userPrompt = `Extraia as questões do ENEM ${year}, Dia ${day} deste trecho de texto (parte ${i + 1} de ${chunks.length}).
+      const yearHint = year ? `ENEM ${year}` : 'ENEM (detecte o ano do texto)';
+      const dayHint = day ? `Dia ${day}` : '';
+      
+      const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho de texto (parte ${i + 1} de ${chunks.length}).
 
-Se não houver questões neste trecho, retorne {"questions": []}.
+Se não houver questões neste trecho, retorne {"questions": [], "detected_year": null}.
 
 TEXTO:
 """
@@ -141,7 +147,7 @@ ${chunk}
             { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
-        continue; // Skip failed chunk
+        continue;
       }
 
       const data = await response.json();
@@ -150,10 +156,11 @@ ${chunk}
       if (content) {
         try {
           const parsed = JSON.parse(content);
+          if (parsed.detected_year && !detectedYear) {
+            detectedYear = parsed.detected_year;
+          }
           if (parsed.questions && Array.isArray(parsed.questions)) {
             for (const q of parsed.questions) {
-              // Override area classification based on question number
-              q.area = getAreaForQuestion(q.number, day);
               allQuestions.push(q);
             }
           }
@@ -171,10 +178,14 @@ ${chunk}
       return true;
     }).sort((a, b) => a.number - b.number);
 
-    console.log(`Extracted ${uniqueQuestions.length} unique questions`);
+    console.log(`Extracted ${uniqueQuestions.length} unique questions, detected year: ${detectedYear}`);
 
     return new Response(
-      JSON.stringify({ questions: uniqueQuestions, total: uniqueQuestions.length }),
+      JSON.stringify({ 
+        questions: uniqueQuestions, 
+        total: uniqueQuestions.length,
+        detected_year: detectedYear || year || null,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

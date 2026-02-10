@@ -4,12 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, Trash2, AlertCircle } from 'lucide-react';
-import { useImportExam, ImportedQuestion } from '@/hooks/useImportExam';
+import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, Trash2, AlertCircle, X } from 'lucide-react';
+import { useImportExam, ImportedQuestion, DayUpload } from '@/hooks/useImportExam';
 
 const AREA_LABELS: Record<string, string> = {
   linguagens: 'Linguagens',
@@ -25,226 +24,143 @@ const AREA_COLORS: Record<string, string> = {
   matematica: 'bg-purple-500/10 text-purple-700 dark:text-purple-300',
 };
 
-function UploadStage({
-  onExtract,
-  loading,
-  onExtractAnswerKeyFromPdf,
-  year,
-  day,
-  setYear,
-  setDay,
+function PdfDropZone({
+  file,
+  onFile,
+  label,
+  sublabel,
 }: {
-  onExtract: (file: File, year: number, day: number, answerKey: string) => void;
-  loading: boolean;
-  onExtractAnswerKeyFromPdf: (file: File) => Promise<{ text: string; detectedYear: number | null }>;
-  year: number;
-  day: number;
-  setYear: (y: number) => void;
-  setDay: (d: number) => void;
+  file: File | null;
+  onFile: (f: File) => void;
+  label: string;
+  sublabel?: string;
 }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [answerKey, setAnswerKey] = useState('');
-  const [gabaritoMode, setGabaritoMode] = useState<'pdf' | 'text'>('pdf');
-  const [gabaritoFile, setGabaritoFile] = useState<File | null>(null);
-  const [gabaritoExtracting, setGabaritoExtracting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const gabaritoInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const dropped = e.dataTransfer.files[0];
-    if (dropped?.type === 'application/pdf') setFile(dropped);
-  };
+  return (
+    <div
+      onDragOver={e => e.preventDefault()}
+      onDrop={e => {
+        e.preventDefault();
+        const f = e.dataTransfer.files[0];
+        if (f?.type === 'application/pdf') onFile(f);
+      }}
+      onClick={() => inputRef.current?.click()}
+      className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
+    >
+      {file ? (
+        <div className="flex items-center justify-center gap-2">
+          <FileText className="h-5 w-5 text-primary shrink-0" />
+          <div className="text-left min-w-0">
+            <p className="font-medium text-xs truncate">{file.name}</p>
+            <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(1)} MB</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-1" />
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          {sublabel && <p className="text-xs text-muted-foreground/60">{sublabel}</p>}
+        </>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".pdf"
+        className="hidden"
+        onChange={e => {
+          const f = e.target.files?.[0];
+          if (f) onFile(f);
+        }}
+      />
+    </div>
+  );
+}
 
-  const handleGabaritoDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const dropped = e.dataTransfer.files[0];
-    if (dropped?.type === 'application/pdf') handleGabaritoFile(dropped);
-  };
+function DayRow({
+  dayNum,
+  upload,
+  onChange,
+}: {
+  dayNum: number;
+  upload: DayUpload;
+  onChange: (u: DayUpload) => void;
+}) {
+  const dayLabel = dayNum === 1 ? 'Linguagens + Humanas' : 'Natureza + Matemática';
 
-  const handleGabaritoFile = async (f: File) => {
-    setGabaritoFile(f);
-    setGabaritoExtracting(true);
-    try {
-      const { text, detectedYear } = await onExtractAnswerKeyFromPdf(f);
-      setAnswerKey(text);
-      if (detectedYear) setYear(detectedYear);
-    } catch {
-      // silently fail, user can paste manually
-    } finally {
-      setGabaritoExtracting(false);
-    }
-  };
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          Dia {dayNum}
+          <span className="text-xs font-normal text-muted-foreground">— {dayLabel}</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-3">
+          <PdfDropZone
+            file={upload.examFile}
+            onFile={f => onChange({ ...upload, examFile: f })}
+            label="Prova"
+            sublabel="PDF da prova"
+          />
+          <PdfDropZone
+            file={upload.gabaritoFile}
+            onFile={f => onChange({ ...upload, gabaritoFile: f })}
+            label="Gabarito"
+            sublabel="PDF do gabarito"
+          />
+        </div>
+        {upload.examFile && !upload.gabaritoFile && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Sem gabarito? As questões serão importadas sem resposta correta.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function UploadStage({
+  onProcess,
+  loading,
+  loadingMessage,
+  progress,
+}: {
+  onProcess: (days: DayUpload[]) => void;
+  loading: boolean;
+  loadingMessage: string;
+  progress: number;
+}) {
+  const [day1, setDay1] = useState<DayUpload>({ examFile: null, gabaritoFile: null, gabaritoText: '', day: 1 });
+  const [day2, setDay2] = useState<DayUpload>({ examFile: null, gabaritoFile: null, gabaritoText: '', day: 2 });
+
+  const hasAnyFile = day1.examFile || day2.examFile;
 
   const handleSubmit = () => {
-    if (!file) return;
-    onExtract(file, year, day, answerKey);
+    const days = [day1, day2].filter(d => d.examFile);
+    onProcess(days);
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Dados da Prova</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="year">Ano</Label>
-              <Input
-                id="year"
-                type="number"
-                min={2009}
-                max={2030}
-                value={year}
-                onChange={e => setYear(parseInt(e.target.value))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Dia</Label>
-              <Select value={String(day)} onValueChange={v => setDay(parseInt(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Dia 1 — Linguagens + Humanas</SelectItem>
-                  <SelectItem value="2">Dia 2 — Natureza + Matemática</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">PDF da Prova</CardTitle>
-          <CardDescription>Arraste ou selecione o PDF da prova</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div
-            onDragOver={e => e.preventDefault()}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-          >
-            {file ? (
-              <div className="flex items-center justify-center gap-3">
-                <FileText className="h-8 w-8 text-primary" />
-                <div className="text-left">
-                  <p className="font-medium text-sm">{file.name}</p>
-                  <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(1)} MB</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">Clique ou arraste o PDF aqui</p>
-              </>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf"
-              className="hidden"
-              onChange={e => {
-                const f = e.target.files?.[0];
-                if (f) setFile(f);
-              }}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Gabarito</CardTitle>
-          <CardDescription>
-            Envie o PDF do gabarito oficial ou cole manualmente
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Button
-              variant={gabaritoMode === 'pdf' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setGabaritoMode('pdf')}
-            >
-              <Upload className="h-3 w-3 mr-1" /> Upload PDF
-            </Button>
-            <Button
-              variant={gabaritoMode === 'text' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setGabaritoMode('text')}
-            >
-              <FileText className="h-3 w-3 mr-1" /> Colar texto
-            </Button>
-          </div>
-
-          {gabaritoMode === 'pdf' ? (
-            <div
-              onDragOver={e => e.preventDefault()}
-              onDrop={handleGabaritoDrop}
-              onClick={() => gabaritoInputRef.current?.click()}
-              className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
-            >
-              {gabaritoExtracting ? (
-                <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">Extraindo gabarito...</p>
-                </div>
-              ) : gabaritoFile ? (
-                <div className="flex items-center justify-center gap-3">
-                  <FileText className="h-6 w-6 text-primary" />
-                  <div className="text-left">
-                    <p className="font-medium text-sm">{gabaritoFile.name}</p>
-                    <p className="text-xs text-green-600">✓ Gabarito extraído</p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">PDF do gabarito oficial</p>
-                </>
-              )}
-              <input
-                ref={gabaritoInputRef}
-                type="file"
-                accept=".pdf"
-                className="hidden"
-                onChange={e => {
-                  const f = e.target.files?.[0];
-                  if (f) handleGabaritoFile(f);
-                }}
-              />
-            </div>
-          ) : (
-            <>
-              <Textarea
-                placeholder="1-D, 2-D, 3-B, 4-C, 5-A... ou DDBCA..."
-                value={answerKey}
-                onChange={e => setAnswerKey(e.target.value)}
-                rows={4}
-              />
-              <p className="text-xs text-muted-foreground">
-                Formatos aceitos: "1-D, 2-A" / "1D 2A" / "DACBE..." / deixe em branco para preencher depois
-              </p>
-            </>
-          )}
-        </CardContent>
-      </Card>
+    <div className="space-y-4">
+      <DayRow dayNum={1} upload={day1} onChange={setDay1} />
+      <DayRow dayNum={2} upload={day2} onChange={setDay2} />
 
       <Button
         className="w-full"
         size="lg"
         onClick={handleSubmit}
-        disabled={!file || loading}
+        disabled={!hasAnyFile || loading}
       >
         {loading ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Extraindo questões...
-          </>
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <div className="text-left">
+              <p className="text-sm">{loadingMessage || 'Processando...'}</p>
+              {progress > 0 && <p className="text-xs opacity-70">{progress}%</p>}
+            </div>
+          </div>
         ) : (
           <>
             <Upload className="h-4 w-4 mr-2" />
@@ -264,13 +180,14 @@ function PreviewStage({
   onBack,
 }: {
   questions: ImportedQuestion[];
-  onToggle: (n: number) => void;
-  onUpdateArea: (n: number, area: string) => void;
+  onToggle: (n: number, day: number) => void;
+  onUpdateArea: (n: number, day: number, area: string) => void;
   onConfirm: () => void;
   onBack: () => void;
 }) {
   const selected = questions.filter(q => q.selected);
   const withoutAnswer = selected.filter(q => !q.correct_answer);
+  const days = [...new Set(questions.map(q => q.day))].sort();
 
   return (
     <div className="space-y-4">
@@ -290,58 +207,57 @@ function PreviewStage({
         </div>
       )}
 
-      <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-        {questions.map(q => (
-          <Card key={q.number} className={`transition-opacity ${!q.selected ? 'opacity-40' : ''}`}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-sm">Q{q.number}</span>
-                    <Select value={q.area} onValueChange={v => onUpdateArea(q.number, v)}>
-                      <SelectTrigger className="h-6 w-auto text-xs px-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(AREA_LABELS).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {q.correct_answer ? (
-                      <Badge variant="outline" className="text-xs">Resp: {q.correct_answer}</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs text-amber-600">Sem gabarito</Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{q.statement}</p>
-                  <div className="flex gap-1 mt-1">
-                    {q.alternatives.map(a => (
-                      <span
-                        key={a.letter}
-                        className={`text-xs px-1.5 py-0.5 rounded ${
-                          a.letter === q.correct_answer
-                            ? 'bg-green-500/20 text-green-700 dark:text-green-300 font-bold'
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {a.letter}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0"
-                  onClick={() => onToggle(q.number)}
-                >
-                  <Trash2 className={`h-4 w-4 ${q.selected ? 'text-muted-foreground' : 'text-destructive'}`} />
-                </Button>
+      <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-1">
+        {days.map(day => {
+          const dayQuestions = questions.filter(q => q.day === day);
+          return (
+            <div key={day}>
+              <h3 className="text-sm font-semibold text-foreground mb-2 sticky top-0 bg-background py-1 z-10">
+                Dia {day} — {dayQuestions.filter(q => q.selected).length} questões
+              </h3>
+              <div className="space-y-2">
+                {dayQuestions.map(q => (
+                  <Card key={`${q.day}-${q.number}`} className={`transition-opacity ${!q.selected ? 'opacity-40' : ''}`}>
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span className="font-bold text-xs">Q{q.number}</span>
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                              {AREA_LABELS[q.area] || q.area}
+                            </Badge>
+                            {q.correct_answer ? (
+                              <Badge variant="outline" className="text-xs px-1.5 py-0">
+                                {q.correct_answer}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs px-1.5 py-0 text-amber-600">
+                                ?
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-1">{q.statement}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0 h-7 w-7"
+                          onClick={() => onToggle(q.number, q.day)}
+                        >
+                          {q.selected ? (
+                            <X className="h-3.5 w-3.5 text-muted-foreground" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5 text-primary" />
+                          )}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            </div>
+          );
+        })}
       </div>
 
       <Button className="w-full" size="lg" onClick={onConfirm} disabled={selected.length === 0}>
@@ -354,23 +270,23 @@ function PreviewStage({
 
 function ConfirmStage({
   questions,
-  year,
-  day,
+  detectedYear,
   loading,
   progress,
   onSave,
   onBack,
 }: {
   questions: ImportedQuestion[];
-  year: number;
-  day: number;
+  detectedYear: number | null;
   loading: boolean;
   progress: number;
-  onSave: () => void;
+  onSave: (year: number) => void;
   onBack: () => void;
 }) {
+  const [year, setYear] = useState(detectedYear || new Date().getFullYear());
   const selected = questions.filter(q => q.selected);
   const areas = [...new Set(selected.map(q => q.area))];
+  const days = [...new Set(selected.map(q => q.day))].sort();
 
   return (
     <div className="space-y-6">
@@ -386,10 +302,26 @@ function ConfirmStage({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="confirm-year">Ano da prova</Label>
+            <Input
+              id="confirm-year"
+              type="number"
+              min={2009}
+              max={2030}
+              value={year}
+              onChange={e => setYear(parseInt(e.target.value))}
+              className="w-32"
+            />
+            {detectedYear && (
+              <p className="text-xs text-muted-foreground">Detectado automaticamente: {detectedYear}</p>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-muted-foreground">Prova:</span>
-              <p className="font-medium">ENEM {year} — Dia {day}</p>
+              <span className="text-muted-foreground">Dias:</span>
+              <p className="font-medium">{days.map(d => `Dia ${d}`).join(' + ')}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Questões:</span>
@@ -399,8 +331,8 @@ function ConfirmStage({
 
           <div className="flex flex-wrap gap-2">
             {areas.map(a => (
-              <Badge key={a} className={AREA_COLORS[a]}>
-                {AREA_LABELS[a]}: {selected.filter(q => q.area === a).length}
+              <Badge key={a} className={AREA_COLORS[a] || 'bg-muted text-muted-foreground'}>
+                {AREA_LABELS[a] || a}: {selected.filter(q => q.area === a).length}
               </Badge>
             ))}
           </div>
@@ -413,7 +345,7 @@ function ConfirmStage({
 
           {loading && <Progress value={progress} className="h-2" />}
 
-          <Button className="w-full" size="lg" onClick={onSave} disabled={loading}>
+          <Button className="w-full" size="lg" onClick={() => onSave(year)} disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -438,12 +370,9 @@ export default function Import() {
     questions,
     loading,
     progress,
-    year,
-    day,
-    setYear,
-    setDay,
-    extractFromPdf,
-    extractAnswerKeyFromPdf,
+    detectedYear,
+    loadingMessage,
+    processUploads,
     removeQuestion,
     updateArea,
     saveQuestions,
@@ -456,11 +385,11 @@ export default function Import() {
       <div className="container max-w-2xl mx-auto px-4 py-8">
         <div className="space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Importar Questões</h1>
+            <h1 className="text-2xl font-bold text-foreground">Importar Prova ENEM</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {stage === 'upload' && 'Faça upload do PDF da prova do ENEM'}
+              {stage === 'upload' && 'Envie os PDFs da prova e gabarito de cada dia'}
               {stage === 'preview' && 'Revise as questões extraídas pela IA'}
-              {stage === 'confirm' && 'Confirme a importação'}
+              {stage === 'confirm' && 'Confirme o ano e importe'}
             </p>
           </div>
 
@@ -482,13 +411,10 @@ export default function Import() {
 
           {stage === 'upload' && (
             <UploadStage
-              onExtract={extractFromPdf}
+              onProcess={processUploads}
               loading={loading}
-              onExtractAnswerKeyFromPdf={extractAnswerKeyFromPdf}
-              year={year}
-              day={day}
-              setYear={setYear}
-              setDay={setDay}
+              loadingMessage={loadingMessage}
+              progress={progress}
             />
           )}
           {stage === 'preview' && (
@@ -503,8 +429,7 @@ export default function Import() {
           {stage === 'confirm' && (
             <ConfirmStage
               questions={questions}
-              year={year}
-              day={day}
+              detectedYear={detectedYear}
               loading={loading}
               progress={progress}
               onSave={saveQuestions}

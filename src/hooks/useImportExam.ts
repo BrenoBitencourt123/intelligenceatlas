@@ -10,9 +10,70 @@ export interface ImportedQuestion {
   alternatives: { letter: string; text: string }[];
   correct_answer: string | null;
   selected: boolean;
+  day: number;
+}
+
+export interface DayUpload {
+  examFile: File | null;
+  gabaritoFile: File | null;
+  gabaritoText: string;
+  day: number;
 }
 
 type Stage = 'upload' | 'preview' | 'confirm';
+
+async function extractTextFromPdf(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map((item: any) => item.str).join(' ');
+    fullText += pageText + '\n';
+  }
+
+  return fullText;
+}
+
+function parseAnswerKey(text: string): Record<number, string> {
+  const map: Record<number, string> = {};
+  const cleaned = text
+    .replace(/QUEST[ÃA]O|GABARITO|INGL[ÊE]S|ESPANHOL|PORTUGU[ÊE]S|L[ÍI]NGUA/gi, '')
+    .trim()
+    .toUpperCase();
+
+  // Format: "DACBE..." (sequential letters only)
+  if (/^[A-E]+$/.test(cleaned.replace(/\s/g, ''))) {
+    const letters = cleaned.replace(/\s/g, '');
+    for (let i = 0; i < letters.length; i++) {
+      map[i + 1] = letters[i];
+    }
+    return map;
+  }
+
+  // Format: "1-D, 2-A, 3-C" or "1D 2A 3C" or tabular PDF
+  const patterns = cleaned.match(/(\d+)\s*[-.\s]?\s*([A-E])/g);
+  if (patterns) {
+    for (const p of patterns) {
+      const match = p.match(/(\d+)\s*[-.\s]?\s*([A-E])/);
+      if (match) {
+        map[parseInt(match[1])] = match[2];
+      }
+    }
+  }
+
+  return map;
+}
+
+function detectYearFromText(text: string): number | null {
+  const match = text.match(/(?:Gabarito|GABARITO|ENEM|enem)\s*(\d{4})/i);
+  return match ? parseInt(match[1]) : null;
+}
 
 export function useImportExam() {
   const { user } = useAuth();
@@ -20,146 +81,111 @@ export function useImportExam() {
   const [questions, setQuestions] = useState<ImportedQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [year, setYear] = useState<number>(new Date().getFullYear());
-  const [day, setDay] = useState<number>(1);
+  const [detectedYear, setDetectedYear] = useState<number | null>(null);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
-  function parseAnswerKey(text: string): Record<number, string> {
-    const map: Record<number, string> = {};
-    // Remove common headers from PDF gabarito tables
-    const cleaned = text
-      .replace(/QUEST[ÃA]O|GABARITO|INGL[ÊE]S|ESPANHOL|PORTUGU[ÊE]S|L[ÍI]NGUA/gi, '')
-      .trim()
-      .toUpperCase();
-
-    // Format: "DACBE..." (sequential letters only)
-    if (/^[A-E]+$/.test(cleaned.replace(/\s/g, ''))) {
-      const letters = cleaned.replace(/\s/g, '');
-      for (let i = 0; i < letters.length; i++) {
-        map[i + 1] = letters[i];
-      }
-      return map;
+  async function processUploads(days: DayUpload[]) {
+    const activeDays = days.filter(d => d.examFile);
+    if (activeDays.length === 0) {
+      toast.error('Selecione pelo menos um PDF de prova');
+      return;
     }
 
-    // Format: "1-D, 2-A, 3-C" or "1D 2A 3C" or tabular PDF "1 D 46 E 2 D 47 D"
-    const patterns = cleaned.match(/(\d+)\s*[-.\s]?\s*([A-E])/g);
-    if (patterns) {
-      for (const p of patterns) {
-        const match = p.match(/(\d+)\s*[-.\s]?\s*([A-E])/);
-        if (match) {
-          map[parseInt(match[1])] = match[2];
-        }
-      }
-    }
-
-    return map;
-  }
-
-  async function extractAnswerKeyFromPdf(file: File): Promise<{ text: string; detectedYear: number | null }> {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdfjsLib = await import('pdfjs-dist');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item: any) => item.str).join(' ');
-      fullText += pageText + '\n';
-    }
-
-    // Auto-detect year
-    const yearMatch = fullText.match(/(?:Gabarito|GABARITO|ENEM)\s*(\d{4})/i);
-    const detectedYear = yearMatch ? parseInt(yearMatch[1]) : null;
-
-    return { text: fullText, detectedYear };
-  }
-
-  function applyAnswerKey(qs: ImportedQuestion[], answerKeyText: string): ImportedQuestion[] {
-    const keyMap = parseAnswerKey(answerKeyText);
-    return qs.map(q => ({
-      ...q,
-      correct_answer: keyMap[q.number] || null,
-    }));
-  }
-
-  async function extractFromPdf(file: File, examYear: number, examDay: number, answerKeyText: string) {
     setLoading(true);
+    setLoadingMessage('Extraindo texto dos PDFs...');
+    setProgress(0);
+
     try {
-      // Extract text from PDF using pdfjs-dist
-      const arrayBuffer = await file.arrayBuffer();
-      const pdfjsLib = await import('pdfjs-dist');
-      
-      // Set worker
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      const allQuestions: ImportedQuestion[] = [];
+      let yearFromPdf: number | null = null;
 
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let fullText = '';
+      for (let idx = 0; idx < activeDays.length; idx++) {
+        const dayUpload = activeDays[idx];
+        const { examFile, gabaritoFile, gabaritoText, day } = dayUpload;
 
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-        fullText += pageText + '\n\n';
+        // 1. Extract exam PDF text
+        setLoadingMessage(`Dia ${day}: extraindo texto da prova...`);
+        const examText = await extractTextFromPdf(examFile!);
+
+        if (!examText.trim()) {
+          toast.error(`Dia ${day}: não foi possível extrair texto do PDF`);
+          continue;
+        }
+
+        // 2. Extract gabarito
+        let answerKeyText = gabaritoText;
+        if (gabaritoFile) {
+          setLoadingMessage(`Dia ${day}: extraindo gabarito...`);
+          const gabText = await extractTextFromPdf(gabaritoFile);
+          answerKeyText = gabText;
+
+          // Try to detect year from gabarito
+          if (!yearFromPdf) {
+            yearFromPdf = detectYearFromText(gabText);
+          }
+        }
+
+        // 3. Send to AI
+        setLoadingMessage(`Dia ${day}: IA analisando questões...`);
+        const { data, error } = await supabase.functions.invoke('parse-exam-pdf', {
+          body: { pdfText: examText, day },
+        });
+
+        if (error) throw new Error(error.message || `Erro ao processar Dia ${day}`);
+
+        if (!data?.questions || data.questions.length === 0) {
+          toast.warning(`Dia ${day}: nenhuma questão encontrada`);
+          continue;
+        }
+
+        // Detect year from AI response
+        if (data.detected_year && !yearFromPdf) {
+          yearFromPdf = data.detected_year;
+        }
+
+        // 4. Map questions and apply answer key
+        const keyMap = answerKeyText.trim() ? parseAnswerKey(answerKeyText) : {};
+        const dayQuestions: ImportedQuestion[] = data.questions.map((q: any) => ({
+          ...q,
+          day,
+          correct_answer: keyMap[q.number] || null,
+          selected: true,
+        }));
+
+        allQuestions.push(...dayQuestions);
+        setProgress(Math.round(((idx + 1) / activeDays.length) * 100));
+        toast.success(`Dia ${day}: ${dayQuestions.length} questões extraídas`);
       }
 
-      if (!fullText.trim()) {
-        throw new Error('Não foi possível extrair texto do PDF. Verifique se o arquivo não é uma imagem escaneada.');
+      if (allQuestions.length === 0) {
+        throw new Error('Nenhuma questão extraída de nenhum dia');
       }
 
-      toast.info(`Texto extraído (${Math.round(fullText.length / 1024)}KB). Enviando para IA...`);
-
-      // Send to edge function
-      const { data, error } = await supabase.functions.invoke('parse-exam-pdf', {
-        body: { pdfText: fullText, year: examYear, day: examDay },
-      });
-
-      if (error) throw new Error(error.message || 'Erro ao processar PDF');
-
-      if (!data?.questions || data.questions.length === 0) {
-        throw new Error('Nenhuma questão encontrada no PDF.');
-      }
-
-      let importedQuestions: ImportedQuestion[] = data.questions.map((q: any) => ({
-        ...q,
-        correct_answer: null,
-        selected: true,
-      }));
-
-      // Apply answer key if provided
-      if (answerKeyText.trim()) {
-        importedQuestions = applyAnswerKey(importedQuestions, answerKeyText);
-      }
-
-      setQuestions(importedQuestions);
-      setYear(examYear);
-      setDay(examDay);
+      if (yearFromPdf) setDetectedYear(yearFromPdf);
+      setQuestions(allQuestions);
       setStage('preview');
-      toast.success(`${importedQuestions.length} questões extraídas!`);
     } catch (err: any) {
       console.error('Extract error:', err);
-      toast.error(err.message || 'Erro ao extrair questões do PDF');
+      toast.error(err.message || 'Erro ao extrair questões');
     } finally {
       setLoading(false);
+      setLoadingMessage('');
     }
   }
 
-  function removeQuestion(number: number) {
-    setQuestions(prev => prev.map(q => 
-      q.number === number ? { ...q, selected: !q.selected } : q
-    ));
-  }
-
-  function updateArea(number: number, newArea: string) {
+  function removeQuestion(number: number, day: number) {
     setQuestions(prev => prev.map(q =>
-      q.number === number ? { ...q, area: newArea } : q
+      q.number === number && q.day === day ? { ...q, selected: !q.selected } : q
     ));
   }
 
-  async function saveQuestions() {
+  function updateArea(number: number, day: number, newArea: string) {
+    setQuestions(prev => prev.map(q =>
+      q.number === number && q.day === day ? { ...q, area: newArea } : q
+    ));
+  }
+
+  async function saveQuestions(year: number) {
     if (!user) {
       toast.error('Faça login para importar questões');
       return;
@@ -189,7 +215,7 @@ export function useImportExam() {
           statement: q.statement,
           alternatives: q.alternatives as any,
           correct_answer: q.correct_answer || 'X',
-          year: year,
+          year,
           user_id: user.id,
           tags: [] as any,
         }));
@@ -224,6 +250,7 @@ export function useImportExam() {
     setStage('upload');
     setQuestions([]);
     setProgress(0);
+    setDetectedYear(null);
   }
 
   return {
@@ -231,18 +258,14 @@ export function useImportExam() {
     questions,
     loading,
     progress,
-    year,
-    day,
-    setYear,
-    setDay,
-    extractFromPdf,
+    detectedYear,
+    loadingMessage,
+    processUploads,
     removeQuestion,
     updateArea,
     saveQuestions,
     goToConfirm,
     goBack,
     reset,
-    parseAnswerKey,
-    extractAnswerKeyFromPdf,
   };
 }
