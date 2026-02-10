@@ -17,11 +17,12 @@ import { useAuth } from '@/contexts/AuthContext';
 // Load Stripe with publishable key
 const stripePromise = loadStripe('pk_live_51SwmwuLCrHbXOvxe3vDTpLjWPUqI8L0FPx3p1jgQy8NmXDT0DdJYuqVzFHQ3EvFQFfGe45g7UJGJSJhVl8fhXjzU00xLJvNzjz');
 
-interface EmbeddedCheckoutModalProps {
+export interface EmbeddedCheckoutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   priceId: string;
   planName: string;
+  couponId?: string;
 }
 
 export const EmbeddedCheckoutModal = ({
@@ -29,6 +30,7 @@ export const EmbeddedCheckoutModal = ({
   onOpenChange,
   priceId,
   planName,
+  couponId,
 }: EmbeddedCheckoutModalProps) => {
   const [error, setError] = useState<string | null>(null);
   const { session } = useAuth();
@@ -36,8 +38,11 @@ export const EmbeddedCheckoutModal = ({
   const fetchClientSecret = useCallback(async () => {
     setError(null);
     try {
+      const body: Record<string, string> = { price_id: priceId };
+      if (couponId) body.coupon_id = couponId;
+
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { price_id: priceId },
+        body,
       });
 
       if (error) throw error;
@@ -49,7 +54,7 @@ export const EmbeddedCheckoutModal = ({
       setError(message);
       throw err;
     }
-  }, [priceId]);
+  }, [priceId, couponId]);
 
   const options = { fetchClientSecret };
 

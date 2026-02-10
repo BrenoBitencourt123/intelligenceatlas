@@ -37,9 +37,9 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { price_id } = await req.json();
+    const { price_id, coupon_id } = await req.json();
     if (!price_id) throw new Error("price_id is required");
-    logStep("Received price_id", { price_id });
+    logStep("Received params", { price_id, coupon_id });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
@@ -55,7 +55,7 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://intelligenceatlas.lovable.app";
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
@@ -70,7 +70,15 @@ serve(async (req) => {
       metadata: {
         user_id: user.id,
       },
-    });
+    };
+
+    // Apply coupon if provided
+    if (coupon_id) {
+      sessionParams.discounts = [{ coupon: coupon_id }];
+      logStep("Applying coupon", { coupon_id });
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     logStep("Checkout session created", { sessionId: session.id });
 
