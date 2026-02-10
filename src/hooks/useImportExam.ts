@@ -9,6 +9,8 @@ export interface ImportedQuestion {
   statement: string;
   alternatives: { letter: string; text: string }[];
   correct_answer: string | null;
+  explanation: string | null;
+  tags: string[];
   selected: boolean;
   day: number;
 }
@@ -169,6 +171,8 @@ export function useImportExam() {
           ...q,
           day,
           correct_answer: keyMap[q.number] || null,
+          explanation: q.explanation || null,
+          tags: Array.isArray(q.tags) ? q.tags : [],
           selected: true,
         }));
 
@@ -237,7 +241,8 @@ export function useImportExam() {
           correct_answer: q.correct_answer || 'X',
           year,
           user_id: user.id,
-          tags: [] as any,
+          explanation: q.explanation || null,
+          tags: (q.tags && q.tags.length > 0 ? q.tags : []) as any,
         }));
 
         const { error } = await supabase.from('questions').insert(rows);

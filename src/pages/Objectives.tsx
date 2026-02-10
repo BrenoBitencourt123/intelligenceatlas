@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useStudySchedule } from '@/hooks/useStudySchedule';
 import { useStudySession } from '@/hooks/useStudySession';
-import { ArrowRight, Brain, Check, HelpCircle, ListChecks, Loader2, RotateCcw, X } from 'lucide-react';
+import { ArrowRight, BookOpen, Check, HelpCircle, Loader2, RotateCcw, X } from 'lucide-react';
 import MarkdownText from '@/components/atlas/MarkdownText';
 
 const BLOCK_COLORS = [
@@ -156,11 +156,27 @@ const Objectives = () => {
                   })}
                 </div>
 
-                {/* Feedback / Explanation */}
-                {showFeedback && currentQuestion.explanation && (
-                  <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
-                    <p className="font-medium text-foreground mb-1">Explicação:</p>
-                    {currentQuestion.explanation}
+                {/* Knowledge Capsule */}
+                {showFeedback && (currentQuestion.explanation || (currentQuestion.tags && currentQuestion.tags.length > 0)) && (
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-2.5 border-b border-primary/10">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold text-foreground">Cápsula de Conhecimento</span>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      {currentQuestion.tags && currentQuestion.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {currentQuestion.tags.map((tag, i) => (
+                            <Badge key={i} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      {currentQuestion.explanation && (
+                        <MarkdownText content={currentQuestion.explanation} className="text-sm text-muted-foreground leading-relaxed" />
+                      )}
+                    </div>
                   </div>
                 )}
               </CardContent>

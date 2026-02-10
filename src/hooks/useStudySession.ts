@@ -11,6 +11,7 @@ interface Question {
   alternatives: { letter: string; text: string }[];
   correct_answer: string;
   explanation: string | null;
+  tags: string[];
   image_url: string | null;
 }
 
@@ -72,6 +73,7 @@ export function useStudySession() {
         alternatives: q.alternatives as any,
         correct_answer: q.correct_answer,
         explanation: q.explanation,
+        tags: Array.isArray(q.tags) ? q.tags as string[] : [],
         image_url: q.image_url,
       })));
       setCurrentIndex(0);
