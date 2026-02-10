@@ -1,11 +1,11 @@
-import { Home, PenLine, History, User } from 'lucide-react';
+import { CalendarCheck, ListChecks, PenLine, User } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { title: 'Início', path: '/', icon: Home },
+  { title: 'Hoje', path: '/', icon: CalendarCheck },
+  { title: 'Objetivas', path: '/objetivas', icon: ListChecks },
   { title: 'Redação', path: '/redacao', icon: PenLine },
-  { title: 'Histórico', path: '/historico', icon: History },
   { title: 'Perfil', path: '/perfil', icon: User },
 ];
 

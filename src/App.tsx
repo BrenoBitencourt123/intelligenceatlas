@@ -5,8 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Home from "./pages/Home";
+import Today from "./pages/Today";
 import Essay from "./pages/Essay";
+import Objectives from "./pages/Objectives";
+import Flashcards from "./pages/Flashcards";
+import Import from "./pages/Import";
 import Plan from "./pages/Plan";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
@@ -31,7 +34,7 @@ const App = () => (
               path="/"
               element={
                 <ProtectedRoute>
-                  <Home />
+                  <Today />
                 </ProtectedRoute>
               }
             />
@@ -40,6 +43,30 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Essay />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/objetivas"
+              element={
+                <ProtectedRoute>
+                  <Objectives />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/flashcards"
+              element={
+                <ProtectedRoute>
+                  <Flashcards />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/importar"
+              element={
+                <ProtectedRoute>
+                  <Import />
                 </ProtectedRoute>
               }
             />

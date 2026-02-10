@@ -94,6 +94,83 @@ export type Database = {
           },
         ]
       }
+      flashcard_reviews: {
+        Row: {
+          flashcard_id: string
+          id: string
+          rating: string
+          reviewed_at: string
+          user_id: string
+        }
+        Insert: {
+          flashcard_id: string
+          id?: string
+          rating: string
+          reviewed_at?: string
+          user_id: string
+        }
+        Update: {
+          flashcard_id?: string
+          id?: string
+          rating?: string
+          reviewed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_reviews_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcards: {
+        Row: {
+          area: string | null
+          back: string
+          created_at: string
+          ease_factor: number
+          front: string
+          id: string
+          interval_days: number
+          next_review: string
+          review_count: number
+          source_id: string | null
+          source_type: string
+          user_id: string
+        }
+        Insert: {
+          area?: string | null
+          back: string
+          created_at?: string
+          ease_factor?: number
+          front: string
+          id?: string
+          interval_days?: number
+          next_review?: string
+          review_count?: number
+          source_id?: string | null
+          source_type?: string
+          user_id: string
+        }
+        Update: {
+          area?: string | null
+          back?: string
+          created_at?: string
+          ease_factor?: number
+          front?: string
+          id?: string
+          interval_days?: number
+          next_review?: string
+          review_count?: number
+          source_id?: string | null
+          source_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       passkey_credentials: {
         Row: {
           counter: number | null
@@ -154,6 +231,128 @@ export type Database = {
           name?: string | null
           plan_started_at?: string
           plan_type?: string
+        }
+        Relationships: []
+      }
+      question_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          is_correct: boolean
+          question_id: string
+          response_time_ms: number | null
+          selected_answer: string | null
+          session_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id: string
+          response_time_ms?: number | null
+          selected_answer?: string | null
+          session_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string
+          response_time_ms?: number | null
+          selected_answer?: string | null
+          session_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_attempts_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          alternatives: Json
+          area: string
+          correct_answer: string
+          created_at: string
+          explanation: string | null
+          id: string
+          image_url: string | null
+          number: number
+          statement: string
+          tags: Json
+          user_id: string
+          year: number
+        }
+        Insert: {
+          alternatives?: Json
+          area: string
+          correct_answer: string
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          image_url?: string | null
+          number: number
+          statement: string
+          tags?: Json
+          user_id: string
+          year: number
+        }
+        Update: {
+          alternatives?: Json
+          area?: string
+          correct_answer?: string
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          image_url?: string | null
+          number?: number
+          statement?: string
+          tags?: Json
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      study_sessions: {
+        Row: {
+          area: string
+          correct_answers: number
+          created_at: string
+          duration_minutes: number
+          flashcards_reviewed: number
+          id: string
+          questions_answered: number
+          session_date: string
+          user_id: string
+        }
+        Insert: {
+          area: string
+          correct_answers?: number
+          created_at?: string
+          duration_minutes?: number
+          flashcards_reviewed?: number
+          id?: string
+          questions_answered?: number
+          session_date?: string
+          user_id: string
+        }
+        Update: {
+          area?: string
+          correct_answers?: number
+          created_at?: string
+          duration_minutes?: number
+          flashcards_reviewed?: number
+          id?: string
+          questions_answered?: number
+          session_date?: string
+          user_id?: string
         }
         Relationships: []
       }
