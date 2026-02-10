@@ -1,101 +1,47 @@
 
-## Tres Modulos para Tornar Funcionais
 
-### 1. Mover Importacao para o Admin
+## Diagramacao das Questoes com Markdown
 
-**Problema**: A pagina `/importar` esta acessivel para todos os usuarios. As questoes sao gravadas com `user_id` do importador, entao so ele ve.
+### O que muda
 
-**Solucao**:
-- Adicionar uma nova aba "Importar" no painel Admin (`/admin`) com o fluxo de upload existente
-- Remover a rota `/importar` do acesso publico
-- Alterar a tabela `questions`: remover a dependencia de `user_id` para leitura. As questoes importadas pelo admin ficam disponiveis para todos os usuarios.
-  - Adicionar coluna `imported_by` (uuid, nullable) para rastrear quem importou
-  - Ajustar RLS: qualquer usuario autenticado pode LER questoes; apenas admin pode INSERIR/DELETAR
-- Ajustar `useStudyStats` e `Objectives` para buscar questoes sem filtrar por `user_id`
-- Remover botoes "Importar Questoes" da pagina Objetivas (usuario nao importa mais)
+A IA que extrai questoes do PDF passara a formatar o texto usando Markdown, e a interface de estudo renderizara essa formatacao corretamente.
 
-### 2. Modulo de Objetivas Funcional
+### Formatacao que a IA aplicara
 
-**Problema**: O botao "Iniciar Sessao" nao faz nada. Nao existe logica de sessao de estudo.
+- **Enunciado principal** em negrito
+- *Textos de apoio* (poemas, trechos, citacoes) em blocos italicos ou citacao (`>`)
+- Separacao clara entre texto-base e pergunta
+- Alternativas mantidas como texto limpo (ja sao exibidas com botoes)
+- Quebras de linha preservadas em poemas e listas
 
-**Solucao**: Criar o fluxo completo de sessao de estudo:
+### Mudancas tecnicas
 
-- Novo componente `StudySession` que:
-  - Busca questoes da area do dia (baseado no `useStudySchedule`)
-  - Seleciona 45 questoes aleatorias (ou todas disponiveis se menos)
-  - Divide em 3 blocos de 15
-  - Exibe uma questao por vez com as alternativas
-  - Ao responder: feedback imediato (verde = certo, vermelho = errado)
-  - Botao "Nao sei" que gera automaticamente um flashcard
-  - Ao final: tela de resultado com acertos/erros por bloco
-  - Grava na tabela `question_attempts` e `study_sessions`
+**1. Edge Function `parse-exam-pdf`**
+- Atualizar o `SYSTEM_PROMPT` (linhas 8-51) para instruir o modelo a usar Markdown no campo `statement`:
+  - Textos de apoio em bloco de citacao (`>`)
+  - Titulo/fonte do texto em italico
+  - Pergunta final em negrito
+  - Preservar formatacao de poemas com quebras de linha
 
-- Fluxo de tela:
+**2. Pagina Objectives (`src/pages/Objectives.tsx`)**
+- Trocar a tag `<p>` que renderiza `currentQuestion.statement` (linha 123) por um componente que interpreta Markdown
+- Usar `dangerouslySetInnerHTML` com uma funcao simples de conversao Markdown-to-HTML (negrito, italico, citacao, quebra de linha) -- sem necessidade de biblioteca externa
+- Ou criar um componente `MarkdownText` reutilizavel com regex para os padroes basicos
 
-```text
-[Objetivas] --> [Iniciar Sessao]
-    |
-    v
-[Questao 1/45]
-  Bloco 1: Aquecimento (1-15)
-  Bloco 2: Aprendizado (16-30)
-  Bloco 3: Consolidacao (31-45)
-    |
-    v
-[Resultado da Sessao]
-  - Acertos: 32/45
-  - Por bloco: 12/15, 10/15, 10/15
-  - Flashcards gerados: 5
-```
+**3. Pagina Flashcards (`src/pages/Flashcards.tsx`)**
+- Aplicar a mesma renderizacao Markdown no `front` dos flashcards, que pode conter enunciados formatados
 
-### 3. Flashcards Funcional (SRS)
+### O que NAO muda
 
-**Problema**: A pagina mostra apenas um placeholder. Nao ha interface de revisao nem mecanismo para criar flashcards.
+- Questoes ja importadas continuarao com texto simples (sem Markdown) -- a formatacao so se aplica a novas importacoes
+- As alternativas continuam sendo exibidas como botoes separados, sem Markdown
+- A estrutura do banco de dados permanece igual
 
-**Solucao**:
+### Arquivos alterados
 
-- **Geracao automatica**: Quando o usuario erra uma questao ou marca "Nao sei" no modulo de Objetivas, criar um flashcard automaticamente:
-  - `front`: enunciado resumido da questao
-  - `back`: resposta correta + explicacao
-  - `source_type`: 'question'
-  - `source_id`: id da questao
-  - `next_review`: hoje (disponivel imediatamente)
-
-- **Interface de revisao**: Novo componente na pagina Flashcards:
-  - Exibe o card com o `front` (pergunta)
-  - Toque/clique para revelar o `back` (resposta)
-  - 3 botoes de avaliacao: "Nao lembrei" / "Com esforco" / "Facil"
-  - Calcula proximo intervalo baseado no SRS:
-    - Nao lembrei: volta para 1 dia
-    - Com esforco: mantem intervalo atual
-    - Facil: avanca para proximo intervalo (1 -> 2 -> 4 -> 7 -> 15 -> 30 dias)
-  - Grava review na tabela `flashcard_reviews`
-  - Atualiza `next_review`, `interval_days`, `ease_factor`, `review_count` no flashcard
-  - Ao terminar todos: tela de "Revisao completa"
-
----
-
-### Mudancas no Banco de Dados
-
-1. Alterar RLS da tabela `questions`:
-   - SELECT: qualquer usuario autenticado pode ler todas as questoes
-   - INSERT: apenas admin (via `has_role`)
-   - DELETE: apenas admin
-
-2. Tornar `questions.user_id` nullable ou trocar para `imported_by` (para nao quebrar dados existentes, manter `user_id` mas nao filtrar por ele na leitura)
-
-### Arquivos Alterados
-
-| Arquivo | Mudanca |
-|---------|---------|
-| `src/pages/Admin.tsx` | Nova aba "Importar" com o fluxo de upload |
-| `src/pages/Import.tsx` | Remover ou redirecionar para admin |
-| `src/pages/Objectives.tsx` | Implementar sessao de estudo completa |
-| `src/pages/Flashcards.tsx` | Interface de revisao SRS |
-| `src/hooks/useImportExam.ts` | Ajustar para nao exigir user_id na insercao (ou usar admin id) |
-| `src/hooks/useStudyStats.ts` | Buscar questoes sem filtro de user_id |
-| `src/hooks/useStudySession.ts` | **Novo** - logica da sessao de estudo |
-| `src/hooks/useFlashcardReview.ts` | **Novo** - logica SRS de revisao |
-| `src/App.tsx` | Remover rota `/importar` do acesso publico |
-| `src/components/layout/BottomNav.tsx` | Remover link de importar se existir |
-| Migracao SQL | Ajustar RLS de `questions` |
+| Arquivo | Alteracao |
+|---------|-----------|
+| `supabase/functions/parse-exam-pdf/index.ts` | Prompt atualizado para gerar Markdown |
+| `src/pages/Objectives.tsx` | Renderizar statement como Markdown |
+| `src/pages/Flashcards.tsx` | Renderizar front/back como Markdown |
+| `src/components/atlas/MarkdownText.tsx` | **Novo** - componente reutilizavel de Markdown simples |
