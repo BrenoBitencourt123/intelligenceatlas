@@ -9,7 +9,7 @@ import Today from "./pages/Today";
 import Essay from "./pages/Essay";
 import Objectives from "./pages/Objectives";
 import Flashcards from "./pages/Flashcards";
-import Import from "./pages/Import";
+
 import Plan from "./pages/Plan";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
@@ -62,14 +62,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/importar"
-              element={
-                <ProtectedRoute>
-                  <Import />
-                </ProtectedRoute>
-              }
-            />
+            
             <Route
               path="/historico"
               element={
