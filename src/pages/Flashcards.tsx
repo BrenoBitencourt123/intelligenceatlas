@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { useFlashcardReview } from '@/hooks/useFlashcardReview';
 import { Brain, Check, Eye, Loader2, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
+import MarkdownText from '@/components/atlas/MarkdownText';
 
 const Flashcards = () => {
   const {
@@ -104,12 +105,12 @@ const Flashcards = () => {
 
                 {!isFlipped ? (
                   <div className="space-y-4">
-                    <p className="text-base leading-relaxed">{currentCard.front}</p>
+                    <MarkdownText content={currentCard.front} className="text-base leading-relaxed" />
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Resposta</p>
-                    <p className="text-base leading-relaxed whitespace-pre-line">{currentCard.back}</p>
+                    <MarkdownText content={currentCard.back} className="text-base leading-relaxed" />
                   </div>
                 )}
               </CardContent>

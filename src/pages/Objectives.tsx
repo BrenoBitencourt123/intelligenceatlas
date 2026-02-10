@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { useStudySchedule } from '@/hooks/useStudySchedule';
 import { useStudySession } from '@/hooks/useStudySession';
 import { ArrowRight, Brain, Check, HelpCircle, ListChecks, Loader2, RotateCcw, X } from 'lucide-react';
+import MarkdownText from '@/components/atlas/MarkdownText';
 
 const BLOCK_COLORS = [
   'bg-blue-500/10 text-blue-700 dark:text-blue-300',
@@ -119,7 +120,7 @@ const Objectives = () => {
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-start gap-2">
                   <Badge variant="outline" className="shrink-0 mt-0.5">Q{currentQuestion.number}</Badge>
-                  <p className="text-sm leading-relaxed">{currentQuestion.statement}</p>
+                  <MarkdownText content={currentQuestion.statement} className="text-sm leading-relaxed" />
                 </div>
 
                 {/* Alternatives */}

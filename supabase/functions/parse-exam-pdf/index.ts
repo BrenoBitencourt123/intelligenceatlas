@@ -17,6 +17,24 @@ REGRAS:
 4. Textos compartilhados ("Texto para as questões X a Y") devem ser incluídos no enunciado de CADA questão que os referencia
 5. Mantenha formatação de poemas e citações
 
+FORMATAÇÃO DO CAMPO "statement" (USE MARKDOWN):
+- Textos de apoio (poemas, trechos, citações, letras de música) devem vir em bloco de citação com "> " no início de cada linha
+- O título/fonte do texto de apoio (ex: autor, obra, ano) deve vir em itálico com *texto*
+- A pergunta final (o que se pede ao aluno) deve vir em **negrito**
+- Preserve quebras de linha em poemas e listas usando \\n
+- Separe claramente o texto-base da pergunta com uma linha em branco
+- NÃO aplique Markdown nas alternativas (elas são exibidas separadamente)
+
+Exemplo de statement formatado:
+> Lá vai o trem com o menino
+> Lá vai a vida a rodar
+> Lá vai ciranda e destino
+> Cidade e sertão e dar
+
+*Carlos Drummond de Andrade, "Menino", 1951.*
+
+**Com base no poema, é correto afirmar que o eu lírico expressa:**
+
 CLASSIFICAÇÃO POR ÁREA:
 Detecte a área de conhecimento de cada questão com base no CONTEÚDO e CONTEXTO:
 - "linguagens": Língua Portuguesa, Literatura, Artes, Educação Física, Tecnologias da Informação, Língua Estrangeira (Inglês/Espanhol)
@@ -36,7 +54,7 @@ FORMATO DE RESPOSTA (JSON):
     {
       "number": 1,
       "area": "linguagens",
-      "statement": "Texto completo do enunciado...",
+      "statement": "Texto completo do enunciado com Markdown...",
       "alternatives": [
         {"letter": "A", "text": "texto da alternativa A"},
         {"letter": "B", "text": "texto da alternativa B"},
