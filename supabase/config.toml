@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.webauthn-authenticate]
 verify_jwt = false
+
+[functions.parse-exam-pdf]
+verify_jwt = false
