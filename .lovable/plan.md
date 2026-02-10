@@ -1,57 +1,95 @@
 
 
-## Acesso ao PDF Original nas Questões
+## Melhorias na Tela de Objetivas, Home e Sistema de Planos
 
-### Problema
-Algumas questões do ENEM possuem imagens que nao sao extraidas pelo processamento de texto do PDF, deixando a questao incompleta. O usuario precisa de uma forma de consultar o PDF original quando isso acontecer.
+Sao 4 frentes de mudancas:
 
-### Solucao
+---
 
-Armazenar os PDFs originais das provas no storage do backend e adicionar um botao "Ver no PDF" na tela de questoes que abre o arquivo original.
+### 1. Persistencia da sessao de objetivas
 
-### Fluxo
+**Problema**: Ao sair da tela e voltar, a sessao zera porque todo o estado vive em useState.
 
-1. Durante a importacao (Admin), os PDFs enviados sao salvos no storage em um bucket `exam-pdfs`
-2. O ano e dia da prova ficam registrados no caminho do arquivo (ex: `2025/dia-1.pdf`)
-3. Na tela de Objetivas, um botao "Ver PDF da prova" aparece no cabecalho da questao, abrindo o PDF original em uma nova aba
+**Solucao**: Salvar o progresso da sessao em `localStorage` (questoes carregadas, indice atual, respostas dadas). Ao voltar na tela, recuperar o estado salvo e continuar de onde parou. Ao completar ou resetar, limpar o storage.
 
-### Mudancas tecnicas
+**Arquivos alterados**:
+- `src/hooks/useStudySession.ts` - Adicionar persistencia via localStorage no state da sessao
 
-**1. Criar bucket `exam-pdfs` (migracao SQL)**
+---
 
-Criar um bucket publico para armazenar os PDFs das provas. Publico pois as provas do ENEM sao documentos publicos e todos os usuarios precisam acessar.
+### 2. Integrar flashcards dentro da tela de Objetivas
 
-**2. Atualizar `useImportExam.ts`**
+**Problema**: Flashcards ficam numa tela separada e desconectada do fluxo de estudo.
 
-Apos extrair o texto do PDF, fazer upload do arquivo original para o storage no caminho `{year}/dia-{day}.pdf`. O ano sera determinado ao final (na etapa de confirmacao), entao o upload acontece na funcao `saveQuestions()` que ja recebe o ano como parametro.
+**Solucao**: Na tela de Objetivas (estado `idle`), alem do card de "Iniciar Sessao", exibir:
+- Card de flashcards pendentes com botao "Revisar" (inline, sem navegar para outra pagina)
+- Historico resumido do dia (questoes respondidas, taxa de acerto)
+- A revisao de flashcards acontece inline na propria tela de Objetivas, usando o mesmo hook `useFlashcardReview`
 
-**3. Criar hook `useExamPdf.ts`**
+**Arquivos alterados**:
+- `src/pages/Objectives.tsx` - Adicionar secao de flashcards e stats na tela idle, e modo de revisao inline
 
-Hook simples que, dado um `year` e `day`, retorna a URL publica do PDF no storage. Faz cache para nao recalcular a cada render.
+---
 
-**4. Atualizar `useStudySession.ts`**
+### 3. Dar mais destaque ao card de Redacao na Home ("Hoje")
 
-Incluir o campo `year` na interface `Question` e no mapeamento, para que a tela de Objetivas saiba de qual ano/prova eh a questao.
+**Problema**: O card de redacao nos dias que nao sao de redacao eh muito simples (so "Acessar").
 
-**5. Atualizar `Objectives.tsx`**
+**Solucao**: Em todos os dias, exibir um card mais completo de redacao com:
+- Tema do dia (se Pro/trial), titulo resumido
+- Ultimo score obtido
+- Progresso mensal de redacoes (ex: "5/30 correcoes usadas")
+- CTA mais chamativo ("Escrever Redacao" ou "Praticar Redacao")
 
-Adicionar um botao com icone de documento externo (FileText + ExternalLink) no cabecalho da questao. Ao clicar, abre o PDF da prova correspondente em nova aba.
+**Arquivos alterados**:
+- `src/pages/Today.tsx` - Reformular card de redacao para ser mais rico em informacoes
 
-### Arquivos alterados
+---
 
-| Arquivo | O que muda |
-|---------|-----------|
-| Nova migracao SQL | Cria bucket `exam-pdfs` com politica de leitura publica |
-| `src/hooks/useImportExam.ts` | Upload dos PDFs originais no `saveQuestions()` |
-| `src/hooks/useExamPdf.ts` | Novo hook para obter URL do PDF |
-| `src/hooks/useStudySession.ts` | Adicionar `year` a interface Question |
-| `src/pages/Objectives.tsx` | Botao "Ver PDF" no cabecalho da questao |
+### 4. Limitacoes por plano para o modulo de Objetivas
 
-### Detalhes de implementacao
+**Regras propostas**:
+- **Free**: Acesso limitado a 5 questoes por dia (degustacao)
+- **Basico**: Sessoes completas de 45 questoes, sem flashcards automaticos
+- **Pro**: Sessoes completas + flashcards automaticos + capsulas de conhecimento
 
-- O bucket sera publico (provas ENEM sao publicas)
-- O upload acontece junto com a importacao das questoes, sem etapa extra para o admin
-- Os PDFs originais enviados na importacao serao preservados no state do hook ate o momento do save
-- O botao aparece para todas as questoes, pois mesmo sem imagem faltante pode ser util consultar o PDF completo
-- Arquivo salvo como `{year}/dia-{day}.pdf`, sobrescrevendo se reimportar o mesmo dia/ano
+**Arquivos alterados**:
+- `src/hooks/usePlanFeatures.ts` - Adicionar flags para objetivas (`hasFullSessionAccess`, `hasAutoFlashcards`, `hasKnowledgeCapsules`)
+- `src/hooks/useStudySession.ts` - Aplicar limite de 5 questoes para Free
+- `src/pages/Objectives.tsx` - Esconder capsulas e flashcards conforme plano, mostrar CTA de upgrade
+
+---
+
+### 5. Desconto por duracao de assinatura (ate o ENEM)
+
+**Ideia**: Calcular automaticamente o numero de meses ate o proximo ENEM (geralmente novembro) e oferecer desconto progressivo.
+
+**Logica de desconto**:
+- 1 mes: 0% (preco cheio)
+- 3 meses: 5%
+- 6 meses: 10%
+- 12 meses: 20%
+
+**Implementacao**:
+- Criar cupons no Stripe para cada faixa de desconto
+- Na tela de Planos, calcular meses ate o ENEM e sugerir o pacote ideal
+- Exibir toggle entre "Mensal" e "Ate o ENEM" com o preco com desconto
+- O checkout cria a assinatura mensal com o cupom aplicado (duration_in_months)
+
+**Arquivos alterados**:
+- `src/lib/stripe.ts` - Adicionar configuracao dos cupons/descontos
+- `src/pages/Plan.tsx` - Adicionar seletor de duracao e calculo de desconto
+- `supabase/functions/create-checkout/index.ts` - Aceitar parametro de cupom no checkout
+
+---
+
+### Resumo tecnico
+
+| Mudanca | Arquivos |
+|---------|----------|
+| Persistencia de sessao | `useStudySession.ts` |
+| Flashcards inline | `Objectives.tsx` |
+| Card de redacao na Home | `Today.tsx` |
+| Gating por plano | `usePlanFeatures.ts`, `useStudySession.ts`, `Objectives.tsx` |
+| Desconto por duracao | `stripe.ts`, `Plan.tsx`, `create-checkout/index.ts`, cupons Stripe |
 
