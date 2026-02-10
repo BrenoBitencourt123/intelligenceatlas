@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useStudySchedule } from '@/hooks/useStudySchedule';
 import { useStudySession } from '@/hooks/useStudySession';
-import { ArrowRight, BookOpen, Check, HelpCircle, Loader2, RotateCcw, X } from 'lucide-react';
+import { useExamPdf } from '@/hooks/useExamPdf';
+import { ArrowRight, BookOpen, Check, FileText, HelpCircle, Loader2, RotateCcw, X } from 'lucide-react';
 import MarkdownText from '@/components/atlas/MarkdownText';
 
 const BLOCK_COLORS = [
@@ -32,6 +33,7 @@ const Objectives = () => {
     nextQuestion,
     resetSession,
   } = useStudySession();
+  const pdfUrl = useExamPdf(currentQuestion?.year);
 
   // Loading state
   if (state === 'loading') {
@@ -112,6 +114,17 @@ const Objectives = () => {
                 <X className="h-4 w-4" />
               </Button>
             </div>
+            {pdfUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => window.open(pdfUrl, '_blank')}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                Ver PDF da prova
+              </Button>
+            )}
 
             <Progress value={progress} className="h-1.5" />
 
