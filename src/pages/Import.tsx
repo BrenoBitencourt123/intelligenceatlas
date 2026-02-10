@@ -28,16 +28,27 @@ const AREA_COLORS: Record<string, string> = {
 function UploadStage({
   onExtract,
   loading,
+  onExtractAnswerKeyFromPdf,
+  year,
+  day,
+  setYear,
+  setDay,
 }: {
   onExtract: (file: File, year: number, day: number, answerKey: string) => void;
   loading: boolean;
+  onExtractAnswerKeyFromPdf: (file: File) => Promise<{ text: string; detectedYear: number | null }>;
+  year: number;
+  day: number;
+  setYear: (y: number) => void;
+  setDay: (d: number) => void;
 }) {
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [day, setDay] = useState('1');
   const [file, setFile] = useState<File | null>(null);
   const [answerKey, setAnswerKey] = useState('');
+  const [gabaritoMode, setGabaritoMode] = useState<'pdf' | 'text'>('pdf');
+  const [gabaritoFile, setGabaritoFile] = useState<File | null>(null);
+  const [gabaritoExtracting, setGabaritoExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const dropRef = useRef<HTMLDivElement>(null);
+  const gabaritoInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -45,9 +56,29 @@ function UploadStage({
     if (dropped?.type === 'application/pdf') setFile(dropped);
   };
 
+  const handleGabaritoDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const dropped = e.dataTransfer.files[0];
+    if (dropped?.type === 'application/pdf') handleGabaritoFile(dropped);
+  };
+
+  const handleGabaritoFile = async (f: File) => {
+    setGabaritoFile(f);
+    setGabaritoExtracting(true);
+    try {
+      const { text, detectedYear } = await onExtractAnswerKeyFromPdf(f);
+      setAnswerKey(text);
+      if (detectedYear) setYear(detectedYear);
+    } catch {
+      // silently fail, user can paste manually
+    } finally {
+      setGabaritoExtracting(false);
+    }
+  };
+
   const handleSubmit = () => {
     if (!file) return;
-    onExtract(file, year, parseInt(day), answerKey);
+    onExtract(file, year, day, answerKey);
   };
 
   return (
@@ -71,7 +102,7 @@ function UploadStage({
             </div>
             <div className="space-y-2">
               <Label>Dia</Label>
-              <Select value={day} onValueChange={setDay}>
+              <Select value={String(day)} onValueChange={v => setDay(parseInt(v))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -87,12 +118,11 @@ function UploadStage({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Upload do PDF</CardTitle>
+          <CardTitle className="text-lg">PDF da Prova</CardTitle>
           <CardDescription>Arraste ou selecione o PDF da prova</CardDescription>
         </CardHeader>
         <CardContent>
           <div
-            ref={dropRef}
             onDragOver={e => e.preventDefault()}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
@@ -130,19 +160,77 @@ function UploadStage({
         <CardHeader>
           <CardTitle className="text-lg">Gabarito</CardTitle>
           <CardDescription>
-            Cole o gabarito no formato "1-D, 2-A, 3-C..." ou apenas as letras "DACBE..."
+            Envie o PDF do gabarito oficial ou cole manualmente
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Textarea
-            placeholder="1-D, 2-D, 3-B, 4-C, 5-A... ou DDBCA..."
-            value={answerKey}
-            onChange={e => setAnswerKey(e.target.value)}
-            rows={4}
-          />
-          <p className="text-xs text-muted-foreground mt-2">
-            Formatos aceitos: "1-D, 2-A" / "1D 2A" / "DACBE..." / deixe em branco para preencher depois
-          </p>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Button
+              variant={gabaritoMode === 'pdf' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setGabaritoMode('pdf')}
+            >
+              <Upload className="h-3 w-3 mr-1" /> Upload PDF
+            </Button>
+            <Button
+              variant={gabaritoMode === 'text' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setGabaritoMode('text')}
+            >
+              <FileText className="h-3 w-3 mr-1" /> Colar texto
+            </Button>
+          </div>
+
+          {gabaritoMode === 'pdf' ? (
+            <div
+              onDragOver={e => e.preventDefault()}
+              onDrop={handleGabaritoDrop}
+              onClick={() => gabaritoInputRef.current?.click()}
+              className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+            >
+              {gabaritoExtracting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Extraindo gabarito...</p>
+                </div>
+              ) : gabaritoFile ? (
+                <div className="flex items-center justify-center gap-3">
+                  <FileText className="h-6 w-6 text-primary" />
+                  <div className="text-left">
+                    <p className="font-medium text-sm">{gabaritoFile.name}</p>
+                    <p className="text-xs text-green-600">✓ Gabarito extraído</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">PDF do gabarito oficial</p>
+                </>
+              )}
+              <input
+                ref={gabaritoInputRef}
+                type="file"
+                accept=".pdf"
+                className="hidden"
+                onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (f) handleGabaritoFile(f);
+                }}
+              />
+            </div>
+          ) : (
+            <>
+              <Textarea
+                placeholder="1-D, 2-D, 3-B, 4-C, 5-A... ou DDBCA..."
+                value={answerKey}
+                onChange={e => setAnswerKey(e.target.value)}
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">
+                Formatos aceitos: "1-D, 2-A" / "1D 2A" / "DACBE..." / deixe em branco para preencher depois
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -352,7 +440,10 @@ export default function Import() {
     progress,
     year,
     day,
+    setYear,
+    setDay,
     extractFromPdf,
+    extractAnswerKeyFromPdf,
     removeQuestion,
     updateArea,
     saveQuestions,
@@ -390,7 +481,15 @@ export default function Import() {
           </div>
 
           {stage === 'upload' && (
-            <UploadStage onExtract={extractFromPdf} loading={loading} />
+            <UploadStage
+              onExtract={extractFromPdf}
+              loading={loading}
+              onExtractAnswerKeyFromPdf={extractAnswerKeyFromPdf}
+              year={year}
+              day={day}
+              setYear={setYear}
+              setDay={setDay}
+            />
           )}
           {stage === 'preview' && (
             <PreviewStage
