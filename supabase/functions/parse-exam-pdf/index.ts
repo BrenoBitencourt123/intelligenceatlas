@@ -50,7 +50,7 @@ FORMATO DE RESPOSTA (JSON):
 
 Retorne APENAS o JSON, sem texto adicional.`;
 
-function splitTextIntoChunks(text: string, maxChunkSize = 12000): string[] {
+function splitTextIntoChunks(text: string, maxChunkSize = 24000): string[] {
   const chunks: string[] = [];
   const lines = text.split('\n');
   let currentChunk = '';
@@ -100,13 +100,19 @@ serve(async (req) => {
 
     let detectedYear: number | null = null;
 
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
+    // Process all chunks in parallel (batches of 3 to avoid rate limits)
+    const BATCH_SIZE = 3;
+    const results: Array<{ questions: any[]; detected_year: number | null }> = [];
+
+    for (let batchStart = 0; batchStart < chunks.length; batchStart += BATCH_SIZE) {
+      const batch = chunks.slice(batchStart, batchStart + BATCH_SIZE);
       
-      const yearHint = year ? `ENEM ${year}` : 'ENEM (detecte o ano do texto)';
-      const dayHint = day ? `Dia ${day}` : '';
-      
-      const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho de texto (parte ${i + 1} de ${chunks.length}).
+      const batchPromises = batch.map(async (chunk, batchIdx) => {
+        const i = batchStart + batchIdx;
+        const yearHint = year ? `ENEM ${year}` : 'ENEM (detecte o ano do texto)';
+        const dayHint = day ? `Dia ${day}` : '';
+        
+        const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho de texto (parte ${i + 1} de ${chunks.length}).
 
 Se não houver questões neste trecho, retorne {"questions": [], "detected_year": null}.
 
@@ -115,51 +121,81 @@ TEXTO:
 ${chunk}
 """`;
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: 0.2,
-          response_format: { type: "json_object" },
-        }),
+        try {
+          const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                { role: "system", content: SYSTEM_PROMPT },
+                { role: "user", content: userPrompt },
+              ],
+              temperature: 0.2,
+              response_format: { type: "json_object" },
+            }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`AI error on chunk ${i + 1}:`, response.status, errorText);
+            if (response.status === 429) {
+              // Wait and retry once on rate limit
+              await new Promise(r => setTimeout(r, 5000));
+              const retry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  model: "google/gemini-2.5-flash",
+                  messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "user", content: userPrompt },
+                  ],
+                  temperature: 0.2,
+                  response_format: { type: "json_object" },
+                }),
+              });
+              if (!retry.ok) return { questions: [], detected_year: null };
+              const retryData = await retry.json();
+              const retryContent = retryData.choices?.[0]?.message?.content;
+              if (retryContent) {
+                try { return JSON.parse(retryContent); } catch { return { questions: [], detected_year: null }; }
+              }
+            }
+            return { questions: [], detected_year: null };
+          }
+
+          const data = await response.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) {
+            try { return JSON.parse(content); } catch { return { questions: [], detected_year: null }; }
+          }
+          return { questions: [], detected_year: null };
+        } catch (err) {
+          console.error(`Chunk ${i + 1} error:`, err);
+          return { questions: [], detected_year: null };
+        }
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`AI error on chunk ${i + 1}:`, response.status, errorText);
-        if (response.status === 429) {
-          return new Response(
-            JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }),
-            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        continue;
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+      console.log(`Completed batch ${Math.floor(batchStart / BATCH_SIZE) + 1}, processed ${Math.min(batchStart + BATCH_SIZE, chunks.length)}/${chunks.length} chunks`);
+    }
+
+    // Collect results
+    for (const result of results) {
+      if (result.detected_year && !detectedYear) {
+        detectedYear = result.detected_year;
       }
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-
-      if (content) {
-        try {
-          const parsed = JSON.parse(content);
-          if (parsed.detected_year && !detectedYear) {
-            detectedYear = parsed.detected_year;
-          }
-          if (parsed.questions && Array.isArray(parsed.questions)) {
-            for (const q of parsed.questions) {
-              allQuestions.push(q);
-            }
-          }
-        } catch (parseErr) {
-          console.error(`Failed to parse chunk ${i + 1}:`, parseErr);
+      if (result.questions && Array.isArray(result.questions)) {
+        for (const q of result.questions) {
+          allQuestions.push(q);
         }
       }
     }
