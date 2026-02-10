@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -24,7 +24,38 @@ interface SessionResult {
   durationMinutes: number;
 }
 
+interface PersistedSession {
+  questions: Question[];
+  currentIndex: number;
+  answers: Record<number, { selected: string | null; correct: boolean }>;
+  startTime: number;
+  flashcardsGenerated: number;
+  area: string | null;
+}
+
 type SessionState = 'idle' | 'loading' | 'active' | 'result';
+
+const STORAGE_KEY = 'atlas_study_session';
+
+function saveToStorage(data: PersistedSession) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch {}
+}
+
+function loadFromStorage(): PersistedSession | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function clearStorage() {
+  localStorage.removeItem(STORAGE_KEY);
+}
 
 export function useStudySession() {
   const { user } = useAuth();
@@ -37,13 +68,40 @@ export function useStudySession() {
   const [startTime, setStartTime] = useState<number>(0);
   const [flashcardsGenerated, setFlashcardsGenerated] = useState(0);
 
+  // Restore session from localStorage on mount
+  useEffect(() => {
+    const saved = loadFromStorage();
+    if (saved && saved.questions.length > 0) {
+      setQuestions(saved.questions);
+      setCurrentIndex(saved.currentIndex);
+      setAnswers(saved.answers);
+      setStartTime(saved.startTime);
+      setFlashcardsGenerated(saved.flashcardsGenerated);
+      setState('active');
+    }
+  }, []);
+
+  // Persist session state whenever it changes
+  useEffect(() => {
+    if (state === 'active' && questions.length > 0) {
+      saveToStorage({
+        questions,
+        currentIndex,
+        answers,
+        startTime,
+        flashcardsGenerated,
+        area: questions[0]?.area ?? null,
+      });
+    }
+  }, [state, questions, currentIndex, answers, startTime, flashcardsGenerated]);
+
   const currentQuestion = questions[currentIndex] ?? null;
   const currentBlock = Math.floor(currentIndex / 15);
   const blockLabels = ['Aquecimento', 'Aprendizado', 'Consolidação'];
   const totalQuestions = questions.length;
   const progress = totalQuestions > 0 ? Math.round(((currentIndex + (showFeedback ? 1 : 0)) / totalQuestions) * 100) : 0;
 
-  const startSession = useCallback(async (area: string | null) => {
+  const startSession = useCallback(async (area: string | null, questionLimit?: number) => {
     if (!user) return;
     setState('loading');
 
@@ -63,8 +121,8 @@ export function useStudySession() {
         return;
       }
 
-      // Shuffle and pick up to 45
-      const shuffled = data.sort(() => Math.random() - 0.5).slice(0, 45);
+      const limit = questionLimit ?? 45;
+      const shuffled = data.sort(() => Math.random() - 0.5).slice(0, limit);
 
       setQuestions(shuffled.map(q => ({
         id: q.id,
@@ -118,7 +176,7 @@ export function useStudySession() {
     }
   }, [user]);
 
-  const answerQuestion = useCallback(async (selectedLetter: string | null) => {
+  const answerQuestion = useCallback(async (selectedLetter: string | null, autoFlashcard = true) => {
     if (!currentQuestion || showFeedback) return;
 
     const isCorrect = selectedLetter === currentQuestion.correct_answer;
@@ -139,8 +197,8 @@ export function useStudySession() {
       }).then(() => {});
     }
 
-    // Auto-generate flashcard on wrong answer or "Não sei"
-    if (!isCorrect) {
+    // Auto-generate flashcard on wrong answer (only if plan allows)
+    if (!isCorrect && autoFlashcard) {
       await generateFlashcard(currentQuestion);
     }
   }, [currentQuestion, currentIndex, showFeedback, user, generateFlashcard]);
@@ -149,8 +207,6 @@ export function useStudySession() {
     if (currentIndex + 1 >= totalQuestions) {
       // Session complete
       const durationMinutes = Math.round((Date.now() - startTime) / 60000);
-      const correctCount = Object.values(answers).filter(a => a.correct).length + (showFeedback && answers[currentIndex]?.correct ? 0 : 0);
-
       const totalCorrect = Object.values(answers).filter(a => a.correct).length;
 
       // Calculate per-block results
@@ -179,6 +235,7 @@ export function useStudySession() {
 
       setResult(sessionResult);
       setState('result');
+      clearStorage();
 
       // Save study session
       if (user && currentQuestion) {
@@ -206,6 +263,7 @@ export function useStudySession() {
     setShowFeedback(false);
     setResult(null);
     setFlashcardsGenerated(0);
+    clearStorage();
   }, []);
 
   return {

@@ -3,12 +3,14 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStudySchedule } from '@/hooks/useStudySchedule';
 import { useStudyStats } from '@/hooks/useStudyStats';
+import { useUserStats } from '@/hooks/useUserStats';
 import { useDailyTheme } from '@/hooks/useDailyTheme';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
-import { BookOpen, Brain, PenLine, Target, Flame, CheckCircle2, ArrowRight, Calendar } from 'lucide-react';
+import { BookOpen, Brain, PenLine, Target, Flame, CheckCircle2, ArrowRight, Calendar, Crown } from 'lucide-react';
 
 const AREA_ICONS: Record<string, typeof BookOpen> = {
   matematica: Target,
@@ -21,12 +23,16 @@ const Today = () => {
   const navigate = useNavigate();
   const schedule = useStudySchedule();
   const stats = useStudyStats();
+  const userStats = useUserStats();
   const { theme, isLoading: isThemeLoading } = useDailyTheme();
-  const { hasThemeAccess } = usePlanFeatures();
+  const { hasThemeAccess, monthlyLimit, isPro, isFree } = usePlanFeatures();
 
   const AreaIcon = schedule.area && schedule.area !== 'mista' 
     ? AREA_ICONS[schedule.area] || Target 
     : Target;
+
+  const usedEssays = isFree ? userStats.totalEssays : userStats.monthlyEssays;
+  const usagePercentage = Math.min(100, Math.round((usedEssays / monthlyLimit) * 100));
 
   return (
     <MainLayout>
@@ -146,6 +152,66 @@ const Today = () => {
             </Card>
           )}
 
+          {/* Enhanced Redação Card (shown on all days) */}
+          <Card className="bg-card border">
+            <CardContent className="p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <PenLine className="h-4 w-4" />
+                  Redação
+                </h3>
+                {!isFree && (
+                  <Badge variant="outline" className="text-xs">
+                    {usedEssays}/{monthlyLimit}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Theme preview */}
+              {!isThemeLoading && hasThemeAccess && theme && (
+                <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Tema do dia</p>
+                  <p className="text-sm font-medium text-foreground line-clamp-2">{theme.title}</p>
+                </div>
+              )}
+
+              {/* Last score */}
+              {!userStats.isLoading && userStats.lastScore !== null && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Última nota:</span>
+                  <span className="font-bold text-foreground">{userStats.lastScore}</span>
+                </div>
+              )}
+
+              {/* Monthly progress bar */}
+              {!isFree && !userStats.isLoading && (
+                <div className="space-y-1">
+                  <Progress value={usagePercentage} className="h-1.5" />
+                  <p className="text-xs text-muted-foreground">
+                    {usedEssays} de {monthlyLimit} correções usadas este mês
+                  </p>
+                </div>
+              )}
+
+              {isFree && (
+                <p className="text-xs text-muted-foreground">
+                  {usedEssays >= 1
+                    ? 'Redação gratuita utilizada'
+                    : '1 redação gratuita disponível'}
+                </p>
+              )}
+
+              <Button 
+                onClick={() => navigate('/redacao')} 
+                className="w-full gap-2"
+                variant={schedule.isEssayDay ? 'default' : 'outline'}
+              >
+                {schedule.isEssayDay ? 'Escrever Redação' : 'Praticar Redação'}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Flashcards Card */}
           <Card className="bg-card">
             <CardContent className="p-6">
@@ -168,7 +234,7 @@ const Today = () => {
                 <Button
                   variant={stats.flashcardsDue > 0 ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => navigate('/flashcards')}
+                  onClick={() => navigate('/objetivas')}
                   disabled={stats.flashcardsDue === 0}
                 >
                   Revisar
@@ -181,23 +247,6 @@ const Today = () => {
               )}
             </CardContent>
           </Card>
-
-          {/* Quick access to essay (non-essay days) */}
-          {!schedule.isEssayDay && (
-            <Card className="bg-card">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <PenLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Redação</span>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/redacao')}>
-                    Acessar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </MainLayout>
