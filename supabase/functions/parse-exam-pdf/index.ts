@@ -50,7 +50,7 @@ FORMATO DE RESPOSTA (JSON):
 
 Retorne APENAS o JSON, sem texto adicional.`;
 
-function splitTextIntoChunks(text: string, maxChunkSize = 24000): string[] {
+function splitTextIntoChunks(text: string, maxChunkSize = 15000): string[] {
   const chunks: string[] = [];
   const lines = text.split('\n');
   let currentChunk = '';
@@ -135,6 +135,7 @@ ${chunk}
                 { role: "user", content: userPrompt },
               ],
               temperature: 0.2,
+              max_tokens: 16000,
               response_format: { type: "json_object" },
             }),
           });
@@ -152,17 +153,20 @@ ${chunk}
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  model: "google/gemini-2.5-flash",
+                    model: "google/gemini-2.5-flash",
                   messages: [
                     { role: "system", content: SYSTEM_PROMPT },
                     { role: "user", content: userPrompt },
                   ],
                   temperature: 0.2,
+                  max_tokens: 16000,
                   response_format: { type: "json_object" },
                 }),
               });
               if (!retry.ok) return { questions: [], detected_year: null };
               const retryData = await retry.json();
+              const retryFinish = retryData.choices?.[0]?.finish_reason;
+              console.log(`Chunk ${i + 1} retry finish_reason: ${retryFinish}`);
               const retryContent = retryData.choices?.[0]?.message?.content;
               if (retryContent) {
                 try { return JSON.parse(retryContent); } catch { return { questions: [], detected_year: null }; }
@@ -172,9 +176,21 @@ ${chunk}
           }
 
           const data = await response.json();
+          const finishReason = data.choices?.[0]?.finish_reason;
+          const usage = data.usage;
+          console.log(`Chunk ${i + 1} finish_reason: ${finishReason}, tokens: ${JSON.stringify(usage)}`);
+          
+          if (finishReason === 'length') {
+            console.warn(`Chunk ${i + 1} was TRUNCATED! Output hit max_tokens limit.`);
+          }
+          
           const content = data.choices?.[0]?.message?.content;
           if (content) {
-            try { return JSON.parse(content); } catch { return { questions: [], detected_year: null }; }
+            try { 
+              const parsed = JSON.parse(content);
+              console.log(`Chunk ${i + 1} extracted ${parsed.questions?.length || 0} questions`);
+              return parsed;
+            } catch { return { questions: [], detected_year: null }; }
           }
           return { questions: [], detected_year: null };
         } catch (err) {
