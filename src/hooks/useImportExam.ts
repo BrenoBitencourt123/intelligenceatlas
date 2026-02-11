@@ -48,6 +48,23 @@ function cleanPdfText(text: string): string {
   return cleaned.trim();
 }
 
+function splitTextIntoChunks(text: string, maxChunkSize = 30000): string[] {
+  const chunks: string[] = [];
+  const lines = text.split('\n');
+  let currentChunk = '';
+  for (const line of lines) {
+    if (currentChunk.length + line.length > maxChunkSize && currentChunk.length > 0) {
+      chunks.push(currentChunk);
+      currentChunk = '';
+    }
+    currentChunk += line + '\n';
+  }
+  if (currentChunk.trim()) {
+    chunks.push(currentChunk);
+  }
+  return chunks;
+}
+
 async function extractTextFromPdf(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
   const pdfjsLib = await import('pdfjs-dist');
@@ -140,78 +157,101 @@ export function useImportExam() {
     try {
       const allQuestions: ImportedQuestion[] = [];
       let yearFromPdf: number | null = null;
+      const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-exam-pdf`;
+      const session = (await supabase.auth.getSession()).data.session;
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      };
 
-      for (let idx = 0; idx < activeDays.length; idx++) {
-        const dayUpload = activeDays[idx];
+      // Count total chunks across all days for accurate progress
+      const dayChunks: { day: number; chunks: string[]; gabaritoText: string }[] = [];
+      
+      for (const dayUpload of activeDays) {
         const { examFile, gabaritoFile, gabaritoText, day } = dayUpload;
+        if (examFile) pendingPdfFiles.set(day, examFile);
 
-        // Store original PDF for later upload
-        if (examFile) {
-          pendingPdfFiles.set(day, examFile);
-        }
-
-        // 1. Extract exam PDF text
         setLoadingMessage(`Dia ${day}: extraindo texto da prova...`);
         const examText = await extractTextFromPdf(examFile!);
-
         if (!examText.trim()) {
           toast.error(`Dia ${day}: não foi possível extrair texto do PDF`);
           continue;
         }
 
-        // 2. Extract gabarito
-        let answerKeyText = gabaritoText;
+        let answerKey = gabaritoText;
         if (gabaritoFile) {
           setLoadingMessage(`Dia ${day}: extraindo gabarito...`);
           const gabText = await extractTextFromPdf(gabaritoFile);
-          answerKeyText = gabText;
+          answerKey = gabText;
+          if (!yearFromPdf) yearFromPdf = detectYearFromText(gabText);
+        }
 
-          // Try to detect year from gabarito
-          if (!yearFromPdf) {
-            yearFromPdf = detectYearFromText(gabText);
+        const chunks = splitTextIntoChunks(examText);
+        dayChunks.push({ day, chunks, gabaritoText: answerKey });
+      }
+
+      const totalChunkCount = dayChunks.reduce((sum, d) => sum + d.chunks.length, 0);
+      let completedChunks = 0;
+
+      for (const { day, chunks, gabaritoText: answerKeyText } of dayChunks) {
+        setLoadingMessage(`Dia ${day}: IA analisando questões (${chunks.length} partes)...`);
+
+        // Process chunks in parallel batches of 3 to avoid rate limits
+        const BATCH = 3;
+        const dayQuestionsList: any[] = [];
+
+        for (let b = 0; b < chunks.length; b += BATCH) {
+          const batch = chunks.slice(b, b + BATCH);
+          const promises = batch.map(async (chunk, bIdx) => {
+            const i = b + bIdx;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3 * 60 * 1000);
+            try {
+              const resp = await fetch(fnUrl, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ chunk, chunkIndex: i, totalChunks: chunks.length, year: yearFromPdf, day }),
+                signal: controller.signal,
+              });
+              clearTimeout(timeoutId);
+              if (!resp.ok) {
+                console.error(`Chunk ${i + 1} failed:`, await resp.text());
+                return { questions: [], detected_year: null };
+              }
+              return await resp.json();
+            } catch (err) {
+              clearTimeout(timeoutId);
+              console.error(`Chunk ${i + 1} error:`, err);
+              return { questions: [], detected_year: null };
+            }
+          });
+
+          const results = await Promise.all(promises);
+          for (const r of results) {
+            if (r.detected_year && !yearFromPdf) yearFromPdf = r.detected_year;
+            dayQuestionsList.push(...(r.questions || []));
           }
+          completedChunks += batch.length;
+          setProgress(Math.round((completedChunks / totalChunkCount) * 100));
+          setLoadingMessage(`Dia ${day}: ${completedChunks}/${totalChunkCount} partes processadas...`);
         }
 
-        // 3. Send to AI (use direct fetch with extended timeout for long processing)
-        setLoadingMessage(`Dia ${day}: IA analisando questões...`);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000); // 5 min
-
-        const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-exam-pdf`;
-        const session = (await supabase.auth.getSession()).data.session;
-
-        const response = await fetch(fnUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ pdfText: examText, day }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(errText || `Erro ao processar Dia ${day}`);
-        }
-
-        const data = await response.json();
-
-        if (!data?.questions || data.questions.length === 0) {
+        if (dayQuestionsList.length === 0) {
           toast.warning(`Dia ${day}: nenhuma questão encontrada`);
           continue;
         }
 
-        // Detect year from AI response
-        if (data.detected_year && !yearFromPdf) {
-          yearFromPdf = data.detected_year;
-        }
+        // Deduplicate within day
+        const seen = new Set<number>();
+        const uniqueDayQuestions = dayQuestionsList.filter((q: any) => {
+          if (seen.has(q.number)) return false;
+          seen.add(q.number);
+          return true;
+        });
 
-        // 4. Map questions and apply answer key
         const keyMap = answerKeyText.trim() ? parseAnswerKey(answerKeyText) : {};
-        const dayQuestions: ImportedQuestion[] = data.questions.map((q: any) => {
+        const dayQuestions: ImportedQuestion[] = uniqueDayQuestions.map((q: any) => {
           const isAnnulled = keyMap[q.number] === 'ANULADA';
           return {
             ...q,
@@ -225,7 +265,6 @@ export function useImportExam() {
         });
 
         allQuestions.push(...dayQuestions);
-        setProgress(Math.round(((idx + 1) / activeDays.length) * 100));
         toast.success(`Dia ${day}: ${dayQuestions.length} questões extraídas`);
       }
 
