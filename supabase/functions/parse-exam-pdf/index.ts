@@ -101,7 +101,7 @@ interface ChunkResult {
   chunkText: string;
 }
 
-async function callAI(apiKey: string, userPrompt: string, maxTokens = 32000): Promise<{ parsed: any; finishReason: string; usage: any }> {
+async function callAI(apiKey: string, userPrompt: string, maxTokens = 50000): Promise<{ parsed: any; finishReason: string; usage: any }> {
   const makeRequest = async () => {
     return await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
