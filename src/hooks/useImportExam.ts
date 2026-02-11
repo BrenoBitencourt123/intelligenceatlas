@@ -13,6 +13,7 @@ export interface ImportedQuestion {
   tags: string[];
   selected: boolean;
   day: number;
+  annulled: boolean;
 }
 
 export interface DayUpload {
@@ -72,22 +73,38 @@ function parseAnswerKey(text: string): Record<number, string> {
     .trim()
     .toUpperCase();
 
-  // Format: "DACBE..." (sequential letters only)
-  if (/^[A-E]+$/.test(cleaned.replace(/\s/g, ''))) {
-    const letters = cleaned.replace(/\s/g, '');
-    for (let i = 0; i < letters.length; i++) {
-      map[i + 1] = letters[i];
+  // Format: "DACBE..." (sequential letters/annulled markers)
+  const compacted = cleaned.replace(/\s/g, '');
+  if (/^[A-EX*]+$/.test(compacted)) {
+    for (let i = 0; i < compacted.length; i++) {
+      const ch = compacted[i];
+      map[i + 1] = (ch === 'X' || ch === '*') ? 'ANULADA' : ch;
     }
     return map;
   }
 
-  // Format: "1-D, 2-A, 3-C" or "1D 2A 3C" or tabular PDF
-  const patterns = cleaned.match(/(\d+)\s*[-.\s]?\s*([A-E])/g);
+  // Format: "1-D, 2-A, 3-C" or "1D 2A 3C" or tabular PDF (including annulled)
+  // First try to capture annulled patterns like "91 ANULADA", "91 X", "91 *"
+  const annulledPatterns = cleaned.match(/(\d+)\s*[-.\s]?\s*(ANULADA|NULA)/g);
+  if (annulledPatterns) {
+    for (const p of annulledPatterns) {
+      const match = p.match(/(\d+)\s*[-.\s]?\s*(ANULADA|NULA)/);
+      if (match) {
+        map[parseInt(match[1])] = 'ANULADA';
+      }
+    }
+  }
+
+  const patterns = cleaned.match(/(\d+)\s*[-.\s]?\s*([A-EX*])\b/g);
   if (patterns) {
     for (const p of patterns) {
-      const match = p.match(/(\d+)\s*[-.\s]?\s*([A-E])/);
+      const match = p.match(/(\d+)\s*[-.\s]?\s*([A-EX*])/);
       if (match) {
-        map[parseInt(match[1])] = match[2];
+        const num = parseInt(match[1]);
+        if (!map[num]) { // don't overwrite ANULADA already set
+          const ch = match[2];
+          map[num] = (ch === 'X' || ch === '*') ? 'ANULADA' : ch;
+        }
       }
     }
   }
@@ -175,14 +192,18 @@ export function useImportExam() {
 
         // 4. Map questions and apply answer key
         const keyMap = answerKeyText.trim() ? parseAnswerKey(answerKeyText) : {};
-        const dayQuestions: ImportedQuestion[] = data.questions.map((q: any) => ({
-          ...q,
-          day,
-          correct_answer: keyMap[q.number] || null,
-          explanation: q.explanation || null,
-          tags: Array.isArray(q.tags) ? q.tags : [],
-          selected: true,
-        }));
+        const dayQuestions: ImportedQuestion[] = data.questions.map((q: any) => {
+          const isAnnulled = keyMap[q.number] === 'ANULADA';
+          return {
+            ...q,
+            day,
+            correct_answer: isAnnulled ? null : (keyMap[q.number] || null),
+            annulled: isAnnulled,
+            explanation: q.explanation || null,
+            tags: Array.isArray(q.tags) ? q.tags : [],
+            selected: !isAnnulled,
+          };
+        });
 
         allQuestions.push(...dayQuestions);
         setProgress(Math.round(((idx + 1) / activeDays.length) * 100));
@@ -252,7 +273,7 @@ export function useImportExam() {
           area: q.area,
           statement: q.statement,
           alternatives: q.alternatives as any,
-          correct_answer: q.correct_answer || 'X',
+          correct_answer: q.annulled ? 'ANULADA' : (q.correct_answer || 'X'),
           year,
           user_id: user.id,
           explanation: q.explanation || null,

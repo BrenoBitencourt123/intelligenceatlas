@@ -186,7 +186,8 @@ function PreviewStage({
   onBack: () => void;
 }) {
   const selected = questions.filter(q => q.selected);
-  const withoutAnswer = selected.filter(q => !q.correct_answer);
+  const annulled = questions.filter(q => q.annulled);
+  const withoutAnswer = selected.filter(q => !q.correct_answer && !q.annulled);
   const days = [...new Set(questions.map(q => q.day))].sort();
 
   return (
@@ -199,6 +200,13 @@ function PreviewStage({
           {selected.length} de {questions.length} selecionadas
         </div>
       </div>
+
+      {annulled.length > 0 && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {annulled.length} questões anuladas (desmarcadas automaticamente)
+        </div>
+      )}
 
       {withoutAnswer.length > 0 && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 text-sm">
@@ -226,7 +234,11 @@ function PreviewStage({
                             <Badge variant="secondary" className="text-xs px-1.5 py-0">
                               {AREA_LABELS[q.area] || q.area}
                             </Badge>
-                            {q.correct_answer ? (
+                            {q.annulled ? (
+                              <Badge variant="destructive" className="text-xs px-1.5 py-0">
+                                Anulada
+                              </Badge>
+                            ) : q.correct_answer ? (
                               <Badge variant="outline" className="text-xs px-1.5 py-0">
                                 {q.correct_answer}
                               </Badge>
@@ -337,9 +349,15 @@ function ConfirmStage({
             ))}
           </div>
 
-          {selected.filter(q => !q.correct_answer).length > 0 && (
+          {selected.filter(q => q.annulled).length > 0 && (
+            <p className="text-xs text-destructive">
+              ⚠ {selected.filter(q => q.annulled).length} questões anuladas incluídas manualmente
+            </p>
+          )}
+
+          {selected.filter(q => !q.correct_answer && !q.annulled).length > 0 && (
             <p className="text-xs text-amber-600">
-              ⚠ {selected.filter(q => !q.correct_answer).length} questões sem gabarito
+              ⚠ {selected.filter(q => !q.correct_answer && !q.annulled).length} questões sem gabarito
             </p>
           )}
 
