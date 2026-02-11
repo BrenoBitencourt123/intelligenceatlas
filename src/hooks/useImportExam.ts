@@ -49,19 +49,37 @@ function cleanPdfText(text: string): string {
 }
 
 function splitTextIntoChunks(text: string, maxChunkSize = 30000): string[] {
+  // Split on question boundaries (QUESTÃO XX / QUESTAO XX) to never cut a question in half
+  const questionPattern = /(?=QUEST[ÃA]O\s+\d+)/gi;
+  const questionBlocks = text.split(questionPattern).filter(b => b.trim());
+
+  // If no question markers found, fall back to line-based splitting
+  if (questionBlocks.length <= 1) {
+    const chunks: string[] = [];
+    const lines = text.split('\n');
+    let currentChunk = '';
+    for (const line of lines) {
+      if (currentChunk.length + line.length > maxChunkSize && currentChunk.length > 0) {
+        chunks.push(currentChunk);
+        currentChunk = '';
+      }
+      currentChunk += line + '\n';
+    }
+    if (currentChunk.trim()) chunks.push(currentChunk);
+    return chunks;
+  }
+
+  // Group question blocks into chunks that fit within maxChunkSize
   const chunks: string[] = [];
-  const lines = text.split('\n');
   let currentChunk = '';
-  for (const line of lines) {
-    if (currentChunk.length + line.length > maxChunkSize && currentChunk.length > 0) {
+  for (const block of questionBlocks) {
+    if (currentChunk.length + block.length > maxChunkSize && currentChunk.length > 0) {
       chunks.push(currentChunk);
       currentChunk = '';
     }
-    currentChunk += line + '\n';
+    currentChunk += block;
   }
-  if (currentChunk.trim()) {
-    chunks.push(currentChunk);
-  }
+  if (currentChunk.trim()) chunks.push(currentChunk);
   return chunks;
 }
 
