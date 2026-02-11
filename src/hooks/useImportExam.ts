@@ -85,10 +85,10 @@ function parseAnswerKey(text: string): Record<number, string> {
 
   // Format: "1-D, 2-A, 3-C" or "1D 2A 3C" or tabular PDF (including annulled)
   // First try to capture annulled patterns like "91 ANULADA", "91 X", "91 *"
-  const annulledPatterns = cleaned.match(/(\d+)\s*[-.\s]?\s*(ANULADA|NULA)/g);
+  const annulledPatterns = cleaned.match(/(\d+)\s*[-.\s]?\s*(ANULAD[AO]|NULA)/g);
   if (annulledPatterns) {
     for (const p of annulledPatterns) {
-      const match = p.match(/(\d+)\s*[-.\s]?\s*(ANULADA|NULA)/);
+      const match = p.match(/(\d+)\s*[-.\s]?\s*(ANULAD[AO]|NULA)/);
       if (match) {
         map[parseInt(match[1])] = 'ANULADA';
       }
