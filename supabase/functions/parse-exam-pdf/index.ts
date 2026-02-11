@@ -103,14 +103,14 @@ interface ChunkResult {
 
 async function callAI(apiKey: string, userPrompt: string, maxTokens = 32000): Promise<{ parsed: any; finishReason: string; usage: any }> {
   const makeRequest = async () => {
-    return await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+    return await fetch("https://lovable-ai.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gemini-2.5-flash",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
@@ -132,7 +132,7 @@ async function callAI(apiKey: string, userPrompt: string, maxTokens = 32000): Pr
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`Gemini error: ${response.status}`, errorText);
+    console.error(`AI error: ${response.status}`, errorText);
     return { parsed: { questions: [], detected_year: null }, finishReason: 'error', usage: null };
   }
 
@@ -162,9 +162,9 @@ serve(async (req) => {
       );
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const chunks = splitTextIntoChunks(pdfText);
@@ -193,7 +193,7 @@ ${chunk}
 """`;
 
         try {
-          const { parsed, finishReason, usage } = await callAI(GEMINI_API_KEY, userPrompt);
+          const { parsed, finishReason, usage } = await callAI(LOVABLE_API_KEY, userPrompt);
           console.log(`Chunk ${i + 1} finish_reason: ${finishReason}, tokens: ${JSON.stringify(usage)}`);
 
           const truncated = finishReason === 'length';
@@ -272,7 +272,7 @@ ${cr.chunkText}
 """`;
 
             try {
-              const { parsed, finishReason, usage } = await callAI(GEMINI_API_KEY, retryPrompt);
+              const { parsed, finishReason, usage } = await callAI(LOVABLE_API_KEY, retryPrompt);
               console.log(`Retry chunk ${cr.chunkIndex + 1} finish_reason: ${finishReason}, extracted ${parsed.questions?.length || 0} questions, tokens: ${JSON.stringify(usage)}`);
               return parsed.questions || [];
             } catch (err) {
