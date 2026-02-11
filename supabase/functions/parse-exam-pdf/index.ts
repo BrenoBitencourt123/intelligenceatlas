@@ -102,55 +102,37 @@ interface ChunkResult {
 }
 
 async function callAI(apiKey: string, userPrompt: string, maxTokens = 32000): Promise<{ parsed: any; finishReason: string; usage: any }> {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.2,
-      max_tokens: maxTokens,
-      response_format: { type: "json_object" },
-    }),
-  });
+  const makeRequest = async () => {
+    return await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.2,
+        max_tokens: maxTokens,
+        response_format: { type: "json_object" },
+      }),
+    });
+  };
+
+  let response = await makeRequest();
+
+  if (response.status === 429) {
+    console.warn("Rate limited, retrying in 5s...");
+    await new Promise(r => setTimeout(r, 5000));
+    response = await makeRequest();
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
-    if (response.status === 429) {
-      await new Promise(r => setTimeout(r, 5000));
-      const retry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: 0.2,
-          max_tokens: maxTokens,
-          response_format: { type: "json_object" },
-        }),
-      });
-      if (!retry.ok) return { parsed: { questions: [], detected_year: null }, finishReason: 'error', usage: null };
-      const retryData = await retry.json();
-      const content = retryData.choices?.[0]?.message?.content;
-      try {
-        return { parsed: content ? JSON.parse(content) : { questions: [], detected_year: null }, finishReason: retryData.choices?.[0]?.finish_reason || 'unknown', usage: retryData.usage };
-      } catch {
-        return { parsed: { questions: [], detected_year: null }, finishReason: 'error', usage: null };
-      }
-    }
-    console.error(`AI error: ${response.status}`, errorText);
+    console.error(`OpenAI error: ${response.status}`, errorText);
     return { parsed: { questions: [], detected_year: null }, finishReason: 'error', usage: null };
   }
 
@@ -180,9 +162,9 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
     const chunks = splitTextIntoChunks(pdfText);
@@ -211,7 +193,7 @@ ${chunk}
 """`;
 
         try {
-          const { parsed, finishReason, usage } = await callAI(LOVABLE_API_KEY, userPrompt);
+          const { parsed, finishReason, usage } = await callAI(OPENAI_API_KEY, userPrompt);
           console.log(`Chunk ${i + 1} finish_reason: ${finishReason}, tokens: ${JSON.stringify(usage)}`);
 
           const truncated = finishReason === 'length';
@@ -290,7 +272,7 @@ ${cr.chunkText}
 """`;
 
             try {
-              const { parsed, finishReason, usage } = await callAI(LOVABLE_API_KEY, retryPrompt);
+              const { parsed, finishReason, usage } = await callAI(OPENAI_API_KEY, retryPrompt);
               console.log(`Retry chunk ${cr.chunkIndex + 1} finish_reason: ${finishReason}, extracted ${parsed.questions?.length || 0} questions, tokens: ${JSON.stringify(usage)}`);
               return parsed.questions || [];
             } catch (err) {
