@@ -172,13 +172,32 @@ export function useImportExam() {
           }
         }
 
-        // 3. Send to AI
+        // 3. Send to AI (use direct fetch with extended timeout for long processing)
         setLoadingMessage(`Dia ${day}: IA analisando questões...`);
-        const { data, error } = await supabase.functions.invoke('parse-exam-pdf', {
-          body: { pdfText: examText, day },
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000); // 5 min
 
-        if (error) throw new Error(error.message || `Erro ao processar Dia ${day}`);
+        const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-exam-pdf`;
+        const session = (await supabase.auth.getSession()).data.session;
+
+        const response = await fetch(fnUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ pdfText: examText, day }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(errText || `Erro ao processar Dia ${day}`);
+        }
+
+        const data = await response.json();
 
         if (!data?.questions || data.questions.length === 0) {
           toast.warning(`Dia ${day}: nenhuma questão encontrada`);
