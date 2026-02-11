@@ -153,32 +153,21 @@ serve(async (req) => {
   }
 
   try {
-    const { pdfText, year, day } = await req.json();
-
-    if (!pdfText) {
-      return new Response(
-        JSON.stringify({ error: "Campo obrigatório: pdfText" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const { pdfText, chunk, chunkIndex, totalChunks, year, day } = await req.json();
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY is not configured");
     }
 
-    const chunks = splitTextIntoChunks(pdfText);
-    console.log(`Processing ${chunks.length} chunks${year ? ` for ENEM ${year}` : ''}${day ? ` Day ${day}` : ''}`);
-
-    let detectedYear: number | null = null;
-    const chunkResults: ChunkResult[] = [];
-
-    // Process ALL chunks in parallel to minimize total time
-    const chunkPromises = chunks.map(async (chunk, i) => {
+    // Single-chunk mode: process one chunk and return immediately
+    if (chunk) {
       const yearHint = year ? `ENEM ${year}` : 'ENEM (detecte o ano do texto)';
       const dayHint = day ? `Dia ${day}` : '';
+      const idx = chunkIndex ?? 0;
+      const total = totalChunks ?? 1;
 
-      const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho de texto (parte ${i + 1} de ${chunks.length}).
+      const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho de texto (parte ${idx + 1} de ${total}).
 
 Se não houver questões neste trecho, retorne {"questions": [], "detected_year": null}.
 
@@ -187,108 +176,68 @@ TEXTO:
 ${chunk}
 """`;
 
+      console.log(`Processing single chunk ${idx + 1}/${total} for Day ${day || '?'}`);
+      const { parsed, finishReason, usage } = await callAI(GEMINI_API_KEY, userPrompt);
+      console.log(`Chunk ${idx + 1} finish_reason: ${finishReason}, extracted ${parsed.questions?.length || 0} questions, tokens: ${JSON.stringify(usage)}`);
+
+      return new Response(
+        JSON.stringify({
+          questions: parsed.questions || [],
+          detected_year: parsed.detected_year || null,
+          truncated: finishReason === 'length',
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Legacy full-text mode (kept for backward compatibility)
+    if (!pdfText) {
+      return new Response(
+        JSON.stringify({ error: "Campo obrigatório: pdfText ou chunk" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const chunks = splitTextIntoChunks(pdfText);
+    console.log(`Legacy mode: Processing ${chunks.length} chunks`);
+
+    const chunkPromises = chunks.map(async (c, i) => {
+      const yearHint = year ? `ENEM ${year}` : 'ENEM (detecte o ano do texto)';
+      const dayHint = day ? `Dia ${day}` : '';
+      const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho de texto (parte ${i + 1} de ${chunks.length}).
+
+Se não houver questões neste trecho, retorne {"questions": [], "detected_year": null}.
+
+TEXTO:
+"""
+${c}
+"""`;
       try {
         const { parsed, finishReason, usage } = await callAI(GEMINI_API_KEY, userPrompt);
         console.log(`Chunk ${i + 1} finish_reason: ${finishReason}, tokens: ${JSON.stringify(usage)}`);
-
-        const truncated = finishReason === 'length';
-        if (truncated) {
-          console.warn(`Chunk ${i + 1} was TRUNCATED! Output hit max_tokens limit.`);
-        }
-
-        console.log(`Chunk ${i + 1} extracted ${parsed.questions?.length || 0} questions`);
-
-        return {
-          questions: parsed.questions || [],
-          detected_year: parsed.detected_year || null,
-          chunkIndex: i,
-          truncated,
-          chunkText: chunk,
-        } as ChunkResult;
+        return { questions: parsed.questions || [], detected_year: parsed.detected_year || null };
       } catch (err) {
         console.error(`Chunk ${i + 1} error:`, err);
-        return { questions: [], detected_year: null, chunkIndex: i, truncated: false, chunkText: chunk } as ChunkResult;
+        return { questions: [], detected_year: null };
       }
     });
 
     const results = await Promise.all(chunkPromises);
-    chunkResults.push(...results);
-    console.log(`All ${chunks.length} chunks processed`);
 
-    // Collect all questions and detect year
     const allQuestions: any[] = [];
-    for (const result of chunkResults) {
-      if (result.detected_year && !detectedYear) {
-        detectedYear = result.detected_year;
-      }
-      allQuestions.push(...result.questions);
+    let detectedYear: number | null = null;
+    for (const r of results) {
+      if (r.detected_year && !detectedYear) detectedYear = r.detected_year;
+      allQuestions.push(...r.questions);
     }
 
-    // Deduplicate
     const seen = new Set<number>();
-    let uniqueQuestions = allQuestions.filter(q => {
+    const uniqueQuestions = allQuestions.filter(q => {
       if (seen.has(q.number)) return false;
       seen.add(q.number);
       return true;
-    });
+    }).sort((a, b) => a.number - b.number);
 
-    // Detect missing questions from truncated chunks and retry
-    if (uniqueQuestions.length > 0) {
-      const numbers = uniqueQuestions.map(q => q.number).sort((a, b) => a - b);
-      const minQ = numbers[0];
-      const maxQ = numbers[numbers.length - 1];
-      const extractedSet = new Set(numbers);
-      const missing: number[] = [];
-      for (let n = minQ; n <= maxQ; n++) {
-        if (!extractedSet.has(n)) missing.push(n);
-      }
-
-      if (missing.length > 0) {
-        console.log(`Missing questions detected: ${missing.join(', ')}`);
-
-        // Find truncated chunks to retry with targeted prompt
-        const truncatedChunks = chunkResults.filter(cr => cr.truncated);
-        if (truncatedChunks.length > 0) {
-          console.log(`Retrying ${truncatedChunks.length} truncated chunk(s) for missing questions: ${missing.join(', ')}`);
-
-          const retryPromises = truncatedChunks.map(async (cr) => {
-            const yearHint = year || detectedYear ? `ENEM ${year || detectedYear}` : 'ENEM';
-            const dayHint = day ? `Dia ${day}` : '';
-            const retryPrompt = `Extraia APENAS as questões de números ${missing.join(', ')} do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho.
-
-Se alguma dessas questões não estiver neste trecho, ignore-a. Retorne APENAS as questões encontradas.
-
-Se não houver nenhuma, retorne {"questions": [], "detected_year": null}.
-
-TEXTO:
-"""
-${cr.chunkText}
-"""`;
-
-            try {
-              const { parsed, finishReason, usage } = await callAI(GEMINI_API_KEY, retryPrompt);
-              console.log(`Retry chunk ${cr.chunkIndex + 1} finish_reason: ${finishReason}, extracted ${parsed.questions?.length || 0} questions, tokens: ${JSON.stringify(usage)}`);
-              return parsed.questions || [];
-            } catch (err) {
-              console.error(`Retry chunk ${cr.chunkIndex + 1} error:`, err);
-              return [];
-            }
-          });
-
-          const retryResults = await Promise.all(retryPromises);
-          for (const retryQuestions of retryResults) {
-            for (const q of retryQuestions) {
-              if (!seen.has(q.number)) {
-                seen.add(q.number);
-                uniqueQuestions.push(q);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    uniqueQuestions.sort((a, b) => a.number - b.number);
     console.log(`Extracted ${uniqueQuestions.length} unique questions, detected year: ${detectedYear}`);
 
     return new Response(
