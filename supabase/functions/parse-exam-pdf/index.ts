@@ -173,17 +173,12 @@ serve(async (req) => {
     let detectedYear: number | null = null;
     const chunkResults: ChunkResult[] = [];
 
-    // Process chunks in parallel batches of 3
-    const BATCH_SIZE = 3;
-    for (let batchStart = 0; batchStart < chunks.length; batchStart += BATCH_SIZE) {
-      const batch = chunks.slice(batchStart, batchStart + BATCH_SIZE);
+    // Process ALL chunks in parallel to minimize total time
+    const chunkPromises = chunks.map(async (chunk, i) => {
+      const yearHint = year ? `ENEM ${year}` : 'ENEM (detecte o ano do texto)';
+      const dayHint = day ? `Dia ${day}` : '';
 
-      const batchPromises = batch.map(async (chunk, batchIdx) => {
-        const i = batchStart + batchIdx;
-        const yearHint = year ? `ENEM ${year}` : 'ENEM (detecte o ano do texto)';
-        const dayHint = day ? `Dia ${day}` : '';
-
-        const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho de texto (parte ${i + 1} de ${chunks.length}).
+      const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho de texto (parte ${i + 1} de ${chunks.length}).
 
 Se não houver questões neste trecho, retorne {"questions": [], "detected_year": null}.
 
@@ -192,34 +187,33 @@ TEXTO:
 ${chunk}
 """`;
 
-        try {
-          const { parsed, finishReason, usage } = await callAI(GEMINI_API_KEY, userPrompt);
-          console.log(`Chunk ${i + 1} finish_reason: ${finishReason}, tokens: ${JSON.stringify(usage)}`);
+      try {
+        const { parsed, finishReason, usage } = await callAI(GEMINI_API_KEY, userPrompt);
+        console.log(`Chunk ${i + 1} finish_reason: ${finishReason}, tokens: ${JSON.stringify(usage)}`);
 
-          const truncated = finishReason === 'length';
-          if (truncated) {
-            console.warn(`Chunk ${i + 1} was TRUNCATED! Output hit max_tokens limit.`);
-          }
-
-          console.log(`Chunk ${i + 1} extracted ${parsed.questions?.length || 0} questions`);
-
-          return {
-            questions: parsed.questions || [],
-            detected_year: parsed.detected_year || null,
-            chunkIndex: i,
-            truncated,
-            chunkText: chunk,
-          } as ChunkResult;
-        } catch (err) {
-          console.error(`Chunk ${i + 1} error:`, err);
-          return { questions: [], detected_year: null, chunkIndex: i, truncated: false, chunkText: chunk } as ChunkResult;
+        const truncated = finishReason === 'length';
+        if (truncated) {
+          console.warn(`Chunk ${i + 1} was TRUNCATED! Output hit max_tokens limit.`);
         }
-      });
 
-      const batchResults = await Promise.all(batchPromises);
-      chunkResults.push(...batchResults);
-      console.log(`Completed batch ${Math.floor(batchStart / BATCH_SIZE) + 1}, processed ${Math.min(batchStart + BATCH_SIZE, chunks.length)}/${chunks.length} chunks`);
-    }
+        console.log(`Chunk ${i + 1} extracted ${parsed.questions?.length || 0} questions`);
+
+        return {
+          questions: parsed.questions || [],
+          detected_year: parsed.detected_year || null,
+          chunkIndex: i,
+          truncated,
+          chunkText: chunk,
+        } as ChunkResult;
+      } catch (err) {
+        console.error(`Chunk ${i + 1} error:`, err);
+        return { questions: [], detected_year: null, chunkIndex: i, truncated: false, chunkText: chunk } as ChunkResult;
+      }
+    });
+
+    const results = await Promise.all(chunkPromises);
+    chunkResults.push(...results);
+    console.log(`All ${chunks.length} chunks processed`);
 
     // Collect all questions and detect year
     const allQuestions: any[] = [];
