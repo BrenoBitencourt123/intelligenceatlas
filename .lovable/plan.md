@@ -1,25 +1,47 @@
 
+# Corrigir perda de questoes na importacao (gabarito + truncamento da IA)
 
-# Corrigir deteccao de "Anulado" (masculino) no parser do gabarito
+## Problema 1: Gabarito nao encontra respostas (Q121-123)
 
-## Problema
+O regex atual usa `\b` (word boundary) apos capturar a letra da resposta:
 
-O gabarito oficial usa "Anulado" (masculino), mas o regex so reconhece "ANULADA" e "NULA". Apos o `.toUpperCase()`, o texto vira "ANULADO" que nao casa com o padrao, resultando em 10 questoes "sem gabarito" ao inves de 7 sem gabarito + 3 anuladas.
+```text
+/(\d+)\s*[-.\s]?\s*([A-EX*])\b/g
+```
 
-## Correcao
+Quando o PDF do gabarito gera texto corrido como `121B122A123C...`, nao existe word boundary entre a letra (B) e o proximo digito (1), entao o match falha silenciosamente.
 
-Arquivo: `src/hooks/useImportExam.ts`
+**Correcao**: Trocar `\b` por um lookahead que aceita digito, espaco ou fim de string:
 
-Alterar as duas ocorrencias do regex de anulacao:
+```text
+/(\d+)\s*[-.\s]?\s*([A-EX*])(?=\d|\s|$)/g
+```
 
-- **Linha 88**: `/(ANULADA|NULA)/` para `/(ANULAD[AO]|NULA)/`
-- **Linha 91**: `/(ANULADA|NULA)/` para `/(ANULAD[AO]|NULA)/`
+Arquivo: `src/hooks/useImportExam.ts` (linhas 98, 101)
 
-Isso faz o parser aceitar tanto "Anulada" quanto "Anulado" (ambos comuns em gabaritos oficiais do ENEM).
+## Problema 2: IA trunca saida e perde questoes (Q124-138)
 
-## Resultado esperado
+Os logs mostram:
+- Chunk 3: `finish_reason: length` (truncado em 16000 tokens)
+- Questoes 124-138 estavam nesse chunk e foram descartadas
 
-- 3 questoes (123, 132, 174) aparecerao com badge "Anulada" e desmarcadas
-- As demais 7 sem gabarito continuarao como alerta amarelo separado
-- Total: 73 questoes, sendo 63 com gabarito, 3 anuladas, 7 sem gabarito
+**Correcao em duas frentes**:
 
+1. **Reduzir tamanho dos chunks** de 15000 para 10000 caracteres, gerando mais chunks menores que cabem no limite de tokens
+2. **Detectar truncamento e reprocessar**: quando `finish_reason === 'length'`, identificar quais questoes faltam no range esperado e reenviar o chunk pedindo apenas as questoes faltantes
+3. **Aumentar max_tokens** de 16000 para 32000 como margem de seguranca
+
+Arquivo: `supabase/functions/parse-exam-pdf/index.ts`
+
+### Detalhes tecnicos da logica de reprocessamento
+
+Apos processar todos os chunks, o sistema:
+1. Identifica o range esperado de questoes (min a max dos numeros extraidos)
+2. Encontra lacunas (numeros ausentes)
+3. Para cada chunk que foi truncado, reenvia com prompt especifico pedindo apenas os numeros faltantes
+4. Mescla os resultados
+
+## Arquivos a editar
+
+- `src/hooks/useImportExam.ts` — corrigir regex `\b` no parser do gabarito
+- `supabase/functions/parse-exam-pdf/index.ts` — reduzir chunk size, aumentar max_tokens, adicionar retry em truncamento
