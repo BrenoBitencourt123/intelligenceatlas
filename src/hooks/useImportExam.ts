@@ -48,7 +48,7 @@ function cleanPdfText(text: string): string {
   return cleaned.trim();
 }
 
-function splitTextIntoChunks(text: string, maxChunkSize = 30000): string[] {
+function splitTextIntoChunks(text: string, maxChunkSize = 12000): string[] {
   // Split on question boundaries (QUESTÃO XX / QUESTAO XX) to never cut a question in half
   const questionPattern = /(?=QUEST[ÃA]O\s+\d+)/gi;
   const questionBlocks = text.split(questionPattern).filter(b => b.trim());
