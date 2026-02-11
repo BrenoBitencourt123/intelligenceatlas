@@ -1,45 +1,32 @@
 
-# Adicionar edição de questões no preview de importação
 
-## Objetivo
+# Trocar parse-exam-pdf para Gemini 2.5 Flash
 
-Permitir que o admin edite questões diretamente no preview antes de importar, corrigindo problemas como gabarito faltante, área errada ou enunciado truncado.
+## Resumo
 
-## O que muda
+Configurar a Edge Function `parse-exam-pdf` para usar o Gemini 2.5 Flash com sua chave pessoal do Google.
 
-### 1. Modal de edição por questão
+## Passos
 
-Ao clicar em uma questão no preview, abre um modal (Dialog) com campos editáveis:
+1. **Adicionar secret `GEMINI_API_KEY`** -- vou solicitar que voce insira a chave obtida em [Google AI Studio](https://aistudio.google.com/apikey)
 
-- **Resposta correta**: Select com opções A, B, C, D, E, Anulada, ou Nenhuma
-- **Área**: Select com linguagens, humanas, natureza, matemática
-- **Enunciado**: Textarea editável
-- **Alternativas**: Cada alternativa com campo de texto editável
-- **Tags**: Campo de texto separado por vírgulas
+2. **Atualizar `supabase/functions/parse-exam-pdf/index.ts`**:
+   - Trocar endpoint para `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`
+   - Trocar modelo para `gemini-2.5-flash`
+   - Trocar variavel de `OPENAI_API_KEY` para `GEMINI_API_KEY`
 
-### 2. Função de update no hook
+3. **Redeployar** a Edge Function automaticamente
 
-Adicionar uma função `updateQuestion(number, day, updates)` no `useImportExam` que permite atualizar qualquer campo de uma questão no estado.
+## Detalhes tecnicos
 
-### 3. Indicadores visuais melhorados
+O Google oferece um endpoint compativel com formato OpenAI, entao a mudanca e minima:
 
-- Questões sem gabarito ganham borda amarela para facilitar identificação rápida
-- Questões editadas manualmente ganham um pequeno ícone de "editado" (Pencil) para rastreabilidade
+```text
+Antes:  api.openai.com  +  gpt-4.1-mini  +  OPENAI_API_KEY
+Depois: generativelanguage.googleapis.com/v1beta/openai  +  gemini-2.5-flash  +  GEMINI_API_KEY
+```
 
-## Detalhes técnicos
+O formato de request (messages, temperature, response_format json_object) permanece identico. Nenhuma outra mudanca necessaria.
 
-**Arquivos a editar:**
+**Arquivos a editar:** `supabase/functions/parse-exam-pdf/index.ts`
 
-- `src/hooks/useImportExam.ts` — adicionar `updateQuestion` ao retorno do hook
-- `src/pages/Import.tsx` — adicionar modal de edição e tornar o card da questão clicável
-
-**Novo estado no `ImportedQuestion`:**
-- Sem mudanças no tipo, o campo `correct_answer` já aceita `string | null`
-- Quando o usuario selecionar "Anulada" no select, seta `annulled: true` e `correct_answer: null`
-- Quando selecionar uma letra, seta `annulled: false` e `correct_answer: letra`
-
-**Fluxo:**
-1. Usuario clica no card da questão no preview
-2. Abre Dialog com os campos preenchidos
-3. Usuario edita e clica "Salvar"
-4. Estado atualizado, questão refletida no preview
