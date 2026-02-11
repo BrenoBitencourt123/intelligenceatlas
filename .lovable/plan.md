@@ -1,95 +1,59 @@
 
+# Corrigir tratamento de questoes anuladas na importacao
 
-## Melhorias na Tela de Objetivas, Home e Sistema de Planos
+## Problema
 
-Sao 4 frentes de mudancas:
+O gabarito oficial do ENEM marca questoes anuladas com caracteres como "X", "*" ou a palavra "ANULADA". O parser atual (`parseAnswerKey`) so reconhece letras A-E, causando:
 
----
+1. Questoes anuladas perdem o marcador e ficam sem resposta (confundem com "sem gabarito")
+2. O formato sequencial (`DACBE...`) quebra quando encontra um "X" no meio da sequencia
+3. Nao ha distincao visual entre "sem gabarito" e "anulada" no preview
 
-### 1. Persistencia da sessao de objetivas
+## Solucao
 
-**Problema**: Ao sair da tela e voltar, a sessao zera porque todo o estado vive em useState.
+### 1. Atualizar o parser do gabarito (`useImportExam.ts`)
 
-**Solucao**: Salvar o progresso da sessao em `localStorage` (questoes carregadas, indice atual, respostas dadas). Ao voltar na tela, recuperar o estado salvo e continuar de onde parou. Ao completar ou resetar, limpar o storage.
+Modificar a funcao `parseAnswerKey` para reconhecer marcadores de anulacao:
 
-**Arquivos alterados**:
-- `src/hooks/useStudySession.ts` - Adicionar persistencia via localStorage no state da sessao
+- No formato sequencial (`/^[A-EX*]+$/`): aceitar X e * como caracteres validos
+- No formato tabular: capturar padroes como `91 X`, `91 *`, `91 ANULADA`
+- Retornar "ANULADA" como valor no mapa para essas questoes
 
----
+### 2. Adicionar campo `annulled` ao tipo `ImportedQuestion`
 
-### 2. Integrar flashcards dentro da tela de Objetivas
+Adicionar um campo booleano `annulled` que sera `true` quando o gabarito retornar "ANULADA" para a questao. Na etapa de mapeamento (linha ~178), verificar se `keyMap[q.number] === 'ANULADA'` e marcar a questao.
 
-**Problema**: Flashcards ficam numa tela separada e desconectada do fluxo de estudo.
+### 3. Auto-desselecionar questoes anuladas no preview
 
-**Solucao**: Na tela de Objetivas (estado `idle`), alem do card de "Iniciar Sessao", exibir:
-- Card de flashcards pendentes com botao "Revisar" (inline, sem navegar para outra pagina)
-- Historico resumido do dia (questoes respondidas, taxa de acerto)
-- A revisao de flashcards acontece inline na propria tela de Objetivas, usando o mesmo hook `useFlashcardReview`
+Questoes com `annulled: true` terao `selected: false` por padrao, evitando importacao acidental. O usuario pode reselecionar manualmente se desejar.
 
-**Arquivos alterados**:
-- `src/pages/Objectives.tsx` - Adicionar secao de flashcards e stats na tela idle, e modo de revisao inline
+### 4. Indicador visual no preview (`Import.tsx`)
 
----
+- Exibir badge vermelha "Anulada" ao lado do numero da questao
+- Separar o alerta: mostrar "X questoes anuladas (desmarcadas)" em vermelho e "Y questoes sem gabarito" em amarelo
+- Na tela de confirmacao, mostrar contagem de anuladas separadamente
 
-### 3. Dar mais destaque ao card de Redacao na Home ("Hoje")
+### 5. Ajustar o salvamento
 
-**Problema**: O card de redacao nos dias que nao sao de redacao eh muito simples (so "Acessar").
+Na funcao `saveQuestions`, questoes anuladas que forem selecionadas manualmente serao salvas com `correct_answer: 'ANULADA'` em vez de 'X', para distincao no banco.
 
-**Solucao**: Em todos os dias, exibir um card mais completo de redacao com:
-- Tema do dia (se Pro/trial), titulo resumido
-- Ultimo score obtido
-- Progresso mensal de redacoes (ex: "5/30 correcoes usadas")
-- CTA mais chamativo ("Escrever Redacao" ou "Praticar Redacao")
+## Detalhes tecnicos
 
-**Arquivos alterados**:
-- `src/pages/Today.tsx` - Reformular card de redacao para ser mais rico em informacoes
+**Arquivos a editar:**
+- `src/hooks/useImportExam.ts` — parser do gabarito + campo annulled + logica de selecao
+- `src/pages/Import.tsx` — badges e alertas visuais para anuladas
 
----
+**Mudancas no `parseAnswerKey`:**
 
-### 4. Limitacoes por plano para o modulo de Objetivas
+```text
+Antes: /^[A-E]+$/ e /([A-E])/
+Depois: /^[A-EX*]+$/ e /([A-EX*])/ com mapeamento X/* -> "ANULADA"
+```
 
-**Regras propostas**:
-- **Free**: Acesso limitado a 5 questoes por dia (degustacao)
-- **Basico**: Sessoes completas de 45 questoes, sem flashcards automaticos
-- **Pro**: Sessoes completas + flashcards automaticos + capsulas de conhecimento
+**Mudancas no mapeamento de questoes:**
 
-**Arquivos alterados**:
-- `src/hooks/usePlanFeatures.ts` - Adicionar flags para objetivas (`hasFullSessionAccess`, `hasAutoFlashcards`, `hasKnowledgeCapsules`)
-- `src/hooks/useStudySession.ts` - Aplicar limite de 5 questoes para Free
-- `src/pages/Objectives.tsx` - Esconder capsulas e flashcards conforme plano, mostrar CTA de upgrade
-
----
-
-### 5. Desconto por duracao de assinatura (ate o ENEM)
-
-**Ideia**: Calcular automaticamente o numero de meses ate o proximo ENEM (geralmente novembro) e oferecer desconto progressivo.
-
-**Logica de desconto**:
-- 1 mes: 0% (preco cheio)
-- 3 meses: 5%
-- 6 meses: 10%
-- 12 meses: 20%
-
-**Implementacao**:
-- Criar cupons no Stripe para cada faixa de desconto
-- Na tela de Planos, calcular meses ate o ENEM e sugerir o pacote ideal
-- Exibir toggle entre "Mensal" e "Ate o ENEM" com o preco com desconto
-- O checkout cria a assinatura mensal com o cupom aplicado (duration_in_months)
-
-**Arquivos alterados**:
-- `src/lib/stripe.ts` - Adicionar configuracao dos cupons/descontos
-- `src/pages/Plan.tsx` - Adicionar seletor de duracao e calculo de desconto
-- `supabase/functions/create-checkout/index.ts` - Aceitar parametro de cupom no checkout
-
----
-
-### Resumo tecnico
-
-| Mudanca | Arquivos |
-|---------|----------|
-| Persistencia de sessao | `useStudySession.ts` |
-| Flashcards inline | `Objectives.tsx` |
-| Card de redacao na Home | `Today.tsx` |
-| Gating por plano | `usePlanFeatures.ts`, `useStudySession.ts`, `Objectives.tsx` |
-| Desconto por duracao | `stripe.ts`, `Plan.tsx`, `create-checkout/index.ts`, cupons Stripe |
-
+```text
+correct_answer: keyMap[q.number] === 'ANULADA' ? null : (keyMap[q.number] || null)
+annulled: keyMap[q.number] === 'ANULADA'
+selected: keyMap[q.number] !== 'ANULADA'  // auto-desselecionar anuladas
+```
