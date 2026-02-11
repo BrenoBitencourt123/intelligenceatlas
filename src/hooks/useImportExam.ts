@@ -95,7 +95,7 @@ function parseAnswerKey(text: string): Record<number, string> {
     }
   }
 
-  const patterns = cleaned.match(/(\d+)\s*[-.\s]?\s*([A-EX*])\b/g);
+  const patterns = cleaned.match(/(\d+)\s*[-.\s]?\s*([A-EX*])(?=\d|\s|$)/g);
   if (patterns) {
     for (const p of patterns) {
       const match = p.match(/(\d+)\s*[-.\s]?\s*([A-EX*])/);
