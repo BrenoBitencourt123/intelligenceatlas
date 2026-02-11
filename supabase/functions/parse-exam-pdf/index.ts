@@ -75,7 +75,7 @@ FORMATO DE RESPOSTA (JSON):
 
 Retorne APENAS o JSON, sem texto adicional.`;
 
-function splitTextIntoChunks(text: string, maxChunkSize = 15000): string[] {
+function splitTextIntoChunks(text: string, maxChunkSize = 10000): string[] {
   const chunks: string[] = [];
   const lines = text.split('\n');
   let currentChunk = '';
@@ -91,6 +91,78 @@ function splitTextIntoChunks(text: string, maxChunkSize = 15000): string[] {
     chunks.push(currentChunk);
   }
   return chunks;
+}
+
+interface ChunkResult {
+  questions: any[];
+  detected_year: number | null;
+  chunkIndex: number;
+  truncated: boolean;
+  chunkText: string;
+}
+
+async function callAI(apiKey: string, userPrompt: string, maxTokens = 32000): Promise<{ parsed: any; finishReason: string; usage: any }> {
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.2,
+      max_tokens: maxTokens,
+      response_format: { type: "json_object" },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    if (response.status === 429) {
+      await new Promise(r => setTimeout(r, 5000));
+      const retry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.2,
+          max_tokens: maxTokens,
+          response_format: { type: "json_object" },
+        }),
+      });
+      if (!retry.ok) return { parsed: { questions: [], detected_year: null }, finishReason: 'error', usage: null };
+      const retryData = await retry.json();
+      const content = retryData.choices?.[0]?.message?.content;
+      try {
+        return { parsed: content ? JSON.parse(content) : { questions: [], detected_year: null }, finishReason: retryData.choices?.[0]?.finish_reason || 'unknown', usage: retryData.usage };
+      } catch {
+        return { parsed: { questions: [], detected_year: null }, finishReason: 'error', usage: null };
+      }
+    }
+    console.error(`AI error: ${response.status}`, errorText);
+    return { parsed: { questions: [], detected_year: null }, finishReason: 'error', usage: null };
+  }
+
+  const data = await response.json();
+  const finishReason = data.choices?.[0]?.finish_reason || 'unknown';
+  const usage = data.usage;
+  const content = data.choices?.[0]?.message?.content;
+  try {
+    return { parsed: content ? JSON.parse(content) : { questions: [], detected_year: null }, finishReason, usage };
+  } catch {
+    return { parsed: { questions: [], detected_year: null }, finishReason, usage };
+  }
 }
 
 serve(async (req) => {
@@ -116,27 +188,19 @@ serve(async (req) => {
     const chunks = splitTextIntoChunks(pdfText);
     console.log(`Processing ${chunks.length} chunks${year ? ` for ENEM ${year}` : ''}${day ? ` Day ${day}` : ''}`);
 
-    const allQuestions: Array<{
-      number: number;
-      area: string;
-      statement: string;
-      alternatives: Array<{ letter: string; text: string }>;
-    }> = [];
-
     let detectedYear: number | null = null;
+    const chunkResults: ChunkResult[] = [];
 
-    // Process all chunks in parallel (batches of 3 to avoid rate limits)
+    // Process chunks in parallel batches of 3
     const BATCH_SIZE = 3;
-    const results: Array<{ questions: any[]; detected_year: number | null }> = [];
-
     for (let batchStart = 0; batchStart < chunks.length; batchStart += BATCH_SIZE) {
       const batch = chunks.slice(batchStart, batchStart + BATCH_SIZE);
-      
+
       const batchPromises = batch.map(async (chunk, batchIdx) => {
         const i = batchStart + batchIdx;
         const yearHint = year ? `ENEM ${year}` : 'ENEM (detecte o ano do texto)';
         const dayHint = day ? `Dia ${day}` : '';
-        
+
         const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho de texto (parte ${i + 1} de ${chunks.length}).
 
 Se não houver questões neste trecho, retorne {"questions": [], "detected_year": null}.
@@ -147,113 +211,113 @@ ${chunk}
 """`;
 
         try {
-          const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
-              messages: [
-                { role: "system", content: SYSTEM_PROMPT },
-                { role: "user", content: userPrompt },
-              ],
-              temperature: 0.2,
-              max_tokens: 16000,
-              response_format: { type: "json_object" },
-            }),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`AI error on chunk ${i + 1}:`, response.status, errorText);
-            if (response.status === 429) {
-              // Wait and retry once on rate limit
-              await new Promise(r => setTimeout(r, 5000));
-              const retry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${LOVABLE_API_KEY}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    model: "google/gemini-2.5-flash",
-                  messages: [
-                    { role: "system", content: SYSTEM_PROMPT },
-                    { role: "user", content: userPrompt },
-                  ],
-                  temperature: 0.2,
-                  max_tokens: 16000,
-                  response_format: { type: "json_object" },
-                }),
-              });
-              if (!retry.ok) return { questions: [], detected_year: null };
-              const retryData = await retry.json();
-              const retryFinish = retryData.choices?.[0]?.finish_reason;
-              console.log(`Chunk ${i + 1} retry finish_reason: ${retryFinish}`);
-              const retryContent = retryData.choices?.[0]?.message?.content;
-              if (retryContent) {
-                try { return JSON.parse(retryContent); } catch { return { questions: [], detected_year: null }; }
-              }
-            }
-            return { questions: [], detected_year: null };
-          }
-
-          const data = await response.json();
-          const finishReason = data.choices?.[0]?.finish_reason;
-          const usage = data.usage;
+          const { parsed, finishReason, usage } = await callAI(LOVABLE_API_KEY, userPrompt);
           console.log(`Chunk ${i + 1} finish_reason: ${finishReason}, tokens: ${JSON.stringify(usage)}`);
-          
-          if (finishReason === 'length') {
+
+          const truncated = finishReason === 'length';
+          if (truncated) {
             console.warn(`Chunk ${i + 1} was TRUNCATED! Output hit max_tokens limit.`);
           }
-          
-          const content = data.choices?.[0]?.message?.content;
-          if (content) {
-            try { 
-              const parsed = JSON.parse(content);
-              console.log(`Chunk ${i + 1} extracted ${parsed.questions?.length || 0} questions`);
-              return parsed;
-            } catch { return { questions: [], detected_year: null }; }
-          }
-          return { questions: [], detected_year: null };
+
+          console.log(`Chunk ${i + 1} extracted ${parsed.questions?.length || 0} questions`);
+
+          return {
+            questions: parsed.questions || [],
+            detected_year: parsed.detected_year || null,
+            chunkIndex: i,
+            truncated,
+            chunkText: chunk,
+          } as ChunkResult;
         } catch (err) {
           console.error(`Chunk ${i + 1} error:`, err);
-          return { questions: [], detected_year: null };
+          return { questions: [], detected_year: null, chunkIndex: i, truncated: false, chunkText: chunk } as ChunkResult;
         }
       });
 
       const batchResults = await Promise.all(batchPromises);
-      results.push(...batchResults);
+      chunkResults.push(...batchResults);
       console.log(`Completed batch ${Math.floor(batchStart / BATCH_SIZE) + 1}, processed ${Math.min(batchStart + BATCH_SIZE, chunks.length)}/${chunks.length} chunks`);
     }
 
-    // Collect results
-    for (const result of results) {
+    // Collect all questions and detect year
+    const allQuestions: any[] = [];
+    for (const result of chunkResults) {
       if (result.detected_year && !detectedYear) {
         detectedYear = result.detected_year;
       }
-      if (result.questions && Array.isArray(result.questions)) {
-        for (const q of result.questions) {
-          allQuestions.push(q);
+      allQuestions.push(...result.questions);
+    }
+
+    // Deduplicate
+    const seen = new Set<number>();
+    let uniqueQuestions = allQuestions.filter(q => {
+      if (seen.has(q.number)) return false;
+      seen.add(q.number);
+      return true;
+    });
+
+    // Detect missing questions from truncated chunks and retry
+    if (uniqueQuestions.length > 0) {
+      const numbers = uniqueQuestions.map(q => q.number).sort((a, b) => a - b);
+      const minQ = numbers[0];
+      const maxQ = numbers[numbers.length - 1];
+      const extractedSet = new Set(numbers);
+      const missing: number[] = [];
+      for (let n = minQ; n <= maxQ; n++) {
+        if (!extractedSet.has(n)) missing.push(n);
+      }
+
+      if (missing.length > 0) {
+        console.log(`Missing questions detected: ${missing.join(', ')}`);
+
+        // Find truncated chunks to retry with targeted prompt
+        const truncatedChunks = chunkResults.filter(cr => cr.truncated);
+        if (truncatedChunks.length > 0) {
+          console.log(`Retrying ${truncatedChunks.length} truncated chunk(s) for missing questions: ${missing.join(', ')}`);
+
+          const retryPromises = truncatedChunks.map(async (cr) => {
+            const yearHint = year || detectedYear ? `ENEM ${year || detectedYear}` : 'ENEM';
+            const dayHint = day ? `Dia ${day}` : '';
+            const retryPrompt = `Extraia APENAS as questões de números ${missing.join(', ')} do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho.
+
+Se alguma dessas questões não estiver neste trecho, ignore-a. Retorne APENAS as questões encontradas.
+
+Se não houver nenhuma, retorne {"questions": [], "detected_year": null}.
+
+TEXTO:
+"""
+${cr.chunkText}
+"""`;
+
+            try {
+              const { parsed, finishReason, usage } = await callAI(LOVABLE_API_KEY, retryPrompt);
+              console.log(`Retry chunk ${cr.chunkIndex + 1} finish_reason: ${finishReason}, extracted ${parsed.questions?.length || 0} questions, tokens: ${JSON.stringify(usage)}`);
+              return parsed.questions || [];
+            } catch (err) {
+              console.error(`Retry chunk ${cr.chunkIndex + 1} error:`, err);
+              return [];
+            }
+          });
+
+          const retryResults = await Promise.all(retryPromises);
+          for (const retryQuestions of retryResults) {
+            for (const q of retryQuestions) {
+              if (!seen.has(q.number)) {
+                seen.add(q.number);
+                uniqueQuestions.push(q);
+              }
+            }
+          }
         }
       }
     }
 
-    // Deduplicate by question number
-    const seen = new Set<number>();
-    const uniqueQuestions = allQuestions.filter(q => {
-      if (seen.has(q.number)) return false;
-      seen.add(q.number);
-      return true;
-    }).sort((a, b) => a.number - b.number);
-
+    uniqueQuestions.sort((a, b) => a.number - b.number);
     console.log(`Extracted ${uniqueQuestions.length} unique questions, detected year: ${detectedYear}`);
 
     return new Response(
-      JSON.stringify({ 
-        questions: uniqueQuestions, 
+      JSON.stringify({
+        questions: uniqueQuestions,
         total: uniqueQuestions.length,
         detected_year: detectedYear || year || null,
       }),
