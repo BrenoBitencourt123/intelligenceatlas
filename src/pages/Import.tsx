@@ -7,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, Trash2, AlertCircle, X } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, Trash2, AlertCircle, X, Pencil } from 'lucide-react';
 import { useImportExam, ImportedQuestion, DayUpload } from '@/hooks/useImportExam';
 
 const AREA_LABELS: Record<string, string> = {
@@ -172,16 +174,149 @@ function UploadStage({
   );
 }
 
+function QuestionEditDialog({
+  question,
+  open,
+  onClose,
+  onSave,
+}: {
+  question: ImportedQuestion | null;
+  open: boolean;
+  onClose: () => void;
+  onSave: (updates: Partial<ImportedQuestion>) => void;
+}) {
+  const [statement, setStatement] = useState('');
+  const [alternatives, setAlternatives] = useState<{ letter: string; text: string }[]>([]);
+  const [correctAnswer, setCorrectAnswer] = useState<string>('none');
+  const [area, setArea] = useState('');
+  const [tags, setTags] = useState('');
+
+  // Sync local state when question changes
+  const [lastQ, setLastQ] = useState<ImportedQuestion | null>(null);
+  if (question && question !== lastQ) {
+    setLastQ(question);
+    setStatement(question.statement);
+    setAlternatives(question.alternatives.map(a => ({ ...a })));
+    setCorrectAnswer(question.annulled ? 'anulada' : (question.correct_answer || 'none'));
+    setArea(question.area);
+    setTags(question.tags.join(', '));
+  }
+
+  const handleSave = () => {
+    const isAnnulled = correctAnswer === 'anulada';
+    onSave({
+      statement,
+      alternatives,
+      correct_answer: isAnnulled ? null : (correctAnswer === 'none' ? null : correctAnswer),
+      annulled: isAnnulled,
+      area,
+      tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+    });
+    onClose();
+  };
+
+  if (!question) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Editar Questão {question.number}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Resposta correta</Label>
+              <Select value={correctAnswer} onValueChange={setCorrectAnswer}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {['A', 'B', 'C', 'D', 'E'].map(l => (
+                    <SelectItem key={l} value={l}>{l}</SelectItem>
+                  ))}
+                  <SelectItem value="anulada">Anulada</SelectItem>
+                  <SelectItem value="none">Nenhuma</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Área</Label>
+              <Select value={area} onValueChange={setArea}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(AREA_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Enunciado</Label>
+            <Textarea
+              value={statement}
+              onChange={e => setStatement(e.target.value)}
+              rows={4}
+              className="text-xs"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs">Alternativas</Label>
+            {alternatives.map((alt, i) => (
+              <div key={alt.letter} className="flex items-start gap-2">
+                <span className="text-xs font-bold mt-2.5 w-4 shrink-0">{alt.letter}</span>
+                <Textarea
+                  value={alt.text}
+                  onChange={e => {
+                    const updated = [...alternatives];
+                    updated[i] = { ...alt, text: e.target.value };
+                    setAlternatives(updated);
+                  }}
+                  rows={2}
+                  className="text-xs"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Tags (separadas por vírgula)</Label>
+            <Input
+              value={tags}
+              onChange={e => setTags(e.target.value)}
+              placeholder="revolução, história, brasil"
+              className="text-xs h-9"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={onClose}>Cancelar</Button>
+          <Button size="sm" onClick={handleSave}>Salvar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function PreviewStage({
   questions,
   onToggle,
   onUpdateArea,
+  onUpdateQuestion,
   onConfirm,
   onBack,
 }: {
   questions: ImportedQuestion[];
   onToggle: (n: number, day: number) => void;
   onUpdateArea: (n: number, day: number, area: string) => void;
+  onUpdateQuestion: (n: number, day: number, updates: Partial<ImportedQuestion>) => void;
   onConfirm: () => void;
   onBack: () => void;
 }) {
@@ -189,6 +324,14 @@ function PreviewStage({
   const annulled = questions.filter(q => q.annulled);
   const withoutAnswer = selected.filter(q => !q.correct_answer && !q.annulled);
   const days = [...new Set(questions.map(q => q.day))].sort();
+  const [editingQuestion, setEditingQuestion] = useState<ImportedQuestion | null>(null);
+  const [editedSet, setEditedSet] = useState<Set<string>>(new Set());
+
+  const handleSaveEdit = (updates: Partial<ImportedQuestion>) => {
+    if (!editingQuestion) return;
+    onUpdateQuestion(editingQuestion.number, editingQuestion.day, updates);
+    setEditedSet(prev => new Set(prev).add(`${editingQuestion.day}-${editingQuestion.number}`));
+  };
 
   return (
     <div className="space-y-4">
@@ -211,7 +354,7 @@ function PreviewStage({
       {withoutAnswer.length > 0 && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 text-sm">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          {withoutAnswer.length} questões sem gabarito
+          {withoutAnswer.length} questões sem gabarito — clique para editar
         </div>
       )}
 
@@ -224,48 +367,62 @@ function PreviewStage({
                 Dia {day} — {dayQuestions.filter(q => q.selected).length} questões
               </h3>
               <div className="space-y-2">
-                {dayQuestions.map(q => (
-                  <Card key={`${q.day}-${q.number}`} className={`transition-opacity ${!q.selected ? 'opacity-40' : ''}`}>
-                    <CardContent className="p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                            <span className="font-bold text-xs">Q{q.number}</span>
-                            <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                              {AREA_LABELS[q.area] || q.area}
-                            </Badge>
-                            {q.annulled ? (
-                              <Badge variant="destructive" className="text-xs px-1.5 py-0">
-                                Anulada
+                {dayQuestions.map(q => {
+                  const noAnswer = !q.correct_answer && !q.annulled;
+                  const wasEdited = editedSet.has(`${q.day}-${q.number}`);
+                  return (
+                    <Card
+                      key={`${q.day}-${q.number}`}
+                      className={`transition-opacity cursor-pointer hover:ring-1 hover:ring-primary/40 ${!q.selected ? 'opacity-40' : ''} ${noAnswer && q.selected ? 'border-amber-400 dark:border-amber-500' : ''}`}
+                      onClick={() => setEditingQuestion(q)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                              <span className="font-bold text-xs">Q{q.number}</span>
+                              <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                {AREA_LABELS[q.area] || q.area}
                               </Badge>
-                            ) : q.correct_answer ? (
-                              <Badge variant="outline" className="text-xs px-1.5 py-0">
-                                {q.correct_answer}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs px-1.5 py-0 text-amber-600">
-                                ?
-                              </Badge>
-                            )}
+                              {q.annulled ? (
+                                <Badge variant="destructive" className="text-xs px-1.5 py-0">
+                                  Anulada
+                                </Badge>
+                              ) : q.correct_answer ? (
+                                <Badge variant="outline" className="text-xs px-1.5 py-0">
+                                  {q.correct_answer}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs px-1.5 py-0 text-amber-600">
+                                  ?
+                                </Badge>
+                              )}
+                              {wasEdited && (
+                                <Pencil className="h-3 w-3 text-muted-foreground" />
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-1">{q.statement}</p>
                           </div>
-                          <p className="text-xs text-muted-foreground line-clamp-1">{q.statement}</p>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0 h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggle(q.number, q.day);
+                            }}
+                          >
+                            {q.selected ? (
+                              <X className="h-3.5 w-3.5 text-muted-foreground" />
+                            ) : (
+                              <Check className="h-3.5 w-3.5 text-primary" />
+                            )}
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="shrink-0 h-7 w-7"
-                          onClick={() => onToggle(q.number, q.day)}
-                        >
-                          {q.selected ? (
-                            <X className="h-3.5 w-3.5 text-muted-foreground" />
-                          ) : (
-                            <Check className="h-3.5 w-3.5 text-primary" />
-                          )}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           );
@@ -276,6 +433,13 @@ function PreviewStage({
         <ArrowRight className="h-4 w-4 mr-2" />
         Revisar e Importar ({selected.length})
       </Button>
+
+      <QuestionEditDialog
+        question={editingQuestion}
+        open={!!editingQuestion}
+        onClose={() => setEditingQuestion(null)}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 }
@@ -393,6 +557,7 @@ export default function Import({ embedded = false }: { embedded?: boolean }) {
     processUploads,
     removeQuestion,
     updateArea,
+    updateQuestion,
     saveQuestions,
     goToConfirm,
     goBack,
@@ -405,7 +570,7 @@ export default function Import({ embedded = false }: { embedded?: boolean }) {
           <h1 className="text-2xl font-bold text-foreground">Importar Prova ENEM</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {stage === 'upload' && 'Envie os PDFs da prova e gabarito de cada dia'}
-            {stage === 'preview' && 'Revise as questões extraídas pela IA'}
+            {stage === 'preview' && 'Revise as questões extraídas pela IA — clique para editar'}
             {stage === 'confirm' && 'Confirme o ano e importe'}
           </p>
         </div>
@@ -439,6 +604,7 @@ export default function Import({ embedded = false }: { embedded?: boolean }) {
             questions={questions}
             onToggle={removeQuestion}
             onUpdateArea={updateArea}
+            onUpdateQuestion={updateQuestion}
             onConfirm={goToConfirm}
             onBack={goBack}
           />

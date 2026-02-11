@@ -238,6 +238,12 @@ export function useImportExam() {
     ));
   }
 
+  function updateQuestion(number: number, day: number, updates: Partial<ImportedQuestion>) {
+    setQuestions(prev => prev.map(q =>
+      q.number === number && q.day === day ? { ...q, ...updates } : q
+    ));
+  }
+
   async function saveQuestions(year: number) {
     if (!user) {
       toast.error('Faça login para importar questões');
@@ -325,6 +331,7 @@ export function useImportExam() {
     processUploads,
     removeQuestion,
     updateArea,
+    updateQuestion,
     saveQuestions,
     goToConfirm,
     goBack,
