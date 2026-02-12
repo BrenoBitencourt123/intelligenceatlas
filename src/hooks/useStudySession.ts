@@ -153,13 +153,36 @@ export function useStudySession() {
   const generateFlashcard = useCallback(async (question: Question) => {
     if (!user) return;
     try {
-      const correctAlt = question.alternatives.find(
-        (a: any) => a.letter === question.correct_answer
-      );
-      const front = question.statement.length > 200
-        ? question.statement.substring(0, 200) + '...'
-        : question.statement;
-      const back = `Resposta: ${question.correct_answer}${correctAlt ? ` - ${correctAlt.text}` : ''}${question.explanation ? `\n\n${question.explanation}` : ''}`;
+      let front: string;
+      let back: string;
+
+      // Try AI-powered flashcard generation
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-flashcard', {
+          body: {
+            statement: question.statement,
+            alternatives: question.alternatives,
+            correctAnswer: question.correct_answer,
+            explanation: question.explanation,
+            area: question.area,
+          },
+        });
+
+        if (error || !data?.front || !data?.back) {
+          throw new Error(error?.message || 'Invalid response');
+        }
+
+        front = data.front;
+        back = data.back;
+      } catch (aiErr) {
+        console.warn('AI flashcard generation failed, using fallback:', aiErr);
+        // Fallback: simplified version (better than raw statement)
+        const correctAlt = question.alternatives.find(
+          (a: any) => a.letter === question.correct_answer
+        );
+        front = `[${question.area}] O que a questão ${question.number} cobra?`;
+        back = `Resposta: ${question.correct_answer}${correctAlt ? ` — ${correctAlt.text}` : ''}${question.explanation ? `\n\n${question.explanation}` : ''}`;
+      }
 
       await supabase.from('flashcards').insert({
         user_id: user.id,

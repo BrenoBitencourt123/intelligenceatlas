@@ -327,17 +327,23 @@ const Objectives = () => {
                 </div>
               </div>
 
-              <Card className="border-2 border-primary/20">
-                <CardContent className="p-6 space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase">Frente</p>
-                    <p className="text-sm leading-relaxed">{currentCard.front}</p>
-                  </div>
+              <Card className="border-2 border-primary/20 min-h-[240px] flex flex-col">
+                <CardContent className="p-6 flex-1 flex flex-col justify-center">
+                  {currentCard.area && (
+                    <Badge variant="secondary" className="self-start mb-3 text-xs">
+                      {currentCard.area}
+                    </Badge>
+                  )}
 
-                  {reviewState === 'revealed' && (
-                    <div className="space-y-2 pt-4 border-t">
-                      <p className="text-xs font-medium text-muted-foreground uppercase">Verso</p>
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{currentCard.back}</p>
+                  {reviewState === 'reviewing' ? (
+                    <MarkdownText content={currentCard.front} className="text-lg font-medium leading-relaxed" />
+                  ) : (
+                    <div className="space-y-4">
+                      <MarkdownText content={currentCard.front} className="text-base leading-relaxed text-muted-foreground" />
+                      <div className="border-t pt-4">
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-2">Resposta</p>
+                        <MarkdownText content={currentCard.back} className="text-base leading-relaxed" />
+                      </div>
                     </div>
                   )}
                 </CardContent>
