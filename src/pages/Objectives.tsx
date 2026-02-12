@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { PdfViewerModal } from '@/components/atlas/PdfViewerModal';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,7 +51,7 @@ const Objectives = () => {
   const pdfUrl = useExamPdf(currentQuestion?.year);
   const flashcards = useFlashcardReview();
   const [flashcardMode, setFlashcardMode] = useState(false);
-  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  
 
   // Loading state
   if (state === 'loading') {
@@ -151,23 +150,15 @@ const Objectives = () => {
               </Button>
             </div>
             {pdfUrl && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 text-xs"
-                  onClick={() => setPdfModalOpen(true)}
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  Ver PDF da prova
-                </Button>
-                <PdfViewerModal
-                  open={pdfModalOpen}
-                  onOpenChange={setPdfModalOpen}
-                  pdfUrl={pdfUrl}
-                  title={`ENEM ${currentQuestion?.year} — Prova`}
-                />
-              </>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => window.open(pdfUrl, '_blank')}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                Ver PDF da prova
+              </Button>
             )}
 
             <Progress value={progress} className="h-1.5" />
