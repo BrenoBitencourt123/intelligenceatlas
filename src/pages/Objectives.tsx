@@ -48,7 +48,7 @@ const Objectives = () => {
     nextQuestion,
     resetSession,
   } = useStudySession();
-  const pdfUrl = useExamPdf(currentQuestion?.year);
+  const { available: pdfAvailable, openPdf, loading: pdfLoading } = useExamPdf(currentQuestion?.year);
   const flashcards = useFlashcardReview();
   const [flashcardMode, setFlashcardMode] = useState(false);
   
@@ -149,15 +149,16 @@ const Objectives = () => {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            {pdfUrl && (
+            {pdfAvailable && (
               <Button
                 variant="outline"
                 size="sm"
                 className="gap-1.5 text-xs"
-                onClick={() => window.open(pdfUrl, '_blank')}
+                onClick={openPdf}
+                disabled={pdfLoading}
               >
                 <FileText className="h-3.5 w-3.5" />
-                Ver PDF da prova
+                {pdfLoading ? 'Abrindo...' : 'Ver PDF da prova'}
               </Button>
             )}
 
