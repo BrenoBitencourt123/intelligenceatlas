@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useFlashcardReview } from '@/hooks/useFlashcardReview';
-import { Brain, Check, Eye, Loader2, RotateCcw } from 'lucide-react';
+import { Brain, Check, Eye, Loader2, RotateCcw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import MarkdownText from '@/components/atlas/MarkdownText';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Flashcards = () => {
   const {
@@ -21,6 +23,28 @@ const Flashcards = () => {
     startReview,
   } = useFlashcardReview();
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteAll = async () => {
+    if (!confirm('Tem certeza que deseja deletar todos os flashcards? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.functions.invoke('clean-flashcards');
+      if (error) throw error;
+      
+      toast.success('Todos os flashcards foram deletados');
+      // Reload page to refresh state
+      window.location.reload();
+    } catch (err: any) {
+      console.error('Error deleting flashcards:', err);
+      toast.error('Erro ao deletar flashcards');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Handle reveal with flip animation state
   const handleReveal = () => {
@@ -49,7 +73,19 @@ const Flashcards = () => {
       <MainLayout>
         <div className="container max-w-2xl mx-auto px-4 py-8">
           <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-foreground">Flashcards</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-foreground">Flashcards</h1>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDeleteAll}
+                disabled={isDeleting}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Limpar
+              </Button>
+            </div>
             <Card className="bg-card">
               <CardContent className="p-8 text-center space-y-4">
                 {reviewed > 0 ? (
