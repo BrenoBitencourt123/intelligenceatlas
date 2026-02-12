@@ -142,6 +142,9 @@ const Objectives = () => {
                 <Badge className={BLOCK_COLORS[currentBlock] || BLOCK_COLORS[0]}>
                   {blockLabels[currentBlock] || `Bloco ${currentBlock + 1}`}
                 </Badge>
+                <Badge variant="outline" className="text-xs">
+                  ENEM {currentQuestion.year}
+                </Badge>
                 <span className="text-sm text-muted-foreground">
                   {currentIndex + 1}/{totalQuestions}
                 </span>
