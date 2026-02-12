@@ -95,7 +95,7 @@ const Flashcards = () => {
             <Progress value={progressValue} className="h-1.5" />
 
             {/* Card */}
-            <Card className="min-h-[280px] flex flex-col">
+            <Card className="min-h-[240px] flex flex-col">
               <CardContent className="p-6 flex-1 flex flex-col justify-center">
                 {currentCard.area && (
                   <Badge variant="secondary" className="self-start mb-3 text-xs">
@@ -104,13 +104,14 @@ const Flashcards = () => {
                 )}
 
                 {!isFlipped ? (
-                  <div className="space-y-4">
-                    <MarkdownText content={currentCard.front} className="text-base leading-relaxed" />
-                  </div>
+                  <MarkdownText content={currentCard.front} className="text-lg font-medium leading-relaxed" />
                 ) : (
                   <div className="space-y-4">
-                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Resposta</p>
-                    <MarkdownText content={currentCard.back} className="text-base leading-relaxed" />
+                    <MarkdownText content={currentCard.front} className="text-base leading-relaxed text-muted-foreground" />
+                    <div className="border-t pt-4">
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-2">Resposta</p>
+                      <MarkdownText content={currentCard.back} className="text-base leading-relaxed" />
+                    </div>
                   </div>
                 )}
               </CardContent>
