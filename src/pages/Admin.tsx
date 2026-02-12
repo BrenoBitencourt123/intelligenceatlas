@@ -7,12 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, DollarSign, Cpu, TrendingUp, Coins, Calendar, Upload } from 'lucide-react';
+import { ArrowLeft, DollarSign, Cpu, TrendingUp, Coins, Calendar, Upload, ListChecks } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import ThemesPanel from '@/components/admin/ThemesPanel';
 import ImportPanel from '@/pages/Import';
+import QuestionsPanel from '@/components/admin/QuestionsPanel';
 
 interface TokenUsageRecord {
   id: string;
@@ -163,7 +164,7 @@ const Admin = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="tokens" className="space-y-6">
-          <TabsList className="grid w-full max-w-lg grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="tokens" className="flex items-center gap-2">
               <Coins className="h-4 w-4" />
               Tokens
@@ -175,6 +176,10 @@ const Admin = () => {
             <TabsTrigger value="import" className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
               Importar
+            </TabsTrigger>
+            <TabsTrigger value="questions" className="flex items-center gap-2">
+              <ListChecks className="h-4 w-4" />
+              Questões
             </TabsTrigger>
           </TabsList>
 
@@ -336,6 +341,11 @@ const Admin = () => {
           {/* Import Tab */}
           <TabsContent value="import">
             <ImportPanel embedded />
+          </TabsContent>
+
+          {/* Questions Tab */}
+          <TabsContent value="questions">
+            <QuestionsPanel />
           </TabsContent>
         </Tabs>
       </div>
