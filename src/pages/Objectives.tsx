@@ -142,9 +142,6 @@ const Objectives = () => {
                 <Badge className={BLOCK_COLORS[currentBlock] || BLOCK_COLORS[0]}>
                   {blockLabels[currentBlock] || `Bloco ${currentBlock + 1}`}
                 </Badge>
-                <Badge variant="outline" className="text-xs">
-                  ENEM {currentQuestion.year}
-                </Badge>
                 <span className="text-sm text-muted-foreground">
                   {currentIndex + 1}/{totalQuestions}
                 </span>
@@ -179,7 +176,10 @@ const Objectives = () => {
             <Card>
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-start gap-2">
-                  <Badge variant="outline" className="shrink-0 mt-0.5">Q{currentQuestion.number}</Badge>
+                  <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                    <Badge variant="outline">Q{currentQuestion.number}</Badge>
+                    <span className="text-xs text-muted-foreground">ENEM {currentQuestion.year}</span>
+                  </div>
                   <MarkdownText content={currentQuestion.statement} className="text-sm leading-relaxed" />
                 </div>
 
