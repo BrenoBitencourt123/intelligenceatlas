@@ -1,32 +1,60 @@
 
 
-# Trocar parse-exam-pdf para Gemini 2.5 Flash
+# Flashcards Inteligentes para o ENEM
 
-## Resumo
+## Problema Atual
 
-Configurar a Edge Function `parse-exam-pdf` para usar o Gemini 2.5 Flash com sua chave pessoal do Google.
+Hoje, quando voce erra uma questao, o sistema simplesmente copia o enunciado bruto da questao (truncado em 200 caracteres) como frente do flashcard. Isso gera cartoes pesados, dificeis de revisar e que nao ativam a memoria de forma eficiente.
 
-## Passos
+## Solucao
 
-1. **Adicionar secret `GEMINI_API_KEY`** -- vou solicitar que voce insira a chave obtida em [Google AI Studio](https://aistudio.google.com/apikey)
+Usar IA para gerar flashcards sintetizados no momento da criacao, transformando cada erro em um "gatilho mental rapido" ao inves de um mini-texto.
 
-2. **Atualizar `supabase/functions/parse-exam-pdf/index.ts`**:
-   - Trocar endpoint para `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`
-   - Trocar modelo para `gemini-2.5-flash`
-   - Trocar variavel de `OPENAI_API_KEY` para `GEMINI_API_KEY`
+## O que muda
 
-3. **Redeployar** a Edge Function automaticamente
+### 1. Nova funcao backend para gerar flashcards inteligentes
+Criar uma edge function `generate-flashcard` que recebe os dados da questao (enunciado, alternativas, resposta correta, explicacao, area) e retorna:
+- **Frente**: Pergunta curta e objetiva (max 2 linhas) focada em decisao, reconhecimento de padrao ou conceito minimo
+- **Verso**: Explicacao resumida (3-4 linhas) + aplicacao pratica no ENEM (1 linha)
 
-## Detalhes tecnicos
+### 2. Atualizar geracao de flashcards no frontend
+Modificar `generateFlashcard` em `useStudySession.ts` para chamar a edge function ao inves de truncar o enunciado. Incluir fallback local caso a chamada falhe (para nao travar o fluxo).
 
-O Google oferece um endpoint compativel com formato OpenAI, entao a mudanca e minima:
+### 3. Melhorar a UI de revisao
+Ajustar o layout dos flashcards tanto na pagina dedicada (`Flashcards.tsx`) quanto no modo inline (`Objectives.tsx`):
+- Texto maior e mais limpo na frente
+- Separacao visual clara entre explicacao e dica pratica no verso
+- Label "FRENTE" removido (desnecessario) - so mostrar a pergunta
+- Label "RESPOSTA" mantido no verso com formatacao mais clara
 
-```text
-Antes:  api.openai.com  +  gpt-4.1-mini  +  OPENAI_API_KEY
-Depois: generativelanguage.googleapis.com/v1beta/openai  +  gemini-2.5-flash  +  GEMINI_API_KEY
+---
+
+## Detalhes Tecnicos
+
+### Edge Function `generate-flashcard`
+
+```
+POST /generate-flashcard
+Body: { statement, alternatives, correctAnswer, explanation, area }
+Response: { front, back }
 ```
 
-O formato de request (messages, temperature, response_format json_object) permanece identico. Nenhuma outra mudanca necessaria.
+Usa modelo Lovable AI (gemini-2.5-flash-lite - rapido e barato, ideal para sintese curta) com prompt instruindo:
+- Tipo 1 (Decisao Estrategica): "Quando o enunciado traz X, o que isso indica?"
+- Tipo 2 (Conceito minimo): "O que e X?"
+- Tipo 3 (Pegadinha ENEM): padrao de erro comum
 
-**Arquivos a editar:** `supabase/functions/parse-exam-pdf/index.ts`
+### Alteracoes em `useStudySession.ts`
+
+Funcao `generateFlashcard`:
+- Chamar edge function `generate-flashcard` com dados da questao
+- Se falhar, usar fallback simplificado (melhor que o atual, mas sem IA)
+- Manter mesma estrutura de insert no banco
+
+### Alteracoes de UI
+
+**`Flashcards.tsx`** e secao inline em **`Objectives.tsx`**:
+- Frente: texto com `text-lg font-medium` centralizado, sem label "FRENTE"
+- Verso: separacao com linha entre explicacao e dica pratica
+- Card com `min-h-[240px]` para manter proporcao limpa
 
