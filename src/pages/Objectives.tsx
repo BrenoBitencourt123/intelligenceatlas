@@ -12,6 +12,8 @@ import { useExamPdf } from '@/hooks/useExamPdf';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { ArrowRight, BookOpen, Brain, Check, Crown, FileText, HelpCircle, Loader2, RotateCcw, Target, X, Eye, EyeOff, ChevronRight } from 'lucide-react';
 import MarkdownText from '@/components/atlas/MarkdownText';
+import { useQuestionPedagogy } from '@/hooks/useQuestionPedagogy';
+import { PreConceptBlock, PostAnswerBlocks } from '@/components/atlas/PedagogyBlocks';
 import { useNavigate } from 'react-router-dom';
 
 const BLOCK_COLORS = [
@@ -49,9 +51,20 @@ const Objectives = () => {
     resetSession,
   } = useStudySession();
   const { available: pdfAvailable, openPdf, loading: pdfLoading } = useExamPdf(currentQuestion?.year);
+  const { pedagogy, loading: pedagogyLoading } = useQuestionPedagogy(
+    currentQuestion ? {
+      id: currentQuestion.id,
+      statement: currentQuestion.statement,
+      alternatives: currentQuestion.alternatives as { letter: string; text: string }[],
+      correct_answer: currentQuestion.correct_answer,
+      explanation: currentQuestion.explanation,
+      area: currentQuestion.area,
+      tags: currentQuestion.tags,
+    } : null,
+    state === 'active' && hasKnowledgeCapsules
+  );
   const flashcards = useFlashcardReview();
   const [flashcardMode, setFlashcardMode] = useState(false);
-  
 
   // Loading state
   if (state === 'loading') {
@@ -175,6 +188,11 @@ const Objectives = () => {
                   <MarkdownText content={currentQuestion.statement} className="text-sm leading-relaxed" />
                 </div>
 
+                {/* Pre-concept block - before alternatives */}
+                {hasKnowledgeCapsules && !showFeedback && (
+                  <PreConceptBlock pedagogy={pedagogy} loading={pedagogyLoading} />
+                )}
+
                 {/* Alternatives */}
                 <div className="space-y-2">
                   {alternatives.map((alt) => {
@@ -207,28 +225,40 @@ const Objectives = () => {
                   })}
                 </div>
 
-                {/* Knowledge Capsule - Pro only */}
-                {showFeedback && hasKnowledgeCapsules && (currentQuestion.explanation || (currentQuestion.tags && currentQuestion.tags.length > 0)) && (
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 overflow-hidden">
-                    <div className="flex items-center gap-2 px-4 py-2.5 border-b border-primary/10">
-                      <BookOpen className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-semibold text-foreground">Cápsula de Conhecimento</span>
-                    </div>
-                    <div className="p-4 space-y-3">
-                      {currentQuestion.tags && currentQuestion.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {currentQuestion.tags.map((tag, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
+                {/* Post-answer pedagogical blocks - Pro only */}
+                {showFeedback && hasKnowledgeCapsules && (
+                  <>
+                    {/* Tags */}
+                    {currentQuestion.tags && currentQuestion.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {currentQuestion.tags.map((tag, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Correct answer justification */}
+                    {currentQuestion.explanation && (
+                      <div className="rounded-lg border border-primary/20 bg-primary/5 overflow-hidden">
+                        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-primary/10">
+                          <BookOpen className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-semibold text-foreground">Justificativa</span>
                         </div>
-                      )}
-                      {currentQuestion.explanation && (
-                        <MarkdownText content={currentQuestion.explanation} className="text-sm text-muted-foreground leading-relaxed" />
-                      )}
-                    </div>
-                  </div>
+                        <div className="p-4">
+                          <MarkdownText content={currentQuestion.explanation} className="text-sm text-muted-foreground leading-relaxed" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI-generated pedagogy blocks */}
+                    <PostAnswerBlocks
+                      pedagogy={pedagogy}
+                      loading={pedagogyLoading}
+                      showPostAnswer={true}
+                    />
+                  </>
                 )}
 
                 {/* Locked capsule hint for non-Pro */}

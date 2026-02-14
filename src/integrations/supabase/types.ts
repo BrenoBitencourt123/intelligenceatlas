@@ -275,6 +275,44 @@ export type Database = {
           },
         ]
       }
+      question_pedagogy: {
+        Row: {
+          cognitive_pattern: string | null
+          created_at: string
+          deep_lesson: string | null
+          id: string
+          pre_concept: Json | null
+          question_id: string
+          video_suggestions: Json | null
+        }
+        Insert: {
+          cognitive_pattern?: string | null
+          created_at?: string
+          deep_lesson?: string | null
+          id?: string
+          pre_concept?: Json | null
+          question_id: string
+          video_suggestions?: Json | null
+        }
+        Update: {
+          cognitive_pattern?: string | null
+          created_at?: string
+          deep_lesson?: string | null
+          id?: string
+          pre_concept?: Json | null
+          question_id?: string
+          video_suggestions?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_pedagogy_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       questions: {
         Row: {
           alternatives: Json
