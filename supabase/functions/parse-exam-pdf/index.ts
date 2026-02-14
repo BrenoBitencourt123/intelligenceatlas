@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const SYSTEM_PROMPT = `Você é um parser especializado em provas do ENEM. Sua função é extrair questões de texto bruto de PDFs de provas do ENEM.
@@ -77,15 +78,15 @@ Retorne APENAS o JSON, sem texto adicional.`;
 
 function splitTextIntoChunks(text: string, maxChunkSize = 30000): string[] {
   const chunks: string[] = [];
-  const lines = text.split('\n');
-  let currentChunk = '';
+  const lines = text.split("\n");
+  let currentChunk = "";
 
   for (const line of lines) {
     if (currentChunk.length + line.length > maxChunkSize && currentChunk.length > 0) {
       chunks.push(currentChunk);
-      currentChunk = '';
+      currentChunk = "";
     }
-    currentChunk += line + '\n';
+    currentChunk += line + "\n";
   }
   if (currentChunk.trim()) {
     chunks.push(currentChunk);
@@ -101,48 +102,61 @@ interface ChunkResult {
   chunkText: string;
 }
 
-async function callAI(apiKey: string, userPrompt: string, maxTokens = 50000): Promise<{ parsed: any; finishReason: string; usage: any }> {
+async function callAI(
+  apiKey: string,
+  userPrompt: string,
+  maxTokens = 8000,
+): Promise<{ parsed: any; finishReason: string; usage: any }> {
   const makeRequest = async () => {
-    return await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gemini-2.5-flash",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.2,
-        max_tokens: maxTokens,
-        response_format: { type: "json_object" },
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+    try {
+      return await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gemini-2.5-flash",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.1,
+          max_tokens: Math.min(maxTokens, 8000),
+          response_format: { type: "json_object" },
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
   };
 
   let response = await makeRequest();
 
   if (response.status === 429) {
     console.warn("Rate limited, retrying in 5s...");
-    await new Promise(r => setTimeout(r, 5000));
+    await new Promise((r) => setTimeout(r, 5000));
     response = await makeRequest();
   }
 
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`AI error: ${response.status}`, errorText);
-    return { parsed: { questions: [], detected_year: null }, finishReason: 'error', usage: null };
+    return { parsed: { questions: [], detected_year: null }, finishReason: "error", usage: null };
   }
 
   const data = await response.json();
-  const finishReason = data.choices?.[0]?.finish_reason || 'unknown';
+  const finishReason = data.choices?.[0]?.finish_reason || "unknown";
   const usage = data.usage;
   const content = data.choices?.[0]?.message?.content;
   try {
     return { parsed: content ? JSON.parse(content) : { questions: [], detected_year: null }, finishReason, usage };
   } catch {
+    console.error("Failed to parse model JSON response", content);
     return { parsed: { questions: [], detected_year: null }, finishReason, usage };
   }
 }
@@ -162,12 +176,12 @@ serve(async (req) => {
 
     // Single-chunk mode: process one chunk and return immediately
     if (chunk) {
-      const yearHint = year ? `ENEM ${year}` : 'ENEM (detecte o ano do texto)';
-      const dayHint = day ? `Dia ${day}` : '';
+      const yearHint = year ? `ENEM ${year}` : "ENEM (detecte o ano do texto)";
+      const dayHint = day ? `Dia ${day}` : "";
       const idx = chunkIndex ?? 0;
       const total = totalChunks ?? 1;
 
-      const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho de texto (parte ${idx + 1} de ${total}).
+      const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ""} deste trecho de texto (parte ${idx + 1} de ${total}).
 
 Se não houver questões neste trecho, retorne {"questions": [], "detected_year": null}.
 
@@ -176,35 +190,37 @@ TEXTO:
 ${chunk}
 """`;
 
-      console.log(`Processing single chunk ${idx + 1}/${total} for Day ${day || '?'}`);
+      console.log(`Processing single chunk ${idx + 1}/${total} for Day ${day || "?"}`);
       const { parsed, finishReason, usage } = await callAI(GEMINI_API_KEY, userPrompt);
-      console.log(`Chunk ${idx + 1} finish_reason: ${finishReason}, extracted ${parsed.questions?.length || 0} questions, tokens: ${JSON.stringify(usage)}`);
+      console.log(
+        `Chunk ${idx + 1} finish_reason: ${finishReason}, extracted ${parsed.questions?.length || 0} questions, tokens: ${JSON.stringify(usage)}`,
+      );
 
       return new Response(
         JSON.stringify({
           questions: parsed.questions || [],
           detected_year: parsed.detected_year || null,
-          truncated: finishReason === 'length',
+          truncated: finishReason === "length",
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     // Legacy full-text mode (kept for backward compatibility)
     if (!pdfText) {
-      return new Response(
-        JSON.stringify({ error: "Campo obrigatório: pdfText ou chunk" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Campo obrigatório: pdfText ou chunk" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const chunks = splitTextIntoChunks(pdfText);
     console.log(`Legacy mode: Processing ${chunks.length} chunks`);
 
     const chunkPromises = chunks.map(async (c, i) => {
-      const yearHint = year ? `ENEM ${year}` : 'ENEM (detecte o ano do texto)';
-      const dayHint = day ? `Dia ${day}` : '';
-      const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ''} deste trecho de texto (parte ${i + 1} de ${chunks.length}).
+      const yearHint = year ? `ENEM ${year}` : "ENEM (detecte o ano do texto)";
+      const dayHint = day ? `Dia ${day}` : "";
+      const userPrompt = `Extraia as questões do ${yearHint}${dayHint ? `, ${dayHint}` : ""} deste trecho de texto (parte ${i + 1} de ${chunks.length}).
 
 Se não houver questões neste trecho, retorne {"questions": [], "detected_year": null}.
 
@@ -232,11 +248,13 @@ ${c}
     }
 
     const seen = new Set<number>();
-    const uniqueQuestions = allQuestions.filter(q => {
-      if (seen.has(q.number)) return false;
-      seen.add(q.number);
-      return true;
-    }).sort((a, b) => a.number - b.number);
+    const uniqueQuestions = allQuestions
+      .filter((q) => {
+        if (seen.has(q.number)) return false;
+        seen.add(q.number);
+        return true;
+      })
+      .sort((a, b) => a.number - b.number);
 
     console.log(`Extracted ${uniqueQuestions.length} unique questions, detected year: ${detectedYear}`);
 
@@ -246,14 +264,14 @@ ${c}
         total: uniqueQuestions.length,
         detected_year: detectedYear || year || null,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     console.error("parse-exam-pdf error:", error);
     const message = error instanceof Error ? error.message : "Erro desconhecido";
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
