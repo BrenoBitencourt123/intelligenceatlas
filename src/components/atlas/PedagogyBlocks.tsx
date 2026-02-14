@@ -27,7 +27,7 @@ export function PreConceptBlock({ pedagogy, loading }: { pedagogy: QuestionPedag
 
   if (!pedagogy?.pre_concept) return null;
 
-  const { explanation, formula, bullets } = pedagogy.pre_concept;
+  const { explanation, formula, bullets, skill } = pedagogy.pre_concept as any;
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -41,7 +41,13 @@ export function PreConceptBlock({ pedagogy, loading }: { pedagogy: QuestionPedag
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="rounded-b-lg border border-t-0 border-amber-500/20 bg-amber-500/5 p-4 space-y-2">
+        <div className="rounded-b-lg border border-t-0 border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
+          {skill && (
+            <div className="flex items-start gap-2 bg-amber-600/10 rounded-md px-3 py-2">
+              <Brain className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300 mt-0.5 shrink-0" />
+              <span className="text-xs font-medium text-amber-800 dark:text-amber-200">{skill}</span>
+            </div>
+          )}
           <p className="text-sm text-foreground/90 leading-relaxed">{explanation}</p>
           {formula && (
             <div className="bg-background/60 rounded-md px-3 py-2 font-mono text-sm text-primary border">
@@ -49,7 +55,7 @@ export function PreConceptBlock({ pedagogy, loading }: { pedagogy: QuestionPedag
             </div>
           )}
           <ul className="space-y-1">
-            {bullets.map((b, i) => (
+            {bullets.map((b: string, i: number) => (
               <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
                 <span className="text-amber-600 dark:text-amber-400 mt-0.5">•</span>
                 {b}

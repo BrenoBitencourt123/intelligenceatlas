@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface PreConcept {
   explanation: string;
+  skill: string | null;
   formula: string | null;
   bullets: string[];
 }

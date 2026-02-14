@@ -46,7 +46,13 @@ serve(async (req) => {
     const correctAlt = alternatives?.find((a: { letter: string }) => a.letter === correctAnswer);
     const tagsText = Array.isArray(tags) && tags.length > 0 ? tags.join(', ') : 'não informadas';
 
-    const prompt = `Você é um professor especialista em ENEM. Analise a questão abaixo e gere conteúdo pedagógico estruturado.
+    const prompt = `Você é um professor especialista em ENEM com foco em preparação estratégica. Analise a questão abaixo e gere conteúdo pedagógico ESPECÍFICO para ela.
+
+REGRAS CRÍTICAS:
+- NÃO faça contextualização histórica ampla ou genérica.
+- FOQUE exclusivamente no conceito exigido pelo comando da questão.
+- CONECTE cada explicação diretamente ao que o enunciado pede.
+- IDENTIFIQUE a habilidade cognitiva específica que o ENEM está avaliando.
 
 DADOS DA QUESTÃO:
 Área: ${area}
@@ -60,13 +66,14 @@ ${explanation ? `Explicação existente: ${explanation}` : ''}
 Gere o seguinte conteúdo em JSON:
 
 1. "pre_concept": Bloco "Antes de responder, saiba isso" com:
-   - "explanation": Explicação resumida do conceito necessário (2-3 frases)
+   - "explanation": Em 2-3 frases, explique SOMENTE o conceito-chave que o enunciado exige para resolver a questão. Não contextualize de forma ampla. Conecte diretamente ao comando da pergunta. Ex: "O enunciado pede que você identifique X, o que exige entender Y."
+   - "skill": Uma frase curta descrevendo a habilidade que o ENEM avalia nesta questão (ex: "Interpretar dados em tabela para calcular variação percentual", "Relacionar causa e consequência em processos históricos específicos")
    - "formula": Fórmula ou regra-chave se aplicável (null se não houver)
-   - "bullets": Array com exatamente 3 bullets objetivos sobre o que prestar atenção
+   - "bullets": Array com exatamente 3 bullets que orientem o raciocínio para ESTA questão específica. Cada bullet deve ser uma dica prática de como atacar o problema, não informação genérica.
 
-2. "cognitive_pattern": Texto explicando o padrão cognitivo que o ENEM está cobrando (máx 5 linhas). Comece com o tipo de habilidade (interpretação, cálculo, análise crítica, etc.)
+2. "cognitive_pattern": Texto explicando o padrão cognitivo que o ENEM está cobrando (máx 5 linhas). Comece identificando o tipo de habilidade (interpretação de texto, análise de dados, relação causa-efeito, etc.) e explique POR QUE o ENEM formulou a questão dessa forma.
 
-3. "deep_lesson": Mini-aula estruturada do conceito central (máx 8 linhas). Use parágrafos curtos, objetivos e didáticos.
+3. "deep_lesson": Mini-aula FOCADA no conceito central desta questão (máx 8 linhas). Não repita o que já foi dito no pre_concept. Aprofunde com exemplos práticos e conexões que ajudem a fixar o conceito para questões similares.
 
 4. "video_suggestions": Array com 2-3 sugestões de busca no YouTube para aprofundar. Cada item: {"title": "título descritivo", "query": "termo de busca no YouTube"}
 
