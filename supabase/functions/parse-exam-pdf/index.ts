@@ -52,6 +52,8 @@ CÁPSULAS DE CONHECIMENTO:
 Para cada questão, gere também:
 - "explanation": Uma explicação pedagógica de 2-4 frases que ensina o conceito central da questão (ex: o que é crônica, como funciona regra de três, o que são figuras de linguagem). NÃO diga apenas "a resposta é X" — ensine o conceito de forma didática como uma mini-aula. Use Markdown para formatar (negrito para termos-chave, itálico para exemplos).
 - "tags": Array de 1-3 palavras-chave conceituais que identificam os temas da questão (ex: ["Crônica", "Gêneros textuais"], ["Regra de três", "Proporcionalidade"], ["Figuras de linguagem", "Metáfora"])
+- "requires_image": true quando a questão depende de figura, gráfico, tabela, mapa, esquema ou imagem para ser resolvida; false caso contrário.
+- "image_reason": frase curta explicando por que precisa imagem (null quando requires_image for false).
 
 FORMATO DE RESPOSTA (JSON):
 {
@@ -69,7 +71,9 @@ FORMATO DE RESPOSTA (JSON):
         {"letter": "E", "text": "texto da alternativa E"}
       ],
       "explanation": "**Crônica** é um gênero textual que mistura jornalismo e literatura...",
-      "tags": ["Crônica", "Gêneros textuais"]
+      "tags": ["Crônica", "Gêneros textuais"],
+      "requires_image": false,
+      "image_reason": null
     }
   ]
 }
