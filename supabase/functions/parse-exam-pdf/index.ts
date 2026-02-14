@@ -54,6 +54,7 @@ Para cada questão, gere também:
 - "tags": Array de 1-3 palavras-chave conceituais que identificam os temas da questão (ex: ["Crônica", "Gêneros textuais"], ["Regra de três", "Proporcionalidade"], ["Figuras de linguagem", "Metáfora"])
 - "requires_image": true quando a questão depende de figura, gráfico, tabela, mapa, esquema ou imagem para ser resolvida; false caso contrário.
 - "image_reason": frase curta explicando por que precisa imagem (null quando requires_image for false).
+IMPORTANTE: em CADA questão, preencha SEMPRE os campos "requires_image" e "image_reason".
 
 FORMATO DE RESPOSTA (JSON):
 {
