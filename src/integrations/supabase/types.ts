@@ -430,6 +430,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_question_history: {
+        Row: {
+          answer: string
+          attempted_at: string
+          id: string
+          is_correct: boolean
+          question_id: string
+          time_spent_sec: number | null
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          attempted_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id: string
+          time_spent_sec?: number | null
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          attempted_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string
+          time_spent_sec?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_question_history_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -448,6 +486,60 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_topic_profile: {
+        Row: {
+          area: string
+          attempts: number
+          correct: number
+          correct_streak: number
+          dont_know: number
+          id: string
+          last_attempt_at: string | null
+          level: number
+          next_review_at: string | null
+          priority_score: number
+          subtopic: string
+          topic: string
+          updated_at: string
+          user_id: string
+          wrong: number
+        }
+        Insert: {
+          area: string
+          attempts?: number
+          correct?: number
+          correct_streak?: number
+          dont_know?: number
+          id?: string
+          last_attempt_at?: string | null
+          level?: number
+          next_review_at?: string | null
+          priority_score?: number
+          subtopic?: string
+          topic: string
+          updated_at?: string
+          user_id: string
+          wrong?: number
+        }
+        Update: {
+          area?: string
+          attempts?: number
+          correct?: number
+          correct_streak?: number
+          dont_know?: number
+          id?: string
+          last_attempt_at?: string | null
+          level?: number
+          next_review_at?: string | null
+          priority_score?: number
+          subtopic?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+          wrong?: number
         }
         Relationships: []
       }
