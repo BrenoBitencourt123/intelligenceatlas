@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,16 +14,20 @@ import { ArrowRight, BookOpen, Brain, Check, Crown, FileText, HelpCircle, Loader
 import MarkdownText from '@/components/atlas/MarkdownText';
 import { useQuestionPedagogy } from '@/hooks/useQuestionPedagogy';
 import { PreConceptBlock, PostAnswerBlocks } from '@/components/atlas/PedagogyBlocks';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { QuestionImageGallery } from '@/components/study/QuestionImageGallery';
 
 const BLOCK_COLORS = [
   'bg-blue-500/10 text-blue-700 dark:text-blue-300',
   'bg-amber-500/10 text-amber-700 dark:text-amber-300',
   'bg-green-500/10 text-green-700 dark:text-green-300',
 ];
+const BLOCK_SIZE = 15;
 
 const Objectives = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const previewQuestionId = searchParams.get('previewQuestionId');
   const schedule = useStudySchedule();
   const stats = useStudyStats();
   const {
@@ -45,7 +49,11 @@ const Objectives = () => {
     showFeedback,
     answers,
     result,
+    hasSavedSession,
     startSession,
+    resumeSession,
+    exitSessionView,
+    startPreviewQuestion,
     answerQuestion,
     nextQuestion,
     resetSession,
@@ -65,6 +73,20 @@ const Objectives = () => {
   );
   const flashcards = useFlashcardReview();
   const [flashcardMode, setFlashcardMode] = useState(false);
+
+  // Open a specific question directly when arriving from admin preview.
+  useEffect(() => {
+    if (!previewQuestionId) return;
+    if (state !== 'idle') return;
+
+    startPreviewQuestion(previewQuestionId).then((ok) => {
+      if (ok) {
+        const next = new URLSearchParams(searchParams);
+        next.delete('previewQuestionId');
+        setSearchParams(next, { replace: true });
+      }
+    });
+  }, [previewQuestionId, state, startPreviewQuestion, searchParams, setSearchParams]);
 
   // Loading state
   if (state === 'loading') {
@@ -143,6 +165,24 @@ const Objectives = () => {
   if (state === 'active' && currentQuestion) {
     const currentAnswer = answers[currentIndex];
     const alternatives = currentQuestion.alternatives as { letter: string; text: string }[];
+    const totalBlocks = Math.ceil(totalQuestions / BLOCK_SIZE);
+    const sessionBlocks = Array.from({ length: totalBlocks }, (_, index) => {
+      const start = index * BLOCK_SIZE;
+      const endExclusive = Math.min(start + BLOCK_SIZE, totalQuestions);
+      const totalInBlock = Math.max(0, endExclusive - start);
+      const answeredInBlock = Object.keys(answers).filter((key) => {
+        const questionIndex = Number(key);
+        return questionIndex >= start && questionIndex < endExclusive;
+      }).length;
+
+      return {
+        index,
+        totalInBlock,
+        answeredInBlock,
+        isCurrent: currentBlock === index,
+        progressPct: totalInBlock > 0 ? Math.round((answeredInBlock / totalInBlock) * 100) : 0,
+      };
+    });
 
     return (
       <MainLayout>
@@ -154,11 +194,19 @@ const Objectives = () => {
                 <Badge className={BLOCK_COLORS[currentBlock] || BLOCK_COLORS[0]}>
                   {blockLabels[currentBlock] || `Bloco ${currentBlock + 1}`}
                 </Badge>
+                {totalQuestions === 1 && (
+                  <Badge variant="outline">Preview</Badge>
+                )}
                 <span className="text-sm text-muted-foreground">
                   {currentIndex + 1}/{totalQuestions}
                 </span>
               </div>
-              <Button variant="ghost" size="sm" onClick={resetSession}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={exitSessionView}
+                title="Voltar para a tela de Objetivas"
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -177,15 +225,51 @@ const Objectives = () => {
 
             <Progress value={progress} className="h-1.5" />
 
+            {totalQuestions > 1 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {sessionBlocks.map((block) => (
+                  <Card
+                    key={block.index}
+                    className={block.isCurrent ? 'border-primary/60' : ''}
+                  >
+                    <CardContent className="p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Badge className={BLOCK_COLORS[block.index] || BLOCK_COLORS[0]}>
+                          {blockLabels[block.index] || `Bloco ${block.index + 1}`}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {block.answeredInBlock}/{block.totalInBlock}
+                        </span>
+                      </div>
+                      <Progress value={block.progressPct} className="h-1.5" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
             {/* Question */}
             <Card>
               <CardContent className="p-4 space-y-4">
+                {currentQuestion.images && currentQuestion.images.length > 0 && (
+                  <QuestionImageGallery
+                    images={currentQuestion.images}
+                    questionNumber={currentQuestion.number}
+                  />
+                )}
+
                 <div className="flex items-start gap-2">
                   <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
                     <Badge variant="outline">Q{currentQuestion.number}</Badge>
                     <span className="text-xs text-muted-foreground">ENEM {currentQuestion.year}</span>
                   </div>
-                  <MarkdownText content={currentQuestion.statement} className="text-sm leading-relaxed" />
+                  {currentQuestion.statement?.trim() ? (
+                    <MarkdownText content={currentQuestion.statement} className="text-sm leading-relaxed" />
+                  ) : (
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Esta questao usa imagem como enunciado principal.
+                    </p>
+                  )}
                 </div>
 
                 {/* Pre-concept block - before alternatives */}
@@ -219,7 +303,17 @@ const Objectives = () => {
                         <span className="font-bold text-sm shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center">
                           {alt.letter}
                         </span>
-                        <span className="text-sm">{alt.text}</span>
+                        <span className="text-sm flex-1">
+                          <span>{alt.text}</span>
+                          {alt.image_url && (
+                            <img
+                              src={alt.image_url}
+                              alt={`Alternativa ${alt.letter}`}
+                              className="mt-2 w-full max-w-full rounded border object-contain"
+                              loading="lazy"
+                            />
+                          )}
+                        </span>
                       </button>
                     );
                   })}
@@ -443,15 +537,74 @@ const Objectives = () => {
                   </Button>
                 </div>
               )}
-              <Button
-                className="w-full gap-2"
-                onClick={() => startSession(schedule.area, hasFullSessionAccess ? undefined : freeQuestionLimit)}
-              >
-                Iniciar Sessão
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+              {hasSavedSession ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2"
+                    onClick={resumeSession}
+                  >
+                    Continuar estudo
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      startSession(
+                        schedule.area,
+                        hasFullSessionAccess ? undefined : freeQuestionLimit,
+                        false,
+                        true
+                      )
+                    }
+                    title="Resetar respostas de hoje"
+                    aria-label="Resetar respostas de hoje"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => startSession(schedule.area, hasFullSessionAccess ? undefined : freeQuestionLimit)}
+                >
+                  Iniciar Sessao
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              )}
             </CardContent>
           </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Card className="bg-card">
+              <CardContent className="p-4 space-y-1">
+                <Badge className={BLOCK_COLORS[0]}>Bloco 1</Badge>
+                <p className="text-sm font-medium">Aquecimento</p>
+                <p className="text-xs text-muted-foreground">
+                  15 questoes para entrar no ritmo e mapear foco inicial.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="bg-card">
+              <CardContent className="p-4 space-y-1">
+                <Badge className={BLOCK_COLORS[1]}>Bloco 2</Badge>
+                <p className="text-sm font-medium">Aprendizado</p>
+                <p className="text-xs text-muted-foreground">
+                  15 questoes no miolo da sessao para consolidar conceito.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="bg-card">
+              <CardContent className="p-4 space-y-1">
+                <Badge className={BLOCK_COLORS[2]}>Bloco 3</Badge>
+                <p className="text-sm font-medium">Consolidacao</p>
+                <p className="text-xs text-muted-foreground">
+                  15 questoes finais para fixar e fechar com seguranca.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Flashcards card */}
           <Card className="bg-card">
@@ -492,3 +645,4 @@ const Objectives = () => {
 };
 
 export default Objectives;
+

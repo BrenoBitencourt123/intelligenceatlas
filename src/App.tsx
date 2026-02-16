@@ -14,6 +14,8 @@ import Plan from "./pages/Plan";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import History from "./pages/History";
+import Onboarding from "./pages/Onboarding";
+import ErrorsByTopic from "./pages/ErrorsByTopic";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
@@ -68,6 +70,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <History />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/onboarding"
+              element={
+                <ProtectedRoute>
+                  <Onboarding />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/errors"
+              element={
+                <ProtectedRoute>
+                  <ErrorsByTopic />
                 </ProtectedRoute>
               }
             />

@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+const DIAGNOSTIC_QUESTIONS_PER_AREA = 60;
+
 export function useStudyStats() {
   const { user } = useAuth();
   const today = new Date().toISOString().split('T')[0];
@@ -73,6 +75,54 @@ export function useStudyStats() {
         .from('questions')
         .select('*', { count: 'exact', head: true });
 
+      const { data: topicProfiles } = await supabase
+        .from('user_topic_profile')
+        .select('area,topic,subtopic,level,attempts,correct,priority_score,next_review_at')
+        .eq('user_id', user.id);
+
+      const sortedByPriority = [...(topicProfiles || [])].sort((a, b) => b.priority_score - a.priority_score);
+      const topWeaknesses = sortedByPriority.slice(0, 5).map((row) => ({
+        area: row.area,
+        topic: row.topic,
+        subtopic: row.subtopic,
+        priority: row.priority_score,
+      }));
+
+      const topStrengths = [...(topicProfiles || [])]
+        .map((row) => ({
+          area: row.area,
+          topic: row.topic,
+          subtopic: row.subtopic,
+          level: row.level,
+          attempts: row.attempts,
+          accuracy: row.attempts > 0 ? row.correct / row.attempts : 0,
+        }))
+        .filter((row) => row.attempts > 0)
+        .sort((a, b) => {
+          if (b.level !== a.level) return b.level - a.level;
+          return b.accuracy - a.accuracy;
+        })
+        .slice(0, 5);
+
+      const areaProgress = Object.values((topicProfiles || []).reduce((acc, row) => {
+        const key = row.area;
+        const current = acc[key] || { area: key, attempts: 0, correct: 0 };
+        current.attempts += row.attempts;
+        current.correct += row.correct;
+        acc[key] = current;
+        return acc;
+      }, {} as Record<string, { area: string; attempts: number; correct: number }>)).map((row) => ({
+        area: row.area,
+        attempts: row.attempts,
+        accuracy: row.attempts > 0 ? Math.round((row.correct / row.attempts) * 100) : 0,
+        diagnosticProgressPct: Math.min(100, Math.round((row.attempts / DIAGNOSTIC_QUESTIONS_PER_AREA) * 100)),
+        inDiagnosticMode: row.attempts < DIAGNOSTIC_QUESTIONS_PER_AREA,
+      }));
+
+      const overdueReviews = (topicProfiles || []).filter((row) => (
+        row.next_review_at && row.next_review_at <= `${today}T23:59:59`
+      )).length;
+
       return {
         questionsToday,
         correctToday,
@@ -81,6 +131,10 @@ export function useStudyStats() {
         flashcardsReviewed: flashcardsReviewed ?? 0,
         streak,
         totalQuestions: totalQuestions ?? 0,
+        topWeaknesses,
+        topStrengths,
+        areaProgress,
+        overdueReviews,
       };
     },
     enabled: !!user,
@@ -94,6 +148,11 @@ export function useStudyStats() {
     flashcardsReviewed: data?.flashcardsReviewed ?? 0,
     streak: data?.streak ?? 0,
     totalQuestions: data?.totalQuestions ?? 0,
+    topWeaknesses: data?.topWeaknesses ?? [],
+    topStrengths: data?.topStrengths ?? [],
+    areaProgress: data?.areaProgress ?? [],
+    overdueReviews: data?.overdueReviews ?? 0,
+    diagnosticThreshold: DIAGNOSTIC_QUESTIONS_PER_AREA,
     isLoading,
   };
 }

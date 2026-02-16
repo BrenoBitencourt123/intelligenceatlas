@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+﻿import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,26 +25,29 @@ const Today = () => {
   const stats = useStudyStats();
   const userStats = useUserStats();
   const { theme, isLoading: isThemeLoading } = useDailyTheme();
-  const { hasThemeAccess, monthlyLimit, isPro, isFree } = usePlanFeatures();
+  const { hasThemeAccess, monthlyLimit, isFree } = usePlanFeatures();
 
-  const AreaIcon = schedule.area && schedule.area !== 'mista' 
-    ? AREA_ICONS[schedule.area] || Target 
+  const AreaIcon = schedule.area && schedule.area !== 'mista'
+    ? AREA_ICONS[schedule.area] || Target
     : Target;
 
   const usedEssays = isFree ? userStats.totalEssays : userStats.monthlyEssays;
   const usagePercentage = Math.min(100, Math.round((usedEssays / monthlyLimit) * 100));
 
+  const currentAreaProgress = schedule.area && schedule.area !== 'mista'
+    ? stats.areaProgress.find((item: any) => item.area === schedule.area)
+    : null;
+  const inDiagnosticMode = Boolean(currentAreaProgress?.inDiagnosticMode);
+
   return (
     <MainLayout>
       <div className="container max-w-2xl mx-auto px-4 py-8">
         <div className="space-y-6">
-          {/* Greeting + Day */}
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-foreground">Hoje — {schedule.dayName}</h1>
+            <h1 className="text-2xl font-bold text-foreground">Hoje - {schedule.dayName}</h1>
             <p className="text-muted-foreground">{schedule.label}</p>
           </div>
 
-          {/* Streak + Quick Stats */}
           {stats.isLoading ? (
             <div className="grid grid-cols-3 gap-3">
               <Skeleton className="h-20 rounded-lg" />
@@ -64,7 +67,7 @@ const Today = () => {
                 <CardContent className="p-4 flex flex-col items-center justify-center text-center">
                   <CheckCircle2 className="h-5 w-5 text-foreground mb-1" />
                   <span className="text-2xl font-bold">{stats.questionsToday}</span>
-                  <span className="text-xs text-muted-foreground">Questões</span>
+                  <span className="text-xs text-muted-foreground">Questoes</span>
                 </CardContent>
               </Card>
               <Card className="bg-card">
@@ -77,97 +80,36 @@ const Today = () => {
             </div>
           )}
 
-          {/* Main Study Card */}
           {schedule.isObjectiveDay && (
             <Card className="border-2 border-primary/20 bg-card">
               <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <Badge variant="secondary" className="text-xs">
-                      Área do dia
-                    </Badge>
-                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                      <AreaIcon className="h-5 w-5" />
-                      {schedule.label}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      {schedule.questionCount} questões • 3 blocos de {Math.floor(schedule.questionCount / 3)}
-                    </p>
-                  </div>
-                </div>
-                {stats.totalQuestions === 0 ? (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Nenhuma questão importada. Importe provas do ENEM para começar.
-                    </p>
-                    <Button onClick={() => navigate('/importar')} className="w-full gap-2">
-                      Importar Questões
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Button onClick={() => navigate('/objetivas')} className="w-full mt-4 gap-2">
-                    Começar
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Essay Day Card */}
-          {schedule.isEssayDay && (
-            <Card className="border-2 border-primary/20 bg-card">
-              <CardContent className="p-6">
                 <div className="space-y-2">
-                  <Badge variant="secondary" className="text-xs">
-                    Dia de Redação
-                  </Badge>
+                  <Badge variant="secondary" className="text-xs">Area do dia</Badge>
                   <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                    <PenLine className="h-5 w-5" />
-                    Redação + Revisão
+                    <AreaIcon className="h-5 w-5" />
+                    {schedule.label}
                   </h2>
-                  {!isThemeLoading && hasThemeAccess && theme && (
-                    <p className="text-sm text-muted-foreground">Tema: {theme.title}</p>
-                  )}
+                  <p className="text-sm text-muted-foreground">
+                    {schedule.questionCount} questoes
+                  </p>
                 </div>
-                <Button onClick={() => navigate('/redacao')} className="w-full mt-4 gap-2">
-                  Escrever Redação
+                <Button onClick={() => navigate('/objetivas')} className="w-full mt-4 gap-2">
+                  Comecar
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </CardContent>
             </Card>
           )}
 
-          {/* Rest Day */}
-          {schedule.isRestDay && (
-            <Card className="bg-card">
-              <CardContent className="p-6 text-center space-y-2">
-                <span className="text-3xl">😴</span>
-                <h2 className="text-xl font-bold text-foreground">Descanso Ativo</h2>
-                <p className="text-sm text-muted-foreground">
-                  Hoje é dia de descansar. Revise apenas seus flashcards.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Enhanced Redação Card (shown on all days) */}
           <Card className="bg-card border">
             <CardContent className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <PenLine className="h-4 w-4" />
-                  Redação
+                  <PenLine className="h-4 w-4" /> Redacao
                 </h3>
-                {!isFree && (
-                  <Badge variant="outline" className="text-xs">
-                    {usedEssays}/{monthlyLimit}
-                  </Badge>
-                )}
+                {!isFree && <Badge variant="outline" className="text-xs">{usedEssays}/{monthlyLimit}</Badge>}
               </div>
 
-              {/* Theme preview */}
               {!isThemeLoading && hasThemeAccess && theme && (
                 <div className="rounded-lg bg-muted/50 p-3 space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">Tema do dia</p>
@@ -175,78 +117,88 @@ const Today = () => {
                 </div>
               )}
 
-              {/* Last score */}
-              {!userStats.isLoading && userStats.lastScore !== null && (
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">Última nota:</span>
-                  <span className="font-bold text-foreground">{userStats.lastScore}</span>
-                </div>
-              )}
-
-              {/* Monthly progress bar */}
               {!isFree && !userStats.isLoading && (
                 <div className="space-y-1">
                   <Progress value={usagePercentage} className="h-1.5" />
-                  <p className="text-xs text-muted-foreground">
-                    {usedEssays} de {monthlyLimit} correções usadas este mês
-                  </p>
+                  <p className="text-xs text-muted-foreground">{usedEssays} de {monthlyLimit} correcoes usadas este mes</p>
                 </div>
               )}
 
-              {isFree && (
-                <p className="text-xs text-muted-foreground">
-                  {usedEssays >= 1
-                    ? 'Redação gratuita utilizada'
-                    : '1 redação gratuita disponível'}
-                </p>
-              )}
-
-              <Button 
-                onClick={() => navigate('/redacao')} 
-                className="w-full gap-2"
-                variant={schedule.isEssayDay ? 'default' : 'outline'}
-              >
-                {schedule.isEssayDay ? 'Escrever Redação' : 'Praticar Redação'}
+              <Button onClick={() => navigate('/redacao')} className="w-full gap-2" variant={schedule.isEssayDay ? 'default' : 'outline'}>
+                {schedule.isEssayDay ? 'Escrever Redacao' : 'Praticar Redacao'}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </CardContent>
           </Card>
 
-          {/* Flashcards Card */}
           <Card className="bg-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <h3 className="font-semibold text-foreground flex items-center gap-2">
-                    <Brain className="h-4 w-4" />
-                    Flashcards
+                    <Brain className="h-4 w-4" /> Flashcards
                   </h3>
-                  {stats.isLoading ? (
-                    <Skeleton className="h-4 w-32" />
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {stats.flashcardsDue > 0
-                        ? `${stats.flashcardsDue} para revisar`
-                        : 'Nenhum pendente hoje'}
-                    </p>
-                  )}
+                  <p className="text-sm text-muted-foreground">
+                    {stats.flashcardsDue > 0 ? `${stats.flashcardsDue} para revisar` : 'Nenhum pendente hoje'}
+                  </p>
                 </div>
-                <Button
-                  variant={stats.flashcardsDue > 0 ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => navigate('/objetivas')}
-                  disabled={stats.flashcardsDue === 0}
-                >
+                <Button variant={stats.flashcardsDue > 0 ? 'default' : 'outline'} size="sm" onClick={() => navigate('/objetivas')} disabled={stats.flashcardsDue === 0}>
                   Revisar
                 </Button>
               </div>
-              {!stats.isLoading && stats.flashcardsReviewed > 0 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  ✓ {stats.flashcardsReviewed} revisados hoje
-                </p>
-              )}
             </CardContent>
           </Card>
+
+          {!stats.isLoading && inDiagnosticMode && (
+            <Card className="bg-card">
+              <CardContent className="p-5 space-y-3">
+                <h3 className="font-semibold">Construindo seu perfil...</h3>
+                <p className="text-sm text-muted-foreground">Resolva mais questoes para ativar o modo adaptativo completo.</p>
+                <Progress value={currentAreaProgress?.diagnosticProgressPct ?? 0} className="h-2" />
+                <p className="text-xs text-muted-foreground">
+                  {currentAreaProgress?.attempts ?? 0}/{stats.diagnosticThreshold} respostas nesta area
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {!stats.isLoading && !inDiagnosticMode && stats.topWeaknesses.length > 0 && (
+            <>
+              <Card className="bg-card">
+                <CardContent className="p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Top 5 fraquezas</h3>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/errors')}>Ver por topico</Button>
+                  </div>
+                  <div className="space-y-2">
+                    {stats.topWeaknesses.map((item: any, idx: number) => (
+                      <div key={`${item.area}-${item.topic}-${idx}`} className="flex items-center justify-between text-sm rounded border p-2">
+                        <span><span className="capitalize">{item.area}</span> - {item.topic}{item.subtopic ? ` > ${item.subtopic}` : ''}</span>
+                        <span className="text-muted-foreground">Prioridade {item.priority.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card">
+                <CardContent className="p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Top 5 forcas</h3>
+                    <Badge variant="outline">{stats.overdueReviews} revisoes vencidas</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    {stats.topStrengths.map((item: any, idx: number) => (
+                      <div key={`${item.area}-${item.topic}-${idx}`} className="flex items-center justify-between text-sm rounded border p-2">
+                        <span><span className="capitalize">{item.area}</span> - {item.topic}{item.subtopic ? ` > ${item.subtopic}` : ''}</span>
+                        <span className="text-muted-foreground">N{item.level} - {Math.round(item.accuracy * 100)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
       </div>
     </MainLayout>

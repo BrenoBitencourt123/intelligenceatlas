@@ -1,36 +1,41 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-interface Flashcard {
+export interface Flashcard {
   id: string;
   front: string;
   back: string;
   area: string | null;
+  topic: string;
+  subtopic: string;
+  level: number;
   interval_days: number;
-  ease_factor: number;
   review_count: number;
+  correct_count: number;
+  wrong_count: number;
+  dont_know_count: number;
+  next_review_at: string;
+  last_seen_at: string | null;
+  image_url: string | null;
+  example_context: string | null;
+}
+
+interface FlashcardMetrics {
+  dueToday: number;
+  intervalBuckets: { d1: number; d3: number; d7: number; d14: number; d30: number };
+  weakTopics: Array<{
+    topic: string;
+    subtopic: string;
+    wrongRate: number;
+    reviews: number;
+  }>;
+  retentionPct: number;
 }
 
 type ReviewState = 'loading' | 'reviewing' | 'revealed' | 'done';
-
-const SRS_INTERVALS = [1, 2, 4, 7, 15, 30];
-
-function getNextInterval(currentInterval: number, rating: 'again' | 'hard' | 'easy'): number {
-  if (rating === 'again') return 1;
-  if (rating === 'hard') return currentInterval;
-
-  // Easy: advance to next interval in the sequence
-  const currentIdx = SRS_INTERVALS.indexOf(currentInterval);
-  if (currentIdx === -1) {
-    // Find closest
-    const closest = SRS_INTERVALS.findIndex(i => i >= currentInterval);
-    return SRS_INTERVALS[Math.min(closest + 1, SRS_INTERVALS.length - 1)] ?? 30;
-  }
-  return SRS_INTERVALS[Math.min(currentIdx + 1, SRS_INTERVALS.length - 1)];
-}
 
 export function useFlashcardReview() {
   const { user } = useAuth();
@@ -40,26 +45,36 @@ export function useFlashcardReview() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewState, setReviewState] = useState<ReviewState>('loading');
   const [reviewed, setReviewed] = useState(0);
+  const [cardShownAt, setCardShownAt] = useState<number>(Date.now());
+  const [totalReviewSeconds, setTotalReviewSeconds] = useState(0);
 
-  const { data: cards = [], isLoading } = useQuery({
-    queryKey: ['flashcards-due', user?.id, today],
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['flashcards-smart-due', user?.id, today],
     queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from('flashcards')
-        .select('id, front, back, area, interval_days, ease_factor, review_count')
-        .eq('user_id', user.id)
-        .lte('next_review', today)
-        .order('next_review', { ascending: true });
+      if (!user) return { cards: [] as Flashcard[], metrics: null as FlashcardMetrics | null };
+
+      const { data, error } = await supabase.functions.invoke('flashcards-smart', {
+        body: { action: 'get_due' },
+      });
 
       if (error) throw error;
-      return (data ?? []) as Flashcard[];
+      return {
+        cards: (data?.cards ?? []) as Flashcard[],
+        metrics: (data?.metrics ?? null) as FlashcardMetrics | null,
+      };
     },
     enabled: !!user,
   });
 
+  const cards = data?.cards ?? [];
+  const metrics = data?.metrics;
   const currentCard = cards[currentIndex] ?? null;
   const totalDue = cards.length;
+
+  const nextIntervals = useMemo(() => {
+    const list = cards.slice(0, 5).map((card) => card.interval_days);
+    return list;
+  }, [cards]);
 
   const reveal = useCallback(() => {
     setReviewState('revealed');
@@ -68,57 +83,53 @@ export function useFlashcardReview() {
   const rate = useCallback(async (rating: 'again' | 'hard' | 'easy') => {
     if (!currentCard || !user) return;
 
-    const newInterval = getNextInterval(currentCard.interval_days, rating);
-    const nextReview = new Date();
-    nextReview.setDate(nextReview.getDate() + newInterval);
-    const nextReviewStr = nextReview.toISOString().split('T')[0];
-
-    // Adjust ease factor
-    let newEase = Number(currentCard.ease_factor);
-    if (rating === 'again') newEase = Math.max(1.3, newEase - 0.2);
-    else if (rating === 'easy') newEase = Math.min(3.0, newEase + 0.1);
+    const responseTimeSec = Math.max(1, Math.round((Date.now() - cardShownAt) / 1000));
 
     try {
-      // Update flashcard
-      await supabase.from('flashcards').update({
-        interval_days: newInterval,
-        next_review: nextReviewStr,
-        ease_factor: newEase,
-        review_count: currentCard.review_count + 1,
-      }).eq('id', currentCard.id);
-
-      // Record review
-      await supabase.from('flashcard_reviews').insert({
-        user_id: user.id,
-        flashcard_id: currentCard.id,
-        rating,
+      const { error } = await supabase.functions.invoke('flashcards-smart', {
+        body: {
+          action: 'review',
+          flashcardId: currentCard.id,
+          rating,
+          responseTimeSec,
+        },
       });
+      if (error) throw error;
 
-      setReviewed(prev => prev + 1);
+      setReviewed((prev) => prev + 1);
+      setTotalReviewSeconds((prev) => prev + responseTimeSec);
 
       if (currentIndex + 1 >= totalDue) {
         setReviewState('done');
         queryClient.invalidateQueries({ queryKey: ['study-stats'] });
-        queryClient.invalidateQueries({ queryKey: ['flashcards-due'] });
+        queryClient.invalidateQueries({ queryKey: ['flashcards-smart-due'] });
       } else {
-        setCurrentIndex(prev => prev + 1);
+        const nextIndex = currentIndex + 1;
+        setCurrentIndex(nextIndex);
+        setCardShownAt(Date.now());
         setReviewState('reviewing');
       }
     } catch (err) {
       console.error('Error saving review:', err);
-      toast.error('Erro ao salvar revisão');
+      toast.error('Erro ao salvar revisao');
     }
-  }, [currentCard, user, currentIndex, totalDue, queryClient]);
+  }, [cardShownAt, currentCard, currentIndex, queryClient, totalDue, user]);
 
   const startReview = useCallback(() => {
     setCurrentIndex(0);
     setReviewed(0);
+    setTotalReviewSeconds(0);
+    setCardShownAt(Date.now());
     setReviewState('reviewing');
   }, []);
 
-  // Auto-start when cards load
+  const reload = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
   if (!isLoading && reviewState === 'loading' && cards.length > 0) {
     setReviewState('reviewing');
+    setCardShownAt(Date.now());
   } else if (!isLoading && reviewState === 'loading' && cards.length === 0) {
     setReviewState('done');
   }
@@ -130,8 +141,12 @@ export function useFlashcardReview() {
     totalDue,
     reviewed,
     isLoading,
+    metrics,
+    nextIntervals,
+    totalReviewSeconds,
     reveal,
     rate,
     startReview,
+    reload,
   };
 }

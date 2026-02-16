@@ -53,6 +53,10 @@ REGRAS CRÍTICAS:
 - FOQUE exclusivamente no conceito exigido pelo comando da questão.
 - CONECTE cada explicação diretamente ao que o enunciado pede.
 - IDENTIFIQUE a habilidade cognitiva específica que o ENEM está avaliando.
+- ESCREVA em linguagem simples, direta e fácil de entender para um estudante.
+- USE frases curtas (preferencialmente até 20 palavras por frase).
+- EVITE jargão técnico e palavras rebuscadas; quando precisar de termo técnico, explique em linguagem comum.
+- EVITE tom acadêmico/enciclopédico. Prefira tom de tutoria prática.
 
 DADOS DA QUESTÃO:
 Área: ${area}
@@ -66,14 +70,14 @@ ${explanation ? `Explicação existente: ${explanation}` : ''}
 Gere o seguinte conteúdo em JSON:
 
 1. "pre_concept": Bloco "Antes de responder, saiba isso" com:
-   - "explanation": Em 2-3 frases, explique SOMENTE o conceito-chave que o enunciado exige para resolver a questão. Não contextualize de forma ampla. Conecte diretamente ao comando da pergunta. Ex: "O enunciado pede que você identifique X, o que exige entender Y."
-   - "skill": Uma frase curta descrevendo a habilidade que o ENEM avalia nesta questão (ex: "Interpretar dados em tabela para calcular variação percentual", "Relacionar causa e consequência em processos históricos específicos")
+   - "explanation": Em 2-3 frases, explique SOMENTE o conceito-chave que o enunciado exige para resolver a questão. Não contextualize de forma ampla. Conecte diretamente ao comando da pergunta. Use linguagem simples, sem termos difíceis.
+   - "skill": Uma frase curta, clara e simples descrevendo a habilidade que o ENEM avalia nesta questão (ex: "Ler o texto e identificar a ideia principal", "Comparar informações para escolher a alternativa correta")
    - "formula": Fórmula ou regra-chave se aplicável (null se não houver)
-   - "bullets": Array com exatamente 3 bullets que orientem o raciocínio para ESTA questão específica. Cada bullet deve ser uma dica prática de como atacar o problema, não informação genérica.
+   - "bullets": Array com exatamente 3 bullets com passos práticos para resolver ESTA questão específica. Cada bullet deve começar com verbo de ação (ex: "Compare", "Elimine", "Procure") e usar linguagem simples.
 
-2. "cognitive_pattern": Texto explicando o padrão cognitivo que o ENEM está cobrando (máx 5 linhas). Comece identificando o tipo de habilidade (interpretação de texto, análise de dados, relação causa-efeito, etc.) e explique POR QUE o ENEM formulou a questão dessa forma.
+2. "cognitive_pattern": Texto explicando o padrão cognitivo que o ENEM está cobrando (máx 5 linhas). Comece identificando o tipo de habilidade (interpretação de texto, análise de dados, relação causa-efeito, etc.) e explique POR QUE o ENEM formulou a questão dessa forma. Escreva de modo conversacional e fácil.
 
-3. "deep_lesson": Mini-aula FOCADA no conceito central desta questão (máx 8 linhas). Não repita o que já foi dito no pre_concept. Aprofunde com exemplos práticos e conexões que ajudem a fixar o conceito para questões similares.
+3. "deep_lesson": Mini-aula FOCADA no conceito central desta questão (máx 8 linhas). Não repita o que já foi dito no pre_concept. Aprofunde com exemplos práticos e conexões que ajudem a fixar o conceito para questões similares. Evite linguagem formal e priorize clareza.
 
 4. "video_suggestions": Array com 2-3 sugestões de busca no YouTube para aprofundar. Cada item: {"title": "título descritivo", "query": "termo de busca no YouTube"}
 

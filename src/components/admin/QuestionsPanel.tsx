@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -11,13 +12,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
-import { Search, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 
 interface Question {
   id: string;
   number: number;
   year: number;
   area: string;
+  topic: string;
+  subtopic: string;
+  difficulty: number;
   statement: string;
   alternatives: any;
   correct_answer: string;
@@ -37,6 +41,7 @@ const AREAS = [
 const PAGE_SIZE = 20;
 
 const QuestionsPanel = () => {
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -50,6 +55,9 @@ const QuestionsPanel = () => {
   // Edit modal
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [editArea, setEditArea] = useState('');
+  const [editTopic, setEditTopic] = useState('');
+  const [editSubtopic, setEditSubtopic] = useState('');
+  const [editDifficulty, setEditDifficulty] = useState('2');
   const [editTags, setEditTags] = useState('');
   const [editCorrectAnswer, setEditCorrectAnswer] = useState('');
   const [editExplanation, setEditExplanation] = useState('');
@@ -115,6 +123,9 @@ const QuestionsPanel = () => {
   const openEdit = (q: Question) => {
     setEditingQuestion(q);
     setEditArea(q.area);
+    setEditTopic(q.topic || 'Geral');
+    setEditSubtopic(q.subtopic || '');
+    setEditDifficulty(String(q.difficulty || 2));
     setEditTags(Array.isArray(q.tags) ? q.tags.join(', ') : '');
     setEditCorrectAnswer(q.correct_answer);
     setEditExplanation(q.explanation || '');
@@ -130,6 +141,9 @@ const QuestionsPanel = () => {
       .from('questions')
       .update({
         area: editArea,
+        topic: editTopic || 'Geral',
+        subtopic: editSubtopic || '',
+        difficulty: parseInt(editDifficulty, 10) || 2,
         tags: tagsArray,
         correct_answer: editCorrectAnswer,
         explanation: editExplanation || null,
@@ -231,6 +245,8 @@ const QuestionsPanel = () => {
                     <TableHead className="w-16">Nº</TableHead>
                     <TableHead className="w-16">Ano</TableHead>
                     <TableHead className="w-40">Área</TableHead>
+                    <TableHead className="w-48">Topico</TableHead>
+                    <TableHead className="w-16">Dif.</TableHead>
                     <TableHead>Enunciado</TableHead>
                     <TableHead className="w-20">Resp.</TableHead>
                     <TableHead className="w-24">Ações</TableHead>
@@ -246,12 +262,24 @@ const QuestionsPanel = () => {
                           {q.area}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-sm">
+                        {q.topic || 'Geral'}{q.subtopic ? ` > ${q.subtopic}` : ''}
+                      </TableCell>
+                      <TableCell>{q.difficulty || 2}</TableCell>
                       <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
                         {q.statement.slice(0, 80)}...
                       </TableCell>
                       <TableCell className="font-mono font-medium">{q.correct_answer}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Visualizar em Objetivas"
+                            onClick={() => navigate(`/objetivas?previewQuestionId=${q.id}`)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => openEdit(q)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -307,6 +335,29 @@ const QuestionsPanel = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2">
+                <Label>Topico</Label>
+                <Input value={editTopic} onChange={(e) => setEditTopic(e.target.value)} placeholder="Ex: Porcentagem" />
+              </div>
+              <div>
+                <Label>Dificuldade</Label>
+                <Select value={editDifficulty} onValueChange={setEditDifficulty}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                    <SelectItem value="3">3</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>Subtopico</Label>
+              <Input value={editSubtopic} onChange={(e) => setEditSubtopic(e.target.value)} placeholder="Ex: Aumento e desconto" />
             </div>
             <div>
               <Label>Resposta correta</Label>

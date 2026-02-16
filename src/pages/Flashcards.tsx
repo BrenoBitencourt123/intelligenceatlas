@@ -9,6 +9,7 @@ import { useState } from 'react';
 import MarkdownText from '@/components/atlas/MarkdownText';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatLevelLabel, intervalLabel } from '@/lib/flashcardsSrs';
 
 const Flashcards = () => {
   const {
@@ -18,6 +19,9 @@ const Flashcards = () => {
     totalDue,
     reviewed,
     isLoading,
+    metrics,
+    nextIntervals,
+    totalReviewSeconds,
     reveal,
     rate,
     startReview,
@@ -72,7 +76,7 @@ const Flashcards = () => {
     return (
       <MainLayout>
         <div className="container max-w-2xl mx-auto px-4 py-8">
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold text-foreground">Flashcards</h1>
               <Button
@@ -86,6 +90,28 @@ const Flashcards = () => {
                 Limpar
               </Button>
             </div>
+            {metrics && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Card className="bg-card">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-xs text-muted-foreground">Pendentes hoje</p>
+                    <p className="text-2xl font-bold">{metrics.dueToday}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-xs text-muted-foreground">Retencao estimada</p>
+                    <p className="text-2xl font-bold">{metrics.retentionPct}%</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-xs text-muted-foreground">Tempo hoje</p>
+                    <p className="text-2xl font-bold">{Math.round(totalReviewSeconds / 60)}m</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
             <Card className="bg-card">
               <CardContent className="p-8 text-center space-y-4">
                 {reviewed > 0 ? (
@@ -107,6 +133,21 @@ const Flashcards = () => {
                 )}
               </CardContent>
             </Card>
+            {metrics && metrics.weakTopics.length > 0 && (
+              <Card className="bg-card">
+                <CardContent className="p-4 space-y-3">
+                  <p className="text-sm font-semibold">Topicos com maior falha</p>
+                  <div className="space-y-2">
+                    {metrics.weakTopics.map((topic, idx) => (
+                      <div key={`${topic.topic}-${topic.subtopic}-${idx}`} className="flex items-center justify-between text-sm rounded border px-3 py-2">
+                        <span>{topic.topic}{topic.subtopic ? ` > ${topic.subtopic}` : ''}</span>
+                        <span className="text-muted-foreground">{Math.round(topic.wrongRate * 100)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </MainLayout>
@@ -130,14 +171,43 @@ const Flashcards = () => {
 
             <Progress value={progressValue} className="h-1.5" />
 
+            {metrics && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <Card className="bg-card">
+                  <CardContent className="p-3">
+                    <p className="text-xs text-muted-foreground">Pendentes</p>
+                    <p className="font-semibold">{metrics.dueToday}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card">
+                  <CardContent className="p-3">
+                    <p className="text-xs text-muted-foreground">Retencao</p>
+                    <p className="font-semibold">{metrics.retentionPct}%</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card">
+                  <CardContent className="p-3">
+                    <p className="text-xs text-muted-foreground">Prox. intervalos</p>
+                    <p className="font-semibold">{nextIntervals.slice(0, 3).map(intervalLabel).join(' • ') || '-'}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
             {/* Card */}
             <Card className="min-h-[240px] flex flex-col">
               <CardContent className="p-6 flex-1 flex flex-col justify-center">
-                {currentCard.area && (
-                  <Badge variant="secondary" className="self-start mb-3 text-xs">
-                    {currentCard.area}
-                  </Badge>
-                )}
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {currentCard.area && (
+                    <Badge variant="secondary" className="text-xs">{currentCard.area}</Badge>
+                  )}
+                  <Badge variant="outline" className="text-xs">{formatLevelLabel(currentCard.level)}</Badge>
+                  <Badge variant="outline" className="text-xs">{intervalLabel(currentCard.interval_days)}</Badge>
+                </div>
+
+                <div className="text-xs text-muted-foreground mb-2">
+                  {currentCard.topic}{currentCard.subtopic ? ` > ${currentCard.subtopic}` : ''}
+                </div>
 
                 {!isFlipped ? (
                   <MarkdownText content={currentCard.front} className="text-lg font-medium leading-relaxed" />
@@ -147,6 +217,23 @@ const Flashcards = () => {
                     <div className="border-t pt-4">
                       <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-2">Resposta</p>
                       <MarkdownText content={currentCard.back} className="text-base leading-relaxed" />
+                    </div>
+                    {currentCard.image_url && (
+                      <img
+                        src={currentCard.image_url}
+                        alt="Contexto visual do flashcard"
+                        className="w-full rounded border object-contain"
+                        loading="lazy"
+                      />
+                    )}
+                    {currentCard.example_context && (
+                      <div className="rounded border p-3 text-xs text-muted-foreground">
+                        <p className="font-medium mb-1">Contexto da questao</p>
+                        <p>{currentCard.example_context}</p>
+                      </div>
+                    )}
+                    <div className="text-xs text-muted-foreground">
+                      Performance: {currentCard.correct_count} acertos • {currentCard.wrong_count + currentCard.dont_know_count} falhas
                     </div>
                   </div>
                 )}

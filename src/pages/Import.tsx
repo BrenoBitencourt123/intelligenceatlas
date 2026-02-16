@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+﻿import { useState, useRef } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,14 +9,14 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, Trash2, AlertCircle, X, Pencil } from 'lucide-react';
+import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, AlertCircle, X, Pencil, ImagePlus, Trash2 } from 'lucide-react';
 import { useImportExam, ImportedQuestion, DayUpload } from '@/hooks/useImportExam';
 
 const AREA_LABELS: Record<string, string> = {
   linguagens: 'Linguagens',
   humanas: 'Humanas',
   natureza: 'Natureza',
-  matematica: 'Matemática',
+  matematica: 'Matematica',
 };
 
 const AREA_COLORS: Record<string, string> = {
@@ -88,14 +88,14 @@ function DayRow({
   upload: DayUpload;
   onChange: (u: DayUpload) => void;
 }) {
-  const dayLabel = dayNum === 1 ? 'Linguagens + Humanas' : 'Natureza + Matemática';
+  const dayLabel = dayNum === 1 ? 'Linguagens + Humanas' : 'Natureza + Matematica';
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           Dia {dayNum}
-          <span className="text-xs font-normal text-muted-foreground">— {dayLabel}</span>
+          <span className="text-xs font-normal text-muted-foreground">- {dayLabel}</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -115,7 +115,7 @@ function DayRow({
         </div>
         {upload.examFile && !upload.gabaritoFile && (
           <p className="text-xs text-muted-foreground mt-2">
-            Sem gabarito? As questões serão importadas sem resposta correta.
+            Sem gabarito? As questoes serao importadas sem resposta correta.
           </p>
         )}
       </CardContent>
@@ -125,17 +125,20 @@ function DayRow({
 
 function UploadStage({
   onProcess,
+  onProcessJson,
   loading,
   loadingMessage,
   progress,
 }: {
   onProcess: (days: DayUpload[]) => void;
+  onProcessJson: (jsonText: string) => void;
   loading: boolean;
   loadingMessage: string;
   progress: number;
 }) {
   const [day1, setDay1] = useState<DayUpload>({ examFile: null, gabaritoFile: null, gabaritoText: '', day: 1 });
   const [day2, setDay2] = useState<DayUpload>({ examFile: null, gabaritoFile: null, gabaritoText: '', day: 2 });
+  const [jsonInput, setJsonInput] = useState('');
 
   const hasAnyFile = day1.examFile || day2.examFile;
 
@@ -166,10 +169,35 @@ function UploadStage({
         ) : (
           <>
             <Upload className="h-4 w-4 mr-2" />
-            Extrair Questões
+            Extrair Questoes (PDF)
           </>
         )}
       </Button>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Ou importar por JSON</CardTitle>
+          <CardDescription className="text-xs">
+            Aceita objeto com campo `questions` (com topic/subtopic/difficulty opcionais) ou array de questoes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Textarea
+            rows={6}
+            value={jsonInput}
+            onChange={(e) => setJsonInput(e.target.value)}
+            placeholder='{"detected_year": 2025, "questions": [{"number": 1, "area": "linguagens", "topic": "Interpretacao", "subtopic": "Inferencia", "difficulty": 2, "statement": "", "alternatives": [], "images": [{"url": "https://..."}]}]}'
+          />
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => onProcessJson(jsonInput)}
+            disabled={!jsonInput.trim() || loading}
+          >
+            Carregar JSON
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -179,19 +207,22 @@ function QuestionEditDialog({
   open,
   onClose,
   onSave,
+  onAddAlternativeImage,
+  onRemoveAlternativeImage,
 }: {
   question: ImportedQuestion | null;
   open: boolean;
   onClose: () => void;
   onSave: (updates: Partial<ImportedQuestion>) => void;
+  onAddAlternativeImage: (number: number, day: number, letter: string, file: File) => void;
+  onRemoveAlternativeImage: (number: number, day: number, letter: string) => void;
 }) {
   const [statement, setStatement] = useState('');
-  const [alternatives, setAlternatives] = useState<{ letter: string; text: string }[]>([]);
+  const [alternatives, setAlternatives] = useState<{ letter: string; text: string; image_url?: string | null }[]>([]);
   const [correctAnswer, setCorrectAnswer] = useState<string>('none');
   const [area, setArea] = useState('');
   const [tags, setTags] = useState('');
 
-  // Sync local state when question changes
   const [lastQ, setLastQ] = useState<ImportedQuestion | null>(null);
   if (question && question !== lastQ) {
     setLastQ(question);
@@ -221,7 +252,7 @@ function QuestionEditDialog({
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Questão {question.number}</DialogTitle>
+          <DialogTitle>Editar Questao {question.number}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -242,7 +273,7 @@ function QuestionEditDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Área</Label>
+              <Label className="text-xs">Area</Label>
               <Select value={area} onValueChange={setArea}>
                 <SelectTrigger className="h-9">
                   <SelectValue />
@@ -257,7 +288,7 @@ function QuestionEditDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Enunciado</Label>
+            <Label className="text-xs">Enunciado (pode ficar vazio se tiver imagem)</Label>
             <Textarea
               value={statement}
               onChange={e => setStatement(e.target.value)}
@@ -271,26 +302,92 @@ function QuestionEditDialog({
             {alternatives.map((alt, i) => (
               <div key={alt.letter} className="flex items-start gap-2">
                 <span className="text-xs font-bold mt-2.5 w-4 shrink-0">{alt.letter}</span>
-                <Textarea
-                  value={alt.text}
-                  onChange={e => {
-                    const updated = [...alternatives];
-                    updated[i] = { ...alt, text: e.target.value };
-                    setAlternatives(updated);
-                  }}
-                  rows={2}
-                  className="text-xs"
-                />
+                <div className="flex-1 space-y-2">
+                  <Textarea
+                    value={alt.text}
+                    onChange={e => {
+                      const updated = [...alternatives];
+                      updated[i] = { ...alt, text: e.target.value };
+                      setAlternatives(updated);
+                    }}
+                    rows={2}
+                    className="text-xs"
+                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      id={`alt-image-input-${question.day}-${question.number}-${alt.letter}`}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          onAddAlternativeImage(question.number, question.day, alt.letter, file);
+                          const updated = [...alternatives];
+                          updated[i] = { ...alt, image_url: URL.createObjectURL(file) };
+                          setAlternatives(updated);
+                        }
+                        e.currentTarget.value = '';
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        const input = document.getElementById(`alt-image-input-${question.day}-${question.number}-${alt.letter}`) as HTMLInputElement | null;
+                        input?.click();
+                      }}
+                    >
+                      <ImagePlus className="h-3.5 w-3.5 mr-1" />
+                      Anexar imagem na alternativa
+                    </Button>
+                    <div
+                      className="text-[11px] text-muted-foreground border rounded px-2 py-1"
+                      tabIndex={0}
+                      onPaste={(e) => {
+                        const files = Array.from(e.clipboardData.files || []);
+                        const imageFile = files.find((f) => f.type.startsWith('image/'));
+                        if (!imageFile) return;
+                        e.preventDefault();
+                        onAddAlternativeImage(question.number, question.day, alt.letter, imageFile);
+                        const updated = [...alternatives];
+                        updated[i] = { ...alt, image_url: URL.createObjectURL(imageFile) };
+                        setAlternatives(updated);
+                      }}
+                    >
+                      Ctrl+V imagem
+                    </div>
+                  </div>
+                  {alt.image_url && (
+                    <div className="relative w-28 rounded border overflow-hidden">
+                      <img src={alt.image_url} alt={`Alternativa ${alt.letter}`} className="w-full h-20 object-cover" loading="lazy" />
+                      <button
+                        type="button"
+                        className="absolute top-1 right-1 rounded-full bg-black/60 text-white p-0.5"
+                        onClick={() => {
+                          onRemoveAlternativeImage(question.number, question.day, alt.letter);
+                          const updated = [...alternatives];
+                          updated[i] = { ...alt, image_url: null };
+                          setAlternatives(updated);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Tags (separadas por vírgula)</Label>
+            <Label className="text-xs">Tags (separadas por virgula)</Label>
             <Input
               value={tags}
               onChange={e => setTags(e.target.value)}
-              placeholder="revolução, história, brasil"
+              placeholder="historia, enem"
               className="text-xs h-9"
             />
           </div>
@@ -308,15 +405,21 @@ function QuestionEditDialog({
 function PreviewStage({
   questions,
   onToggle,
-  onUpdateArea,
   onUpdateQuestion,
+  onAddImages,
+  onRemoveImage,
+  onAddAlternativeImage,
+  onRemoveAlternativeImage,
   onConfirm,
   onBack,
 }: {
   questions: ImportedQuestion[];
   onToggle: (n: number, day: number) => void;
-  onUpdateArea: (n: number, day: number, area: string) => void;
   onUpdateQuestion: (n: number, day: number, updates: Partial<ImportedQuestion>) => void;
+  onAddImages: (n: number, day: number, files: File[]) => void;
+  onRemoveImage: (n: number, day: number, imageIndex: number) => void;
+  onAddAlternativeImage: (n: number, day: number, letter: string, file: File) => void;
+  onRemoveAlternativeImage: (n: number, day: number, letter: string) => void;
   onConfirm: () => void;
   onBack: () => void;
 }) {
@@ -347,14 +450,14 @@ function PreviewStage({
       {annulled.length > 0 && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          {annulled.length} questões anuladas (desmarcadas automaticamente)
+          {annulled.length} questoes anuladas (desmarcadas automaticamente)
         </div>
       )}
 
       {withoutAnswer.length > 0 && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 text-sm">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          {withoutAnswer.length} questões sem gabarito — clique para editar
+          {withoutAnswer.length} questoes sem gabarito - clique para editar
         </div>
       )}
 
@@ -364,19 +467,21 @@ function PreviewStage({
           return (
             <div key={day}>
               <h3 className="text-sm font-semibold text-foreground mb-2 sticky top-0 bg-background py-1 z-10">
-                Dia {day} — {dayQuestions.filter(q => q.selected).length} questões
+                Dia {day} - {dayQuestions.filter(q => q.selected).length} questoes
               </h3>
               <div className="space-y-2">
                 {dayQuestions.map(q => {
                   const noAnswer = !q.correct_answer && !q.annulled;
                   const wasEdited = editedSet.has(`${q.day}-${q.number}`);
+                  const inputId = `question-image-${q.day}-${q.number}`;
+
                   return (
                     <Card
                       key={`${q.day}-${q.number}`}
                       className={`transition-opacity cursor-pointer hover:ring-1 hover:ring-primary/40 ${!q.selected ? 'opacity-40' : ''} ${noAnswer && q.selected ? 'border-amber-400 dark:border-amber-500' : ''}`}
                       onClick={() => setEditingQuestion(q)}
                     >
-                      <CardContent className="p-3">
+                      <CardContent className="p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 mb-1 flex-wrap">
@@ -385,23 +490,23 @@ function PreviewStage({
                                 {AREA_LABELS[q.area] || q.area}
                               </Badge>
                               {q.annulled ? (
-                                <Badge variant="destructive" className="text-xs px-1.5 py-0">
-                                  Anulada
-                                </Badge>
+                                <Badge variant="destructive" className="text-xs px-1.5 py-0">Anulada</Badge>
                               ) : q.correct_answer ? (
-                                <Badge variant="outline" className="text-xs px-1.5 py-0">
-                                  {q.correct_answer}
-                                </Badge>
+                                <Badge variant="outline" className="text-xs px-1.5 py-0">{q.correct_answer}</Badge>
                               ) : (
-                                <Badge variant="outline" className="text-xs px-1.5 py-0 text-amber-600">
-                                  ?
-                                </Badge>
+                                <Badge variant="outline" className="text-xs px-1.5 py-0 text-amber-600">?</Badge>
                               )}
-                              {wasEdited && (
-                                <Pencil className="h-3 w-3 text-muted-foreground" />
+                              {q.images.length > 0 && (
+                                <Badge variant="outline" className="text-xs px-1.5 py-0">{q.images.length} imagem(ns)</Badge>
                               )}
+                              {q.requires_image && (
+                                <Badge variant="destructive" className="text-xs px-1.5 py-0">Precisa imagem</Badge>
+                              )}
+                              {wasEdited && <Pencil className="h-3 w-3 text-muted-foreground" />}
                             </div>
-                            <p className="text-xs text-muted-foreground line-clamp-1">{q.statement}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {q.statement?.trim() ? q.statement : '[Sem enunciado textual]'}
+                            </p>
                           </div>
                           <Button
                             variant="ghost"
@@ -419,6 +524,78 @@ function PreviewStage({
                             )}
                           </Button>
                         </div>
+
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            id={inputId}
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              onAddImages(q.number, q.day, files);
+                              e.currentTarget.value = '';
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const input = document.getElementById(inputId) as HTMLInputElement | null;
+                              input?.click();
+                            }}
+                          >
+                            <ImagePlus className="h-3.5 w-3.5 mr-1" />
+                            Anexar imagem
+                          </Button>
+                          <div
+                            className="text-[11px] text-muted-foreground border rounded px-2 py-1"
+                            tabIndex={0}
+                            onPaste={(e) => {
+                              const files = Array.from(e.clipboardData.files || []);
+                              const imageFiles = files.filter((f) => f.type.startsWith('image/'));
+                              if (imageFiles.length === 0) return;
+                              e.preventDefault();
+                              onAddImages(q.number, q.day, imageFiles);
+                            }}
+                          >
+                            Ctrl+V imagem
+                          </div>
+                        </div>
+                        {q.requires_image && q.image_reason && (
+                          <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                            Dica IA: {q.image_reason}
+                          </p>
+                        )}
+
+                        {q.images.length > 0 && (
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2" onClick={(e) => e.stopPropagation()}>
+                            {q.images.map((img, imageIndex) => (
+                              <div key={`${img.url}-${imageIndex}`} className="relative rounded-md overflow-hidden border bg-muted/20">
+                                <img
+                                  src={img.url}
+                                  alt={`Questao ${q.number} imagem ${imageIndex + 1}`}
+                                  className="h-16 w-full object-cover"
+                                  loading="lazy"
+                                />
+                                <button
+                                  type="button"
+                                  className="absolute top-1 right-1 rounded-full bg-black/60 text-white p-0.5"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onRemoveImage(q.number, q.day, imageIndex);
+                                  }}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   );
@@ -439,6 +616,8 @@ function PreviewStage({
         open={!!editingQuestion}
         onClose={() => setEditingQuestion(null)}
         onSave={handleSaveEdit}
+        onAddAlternativeImage={onAddAlternativeImage}
+        onRemoveAlternativeImage={onRemoveAlternativeImage}
       />
     </div>
   );
@@ -472,7 +651,7 @@ function ConfirmStage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Confirmar Importação</CardTitle>
+          <CardTitle>Confirmar Importacao</CardTitle>
           <CardDescription>
             Revise os dados antes de importar
           </CardDescription>
@@ -486,7 +665,7 @@ function ConfirmStage({
               min={2009}
               max={2030}
               value={year}
-              onChange={e => setYear(parseInt(e.target.value))}
+              onChange={e => setYear(parseInt(e.target.value, 10))}
               className="w-32"
             />
             {detectedYear && (
@@ -500,7 +679,7 @@ function ConfirmStage({
               <p className="font-medium">{days.map(d => `Dia ${d}`).join(' + ')}</p>
             </div>
             <div>
-              <span className="text-muted-foreground">Questões:</span>
+              <span className="text-muted-foreground">Questoes:</span>
               <p className="font-medium">{selected.length}</p>
             </div>
           </div>
@@ -513,15 +692,9 @@ function ConfirmStage({
             ))}
           </div>
 
-          {selected.filter(q => q.annulled).length > 0 && (
-            <p className="text-xs text-destructive">
-              ⚠ {selected.filter(q => q.annulled).length} questões anuladas incluídas manualmente
-            </p>
-          )}
-
-          {selected.filter(q => !q.correct_answer && !q.annulled).length > 0 && (
-            <p className="text-xs text-amber-600">
-              ⚠ {selected.filter(q => !q.correct_answer && !q.annulled).length} questões sem gabarito
+          {selected.filter(q => q.images.length > 0).length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {selected.filter(q => q.images.length > 0).length} questoes com imagem
             </p>
           )}
 
@@ -536,7 +709,7 @@ function ConfirmStage({
             ) : (
               <>
                 <Check className="h-4 w-4 mr-2" />
-                Importar {selected.length} Questões
+                Importar {selected.length} Questoes
               </>
             )}
           </Button>
@@ -555,9 +728,13 @@ export default function Import({ embedded = false }: { embedded?: boolean }) {
     detectedYear,
     loadingMessage,
     processUploads,
+    processJsonImport,
     removeQuestion,
-    updateArea,
     updateQuestion,
+    addQuestionImages,
+    removeQuestionImage,
+    addAlternativeImage,
+    removeAlternativeImage,
     saveQuestions,
     goToConfirm,
     goBack,
@@ -569,13 +746,12 @@ export default function Import({ embedded = false }: { embedded?: boolean }) {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Importar Prova ENEM</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {stage === 'upload' && 'Envie os PDFs da prova e gabarito de cada dia'}
-            {stage === 'preview' && 'Revise as questões extraídas pela IA — clique para editar'}
+            {stage === 'upload' && 'Envie PDFs ou JSON de questoes'}
+            {stage === 'preview' && 'Revise as questoes extraidas - clique para editar'}
             {stage === 'confirm' && 'Confirme o ano e importe'}
           </p>
         </div>
 
-        {/* Step indicator */}
         <div className="flex items-center gap-2">
           {['Upload', 'Preview', 'Importar'].map((label, i) => {
             const stepStages = ['upload', 'preview', 'confirm'] as const;
@@ -594,6 +770,7 @@ export default function Import({ embedded = false }: { embedded?: boolean }) {
         {stage === 'upload' && (
           <UploadStage
             onProcess={processUploads}
+            onProcessJson={processJsonImport}
             loading={loading}
             loadingMessage={loadingMessage}
             progress={progress}
@@ -603,8 +780,11 @@ export default function Import({ embedded = false }: { embedded?: boolean }) {
           <PreviewStage
             questions={questions}
             onToggle={removeQuestion}
-            onUpdateArea={updateArea}
             onUpdateQuestion={updateQuestion}
+            onAddImages={addQuestionImages}
+            onRemoveImage={removeQuestionImage}
+            onAddAlternativeImage={addAlternativeImage}
+            onRemoveAlternativeImage={removeAlternativeImage}
             onConfirm={goToConfirm}
             onBack={goBack}
           />

@@ -60,6 +60,59 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Question Import JSON schema
+
+The `/importar` flow accepts JSON in two formats:
+
+```json
+{
+  "detected_year": 2025,
+  "questions": []
+}
+```
+
+or directly:
+
+```json
+[]
+```
+
+Each question object supports:
+
+```json
+{
+  "number": 1,
+  "day": 1,
+  "area": "linguagens",
+  "topic": "Interpretacao",
+  "subtopic": "Inferencia textual",
+  "difficulty": 2,
+  "skills": ["Leitura", "Semantica"],
+  "statement": "",
+  "alternatives": [
+    { "letter": "A", "text": "..." },
+    { "letter": "B", "text": "..." },
+    { "letter": "C", "text": "..." },
+    { "letter": "D", "text": "..." },
+    { "letter": "E", "text": "..." }
+  ],
+  "correct_answer": "A",
+  "explanation": "optional",
+  "tags": ["optional"],
+  "requires_image": false,
+  "image_reason": null,
+  "images": [
+    { "url": "https://...", "caption": "optional", "order": 0 }
+  ]
+}
+```
+
+Notes:
+- `images` is optional.
+- `images` can also be an array of URL strings.
+- `statement` can be empty when `images` has at least one item.
+- `topic`/`subtopic`/`difficulty` are optional in import, and default to `Geral`/empty/`2`.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
