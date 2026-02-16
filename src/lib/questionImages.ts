@@ -19,7 +19,7 @@ export function validateQuestionImageFile(file: File): void {
   }
 }
 
-export async function uploadQuestionImage(file: File, userId: string): Promise<string> {
+export async function uploadQuestionImage(file: File, userId: string, _index?: number): Promise<string> {
   validateQuestionImageFile(file);
 
   const ext = file.name.split('.').pop() || 'png';

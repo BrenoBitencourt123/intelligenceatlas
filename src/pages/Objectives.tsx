@@ -305,9 +305,9 @@ const Objectives = () => {
                         </span>
                         <span className="text-sm flex-1">
                           <span>{alt.text}</span>
-                          {alt.image_url && (
+                          {(alt as any).image_url && (
                             <img
-                              src={alt.image_url}
+                              src={(alt as any).image_url}
                               alt={`Alternativa ${alt.letter}`}
                               className="mt-2 w-full max-w-full rounded border object-contain"
                               loading="lazy"
