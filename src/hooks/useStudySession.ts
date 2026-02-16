@@ -1,18 +1,32 @@
-import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { useState, useCallback, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { QuestionImage } from "@/lib/questionImages";
+import {
+  computePriorityScore,
+  nextReviewDateForLevel,
+  normalizeDifficulty,
+  normalizeSubtopic,
+  normalizeTopic,
+} from "@/lib/adaptiveStudy";
 
 interface Question {
   id: string;
   number: number;
   area: string;
+  topic: string;
+  subtopic: string;
+  difficulty: 1 | 2 | 3;
+  skills: string[];
   statement: string;
-  alternatives: { letter: string; text: string }[];
+  alternatives: { letter: string; text: string; image_url?: string | null }[];
   correct_answer: string;
   explanation: string | null;
   tags: string[];
   image_url: string | null;
+  images: QuestionImage[];
   year: number;
 }
 
@@ -33,9 +47,16 @@ interface PersistedSession {
   area: string | null;
 }
 
-type SessionState = 'idle' | 'loading' | 'active' | 'result';
+interface PersistedDailyPlan {
+  date: string;
+  area: string | null;
+  questionIds: string[];
+}
 
-const STORAGE_KEY = 'atlas_study_session';
+type SessionState = "idle" | "loading" | "active" | "result";
+
+const STORAGE_KEY = "atlas_study_session";
+const DAILY_PLAN_KEY = "atlas_study_daily_plan";
 
 function saveToStorage(data: PersistedSession) {
   try {
@@ -57,33 +78,446 @@ function clearStorage() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+function todayDateKey() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function saveDailyPlan(data: PersistedDailyPlan) {
+  try {
+    localStorage.setItem(DAILY_PLAN_KEY, JSON.stringify(data));
+  } catch {}
+}
+
+function loadDailyPlan(): PersistedDailyPlan | null {
+  try {
+    const raw = localStorage.getItem(DAILY_PLAN_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedDailyPlan;
+    if (!parsed?.date || !Array.isArray(parsed.questionIds)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeQuestionImages(images: unknown, imageUrl: string | null): QuestionImage[] {
+  if (Array.isArray(images)) {
+    const parsed = images
+      .map((img, index) => {
+        if (!img || typeof img !== "object") return null;
+        const value = img as Record<string, unknown>;
+        if (typeof value.url !== "string" || !value.url.trim()) return null;
+        return {
+          url: value.url.trim(),
+          caption: typeof value.caption === "string" ? value.caption : undefined,
+          order: typeof value.order === "number" ? value.order : index,
+        };
+      })
+      .filter((img): img is QuestionImage => Boolean(img));
+
+    if (parsed.length > 0) return parsed;
+  }
+
+  if (imageUrl) return [{ url: imageUrl, order: 0 }];
+  return [];
+}
+
+function makeTopicKey(area: string, topic: string, subtopic?: string) {
+  return `${area}::${normalizeTopic(topic)}::${normalizeSubtopic(subtopic)}`;
+}
+
+function shuffleArray<T>(items: T[]): T[] {
+  return [...items].sort(() => Math.random() - 0.5);
+}
+
+type ProfileRow = {
+  area: string;
+  topic: string;
+  subtopic: string;
+  level: number;
+  attempts: number;
+  correct: number;
+  next_review_at: string | null;
+  last_attempt_at: string | null;
+  priority_score: number;
+};
+
+const DIAGNOSTIC_QUESTIONS_PER_AREA = 60;
+
+function buildExplorationSelection(input: Question[], limit: number): Question[] {
+  if (input.length <= limit) return shuffleArray(input);
+
+  const selected: Question[] = [];
+  const selectedIds = new Set<string>();
+  const subtopicCount = new Map<string, number>();
+  const difficultyCount = { 1: 0, 2: 0, 3: 0 };
+  const difficultyTarget = {
+    1: Math.round(limit * 0.3),
+    2: Math.round(limit * 0.5),
+    3: limit - Math.round(limit * 0.3) - Math.round(limit * 0.5),
+  };
+  const maxPerSubtopic = 4;
+
+  const byTopic = new Map<string, Question[]>();
+  for (const question of shuffleArray(input)) {
+    const key = makeTopicKey(question.area, question.topic, question.subtopic);
+    const bucket = byTopic.get(key) ?? [];
+    bucket.push(question);
+    byTopic.set(key, bucket);
+  }
+
+  const topicKeys = shuffleArray([...byTopic.keys()]);
+  let keepGoing = true;
+
+  while (selected.length < limit && keepGoing) {
+    keepGoing = false;
+
+    for (const topicKey of topicKeys) {
+      if (selected.length >= limit) break;
+      const bucket = byTopic.get(topicKey);
+      if (!bucket || bucket.length === 0) continue;
+      keepGoing = true;
+
+      const pickIndex = bucket.findIndex((q) => {
+        const diff = normalizeDifficulty(q.difficulty);
+        const subKey = makeTopicKey(q.area, q.topic, q.subtopic);
+        return (
+          !selectedIds.has(q.id) &&
+          (subtopicCount.get(subKey) ?? 0) < maxPerSubtopic &&
+          difficultyCount[diff] < difficultyTarget[diff]
+        );
+      });
+
+      const fallbackIndex = bucket.findIndex((q) => {
+        const subKey = makeTopicKey(q.area, q.topic, q.subtopic);
+        return !selectedIds.has(q.id) && (subtopicCount.get(subKey) ?? 0) < maxPerSubtopic;
+      });
+
+      const indexToUse = pickIndex >= 0 ? pickIndex : fallbackIndex;
+      if (indexToUse < 0) continue;
+
+      const question = bucket.splice(indexToUse, 1)[0];
+      if (selectedIds.has(question.id)) continue;
+
+      const subKey = makeTopicKey(question.area, question.topic, question.subtopic);
+      selected.push(question);
+      selectedIds.add(question.id);
+      subtopicCount.set(subKey, (subtopicCount.get(subKey) ?? 0) + 1);
+      difficultyCount[normalizeDifficulty(question.difficulty)] += 1;
+    }
+  }
+
+  if (selected.length < limit) {
+    for (const question of shuffleArray(input)) {
+      if (selected.length >= limit) break;
+      if (selectedIds.has(question.id)) continue;
+      selected.push(question);
+      selectedIds.add(question.id);
+    }
+  }
+
+  return selected.slice(0, limit);
+}
+
+function buildAdaptiveSelection(input: Question[], profiles: ProfileRow[], limit: number): Question[] {
+  if (input.length <= limit) return shuffleArray(input);
+
+  const profileMap = new Map<string, ProfileRow>();
+  for (const profile of profiles) {
+    profileMap.set(makeTopicKey(profile.area, profile.topic, profile.subtopic), profile);
+  }
+
+  const withPriority = shuffleArray(input).map((question) => {
+    const key = makeTopicKey(question.area, question.topic, question.subtopic);
+    const profile = profileMap.get(key);
+    const priority = profile
+      ? computePriorityScore({
+          attempts: profile.attempts,
+          correct: profile.correct,
+          level: profile.level,
+          nextReviewAt: profile.next_review_at,
+          lastAttemptAt: profile.last_attempt_at,
+        })
+      : 0.75;
+
+    const attempts = profile?.attempts ?? 0;
+    const correct = profile?.correct ?? 0;
+    const accuracy = attempts > 0 ? correct / attempts : 0;
+    const level = profile?.level ?? 1;
+    const overdue = Boolean(profile?.next_review_at && new Date(profile.next_review_at).getTime() <= Date.now());
+
+    return {
+      question,
+      priority,
+      accuracy,
+      level,
+      overdue,
+      topicKey: `${question.area}::${question.topic}`,
+      subKey: makeTopicKey(question.area, question.topic, question.subtopic),
+      difficulty: normalizeDifficulty(question.difficulty),
+    };
+  });
+
+  const weak = withPriority
+    .filter((item) => item.level <= 1 || item.accuracy < 0.55 || item.priority >= 0.6)
+    .sort((a, b) => b.priority - a.priority || Number(b.overdue) - Number(a.overdue));
+
+  const maintenance = withPriority
+    .filter((item) => item.level >= 3 && item.accuracy >= 0.75)
+    .sort((a, b) => b.accuracy - a.accuracy || a.priority - b.priority);
+
+  const middle = withPriority
+    .filter((item) => !weak.includes(item) && !maintenance.includes(item))
+    .sort((a, b) => b.priority - a.priority);
+
+  const selected: Question[] = [];
+  const selectedIds = new Set<string>();
+  const topicCount = new Map<string, number>();
+  const subtopicCount = new Map<string, number>();
+  const maxSubtopic = 6;
+  const tryAddRanked = (
+    item: (typeof withPriority)[number],
+    blockDiffCount?: { 1: number; 2: number; 3: number },
+    blockDiffTarget?: { 1: number; 2: number; 3: number },
+  ) => {
+    if (selectedIds.has(item.question.id)) return false;
+    if ((subtopicCount.get(item.subKey) ?? 0) >= maxSubtopic) return false;
+
+    if (blockDiffCount && blockDiffTarget) {
+      if (blockDiffCount[item.difficulty] >= blockDiffTarget[item.difficulty]) return false;
+    }
+
+    selected.push(item.question);
+    selectedIds.add(item.question.id);
+    topicCount.set(item.topicKey, (topicCount.get(item.topicKey) ?? 0) + 1);
+    subtopicCount.set(item.subKey, (subtopicCount.get(item.subKey) ?? 0) + 1);
+    if (blockDiffCount) blockDiffCount[item.difficulty] += 1;
+    return true;
+  };
+
+  const blockSize = Math.min(15, Math.max(1, Math.floor(limit / 3)));
+  const warmTarget = Math.min(blockSize, limit);
+  const learnTarget = Math.min(blockSize, Math.max(0, limit - warmTarget));
+  const consTarget = Math.max(0, limit - warmTarget - learnTarget);
+
+  const pickForBlock = (
+    candidates: typeof withPriority,
+    targetCount: number,
+    diffTarget: { 1: number; 2: number; 3: number },
+  ) => {
+    const startLen = selected.length;
+    const diffCount = { 1: 0, 2: 0, 3: 0 };
+
+    // First pass: prioritize unseen topics to ensure diversity.
+    for (const item of candidates) {
+      if (selected.length - startLen >= targetCount) break;
+      if (topicCount.has(item.topicKey)) continue;
+      tryAddRanked(item, diffCount, diffTarget);
+    }
+
+    // Second pass: fill respecting difficulty target.
+    for (const item of candidates) {
+      if (selected.length - startLen >= targetCount) break;
+      tryAddRanked(item, diffCount, diffTarget);
+    }
+
+    // Third pass: fill any remaining ignoring block difficulty target.
+    for (const item of candidates) {
+      if (selected.length - startLen >= targetCount) break;
+      tryAddRanked(item);
+    }
+  };
+
+  const warmCandidates = [
+    ...maintenance.filter((i) => i.difficulty <= 2),
+    ...middle.filter((i) => i.difficulty <= 2),
+    ...weak.filter((i) => i.difficulty <= 2),
+    ...withPriority,
+  ];
+  const learningCandidates = [...weak, ...middle, ...maintenance, ...withPriority];
+  const consolidationCandidates = [
+    ...[...weak, ...middle, ...maintenance].sort(
+      (a, b) => Number(b.overdue) - Number(a.overdue) || b.difficulty - a.difficulty || b.priority - a.priority,
+    ),
+    ...withPriority,
+  ];
+
+  pickForBlock(warmCandidates, warmTarget, {
+    1: Math.round(warmTarget * 0.6),
+    2: warmTarget - Math.round(warmTarget * 0.6),
+    3: 0,
+  });
+  pickForBlock(learningCandidates, learnTarget, {
+    1: Math.round(learnTarget * 0.2),
+    2: Math.round(learnTarget * 0.65),
+    3: learnTarget - Math.round(learnTarget * 0.2) - Math.round(learnTarget * 0.65),
+  });
+  pickForBlock(consolidationCandidates, consTarget, {
+    1: Math.round(consTarget * 0.1),
+    2: Math.round(consTarget * 0.45),
+    3: consTarget - Math.round(consTarget * 0.1) - Math.round(consTarget * 0.45),
+  });
+
+  const minTopics = Math.min(6, new Set(withPriority.map((item) => item.topicKey)).size);
+  if (topicCount.size < minTopics) {
+    for (const item of withPriority.sort((a, b) => b.priority - a.priority)) {
+      if (topicCount.size >= minTopics) break;
+      if (topicCount.has(item.topicKey)) continue;
+      tryAddRanked(item);
+    }
+  }
+
+  if (selected.length < limit) {
+    for (const item of withPriority.sort((a, b) => b.priority - a.priority)) {
+      if (selected.length >= limit) break;
+      tryAddRanked(item);
+    }
+  }
+
+  return selected.slice(0, limit);
+}
+
 export function useStudySession() {
   const { user } = useAuth();
-  const [state, setState] = useState<SessionState>('idle');
+  const queryClient = useQueryClient();
+  const [state, setState] = useState<SessionState>("idle");
+  const [hasSavedSession, setHasSavedSession] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, { selected: string | null; correct: boolean }>>({});
   const [showFeedback, setShowFeedback] = useState(false);
   const [result, setResult] = useState<SessionResult | null>(null);
   const [startTime, setStartTime] = useState<number>(0);
+  const [questionStartedAt, setQuestionStartedAt] = useState<number>(0);
   const [flashcardsGenerated, setFlashcardsGenerated] = useState(0);
 
-  // Restore session from localStorage on mount
+  const mapQuestion = useCallback(
+    (q: any): Question => ({
+      id: q.id,
+      number: q.number,
+      area: q.area,
+      topic: normalizeTopic(q.topic),
+      subtopic: normalizeSubtopic(q.subtopic),
+      difficulty: normalizeDifficulty(q.difficulty),
+      skills: Array.isArray(q.skills) ? (q.skills as string[]) : [],
+      statement: q.statement,
+      alternatives: q.alternatives as any,
+      correct_answer: q.correct_answer,
+      explanation: q.explanation,
+      tags: Array.isArray(q.tags) ? (q.tags as string[]) : [],
+      image_url: q.image_url,
+      images: normalizeQuestionImages(q.images, q.image_url),
+      year: q.year,
+    }),
+    [],
+  );
+
+  const syncTopicProfile = useCallback(
+    async (params: { question: Question; selectedLetter: string | null; isCorrect: boolean; timeSpentSec: number }) => {
+      if (!user) return;
+      const { question, selectedLetter, isCorrect, timeSpentSec } = params;
+      const answer = selectedLetter ?? "dont_know";
+      const nowIso = new Date().toISOString();
+
+      const { error: historyError } = await supabase.from("user_question_history").insert({
+        user_id: user.id,
+        question_id: question.id,
+        answer,
+        is_correct: isCorrect,
+        time_spent_sec: timeSpentSec,
+        attempted_at: nowIso,
+      });
+
+      if (historyError) {
+        console.error("Error writing user_question_history:", historyError);
+      }
+
+      const profileFilter = {
+        user_id: user.id,
+        area: question.area,
+        topic: normalizeTopic(question.topic),
+        subtopic: normalizeSubtopic(question.subtopic),
+      };
+
+      const { data: existing, error: profileLoadError } = await supabase
+        .from("user_topic_profile")
+        .select("*")
+        .match(profileFilter)
+        .maybeSingle();
+
+      if (profileLoadError) {
+        console.error("Error loading user_topic_profile:", profileLoadError);
+      }
+
+      const attempts = (existing?.attempts ?? 0) + 1;
+      const correct = (existing?.correct ?? 0) + (isCorrect ? 1 : 0);
+      const dontKnowAnswer = selectedLetter === null;
+      const wrong = (existing?.wrong ?? 0) + (!isCorrect ? 1 : 0);
+      const dontKnow = (existing?.dont_know ?? 0) + (dontKnowAnswer ? 1 : 0);
+
+      let level = existing?.level ?? 1;
+      let correctStreak = existing?.correct_streak ?? 0;
+
+      if (isCorrect) {
+        correctStreak += 1;
+        if (correctStreak >= 3) {
+          level = Math.min(3, level + 1);
+          correctStreak = 0;
+        }
+      } else {
+        correctStreak = 0;
+        if (dontKnowAnswer) {
+          level = Math.max(0, level - 1);
+        }
+      }
+
+      const accuracy = attempts > 0 ? correct / attempts : 0;
+      if (attempts >= 6 && accuracy < 0.35) level = Math.max(0, level - 1);
+
+      const nextReviewAt = nextReviewDateForLevel(level, { forceSoon: !isCorrect || dontKnowAnswer });
+      const priorityScore = computePriorityScore({
+        attempts,
+        correct,
+        level,
+        nextReviewAt,
+        lastAttemptAt: nowIso,
+      });
+
+      const { error: profileUpsertError } = await supabase.from("user_topic_profile").upsert(
+        {
+          ...profileFilter,
+          level,
+          attempts,
+          correct,
+          wrong,
+          dont_know: dontKnow,
+          correct_streak: correctStreak,
+          last_attempt_at: nowIso,
+          next_review_at: nextReviewAt,
+          priority_score: priorityScore,
+          updated_at: nowIso,
+        },
+        {
+          onConflict: "user_id,area,topic,subtopic",
+        },
+      );
+
+      if (profileUpsertError) {
+        console.error("Error upserting user_topic_profile:", profileUpsertError);
+      }
+    },
+    [user],
+  );
+
+  // Detect if a resumable session exists (do not auto-open it)
   useEffect(() => {
     const saved = loadFromStorage();
-    if (saved && saved.questions.length > 0) {
-      setQuestions(saved.questions);
-      setCurrentIndex(saved.currentIndex);
-      setAnswers(saved.answers);
-      setStartTime(saved.startTime);
-      setFlashcardsGenerated(saved.flashcardsGenerated);
-      setState('active');
-    }
+    setHasSavedSession(Boolean(saved && saved.questions.length > 0));
   }, []);
 
   // Persist session state whenever it changes
   useEffect(() => {
-    if (state === 'active' && questions.length > 0) {
+    if (state === "active" && questions.length > 0) {
       saveToStorage({
         questions,
         currentIndex,
@@ -92,145 +526,366 @@ export function useStudySession() {
         flashcardsGenerated,
         area: questions[0]?.area ?? null,
       });
+      setHasSavedSession(true);
     }
   }, [state, questions, currentIndex, answers, startTime, flashcardsGenerated]);
 
+  const resumeSession = useCallback(() => {
+    const saved = loadFromStorage();
+    if (!saved || saved.questions.length === 0) {
+      setHasSavedSession(false);
+      return false;
+    }
+
+    setQuestions(saved.questions);
+    setCurrentIndex(saved.currentIndex);
+    setAnswers(saved.answers);
+    setStartTime(saved.startTime);
+    setQuestionStartedAt(Date.now());
+    setFlashcardsGenerated(saved.flashcardsGenerated);
+    setShowFeedback(false);
+    setResult(null);
+    setState("active");
+    setHasSavedSession(true);
+    return true;
+  }, []);
+
+  const exitSessionView = useCallback(() => {
+    setState("idle");
+    setShowFeedback(false);
+  }, []);
+
   const currentQuestion = questions[currentIndex] ?? null;
   const currentBlock = Math.floor(currentIndex / 15);
-  const blockLabels = ['Aquecimento', 'Aprendizado', 'Consolidação'];
+  const blockLabels = ["Aquecimento", "Aprendizado", "ConsolidaÃ§Ã£o"];
   const totalQuestions = questions.length;
-  const progress = totalQuestions > 0 ? Math.round(((currentIndex + (showFeedback ? 1 : 0)) / totalQuestions) * 100) : 0;
+  const progress =
+    totalQuestions > 0 ? Math.round(((currentIndex + (showFeedback ? 1 : 0)) / totalQuestions) * 100) : 0;
 
-  const startSession = useCallback(async (area: string | null, questionLimit?: number) => {
-    if (!user) return;
-    setState('loading');
+  const startSession = useCallback(
+    async (area: string | null, questionLimit?: number, forceNew = false, resetTodayAttempts = false) => {
+      if (!user) return;
+      setState("loading");
 
-    try {
-      let query = supabase.from('questions').select('*');
-
-      if (area && area !== 'mista') {
-        query = query.eq('area', area);
-      }
-
-      const { data, error } = await query.limit(200);
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        toast.error('Nenhuma questão disponível para esta área');
-        setState('idle');
-        return;
-      }
-
-      const limit = questionLimit ?? 45;
-      const shuffled = data.sort(() => Math.random() - 0.5).slice(0, limit);
-
-      setQuestions(shuffled.map(q => ({
-        id: q.id,
-        number: q.number,
-        area: q.area,
-        statement: q.statement,
-        alternatives: q.alternatives as any,
-        correct_answer: q.correct_answer,
-        explanation: q.explanation,
-        tags: Array.isArray(q.tags) ? q.tags as string[] : [],
-        image_url: q.image_url,
-        year: q.year,
-      })));
-      setCurrentIndex(0);
-      setAnswers({});
-      setShowFeedback(false);
-      setResult(null);
-      setFlashcardsGenerated(0);
-      setStartTime(Date.now());
-      setState('active');
-    } catch (err: any) {
-      console.error('Error starting session:', err);
-      toast.error('Erro ao iniciar sessão');
-      setState('idle');
-    }
-  }, [user]);
-
-  const generateFlashcard = useCallback(async (question: Question) => {
-    if (!user) return;
-    try {
-      let front: string;
-      let back: string;
-
-      // Try AI-powered flashcard generation
       try {
-        const { data, error } = await supabase.functions.invoke('generate-flashcard', {
-          body: {
-            statement: question.statement,
-            alternatives: question.alternatives,
-            correctAnswer: question.correct_answer,
-            explanation: question.explanation,
-            area: question.area,
-          },
-        });
+        const limit = questionLimit ?? 45;
+        const today = todayDateKey();
+        const normalizedArea = area ?? null;
+        const savedPlan = !forceNew ? loadDailyPlan() : null;
 
-        if (error || !data?.front || !data?.back) {
-          throw new Error(error?.message || 'Invalid response');
+        if (resetTodayAttempts) {
+          const { error: resetAttemptsError } = await supabase
+            .from("question_attempts")
+            .delete()
+            .eq("user_id", user.id)
+            .eq("session_date", today);
+
+          if (resetAttemptsError) {
+            console.error("Error resetting today attempts:", resetAttemptsError);
+            toast.error("Nao foi possivel resetar as respostas de hoje");
+          } else {
+            await queryClient.invalidateQueries({ queryKey: ["study-stats", user.id, today] });
+          }
         }
 
-        front = data.front;
-        back = data.back;
-      } catch (aiErr) {
-        console.warn('AI flashcard generation failed, using fallback:', aiErr);
-        // Fallback: simplified version (better than raw statement)
-        const correctAlt = question.alternatives.find(
-          (a: any) => a.letter === question.correct_answer
-        );
-        front = `[${question.area}] O que a questão ${question.number} cobra?`;
-        back = `Resposta: ${question.correct_answer}${correctAlt ? ` — ${correctAlt.text}` : ''}${question.explanation ? `\n\n${question.explanation}` : ''}`;
+        if (
+          savedPlan &&
+          savedPlan.date === today &&
+          savedPlan.area === normalizedArea &&
+          savedPlan.questionIds.length > 0
+        ) {
+          let resumeQuery = supabase.from("questions").select("*").in("id", savedPlan.questionIds);
+
+          if (area && area !== "mista") {
+            resumeQuery = resumeQuery.eq("area", area);
+          }
+
+          const { data: plannedData, error: plannedError } = await resumeQuery;
+          if (plannedError) throw plannedError;
+
+          if (plannedData && plannedData.length > 0) {
+            const byId = new Map(plannedData.map((question) => [question.id, question]));
+            const orderedQuestions = savedPlan.questionIds
+              .map((id) => byId.get(id))
+              .filter((item): item is NonNullable<typeof item> => Boolean(item))
+              .slice(0, limit)
+              .map(mapQuestion);
+
+            if (orderedQuestions.length > 0) {
+              const now = Date.now();
+              setQuestions(orderedQuestions);
+              setCurrentIndex(0);
+              setAnswers({});
+              setShowFeedback(false);
+              setResult(null);
+              setFlashcardsGenerated(0);
+              setStartTime(now);
+              setQuestionStartedAt(now);
+              setState("active");
+              saveToStorage({
+                questions: orderedQuestions,
+                currentIndex: 0,
+                answers: {},
+                startTime: now,
+                flashcardsGenerated: 0,
+                area: orderedQuestions[0]?.area ?? null,
+              });
+              setHasSavedSession(true);
+              return;
+            }
+          }
+        }
+
+        let query = supabase.from("questions").select("*");
+
+        if (area && area !== "mista") {
+          query = query.eq("area", area);
+        }
+
+        const { data, error } = await query.limit(1500);
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          toast.error("Nenhuma questão disponível para esta área");
+          setState("idle");
+          return;
+        }
+
+        const parsedQuestions = data.map(mapQuestion);
+        const hasTaxonomy = parsedQuestions.some((q) => q.topic && q.topic !== "Geral");
+        let selectedQuestions = shuffleArray(parsedQuestions).slice(0, limit);
+
+        if (hasTaxonomy) {
+          let profileQuery = supabase
+            .from("user_topic_profile")
+            .select("area,topic,subtopic,level,attempts,correct,next_review_at,last_attempt_at,priority_score")
+            .eq("user_id", user.id);
+
+          if (area && area !== "mista") {
+            profileQuery = profileQuery.eq("area", area);
+          }
+
+          const { data: profiles } = await profileQuery;
+          if (profiles) {
+            const typedProfiles = profiles as ProfileRow[];
+            const attemptsInArea = typedProfiles.reduce((sum, p) => sum + (p.attempts ?? 0), 0);
+            const inDiagnosticMode = attemptsInArea < DIAGNOSTIC_QUESTIONS_PER_AREA;
+
+            selectedQuestions = inDiagnosticMode
+              ? buildExplorationSelection(parsedQuestions, limit)
+              : buildAdaptiveSelection(parsedQuestions, typedProfiles, limit);
+          }
+        }
+
+        const now = Date.now();
+        setQuestions(selectedQuestions);
+        setCurrentIndex(0);
+        setAnswers({});
+        setShowFeedback(false);
+        setResult(null);
+        setFlashcardsGenerated(0);
+        setStartTime(now);
+        setQuestionStartedAt(now);
+        setState("active");
+        saveDailyPlan({
+          date: today,
+          area: normalizedArea,
+          questionIds: selectedQuestions.map((question) => question.id),
+        });
+        saveToStorage({
+          questions: selectedQuestions,
+          currentIndex: 0,
+          answers: {},
+          startTime: now,
+          flashcardsGenerated: 0,
+          area: selectedQuestions[0]?.area ?? null,
+        });
+        setHasSavedSession(true);
+      } catch (err: any) {
+        console.error("Error starting session:", err);
+        toast.error("Erro ao iniciar sessão");
+        setState("idle");
+      }
+    },
+    [mapQuestion, queryClient, user],
+  );
+
+  const startPreviewQuestion = useCallback(
+    async (questionId: string) => {
+      if (!user || !questionId) return false;
+      setState("loading");
+
+      try {
+        const { data, error } = await supabase.from("questions").select("*").eq("id", questionId).single();
+
+        if (error || !data) {
+          throw new Error(error?.message || "Questao nao encontrada");
+        }
+
+        const previewQuestion: Question = mapQuestion(data);
+
+        setQuestions([previewQuestion]);
+        setCurrentIndex(0);
+        setAnswers({});
+        setShowFeedback(false);
+        setResult(null);
+        setFlashcardsGenerated(0);
+        setStartTime(Date.now());
+        setQuestionStartedAt(Date.now());
+        setState("active");
+        saveToStorage({
+          questions: [previewQuestion],
+          currentIndex: 0,
+          answers: {},
+          startTime: Date.now(),
+          flashcardsGenerated: 0,
+          area: previewQuestion.area ?? null,
+        });
+        return true;
+      } catch (err) {
+        console.error("Error starting preview question:", err);
+        toast.error("Nao foi possivel abrir o preview da questao");
+        setState("idle");
+        return false;
+      }
+    },
+    [mapQuestion, queryClient, user],
+  );
+
+  const generateFlashcard = useCallback(
+    async (question: Question, resultType: "wrong" | "dont_know") => {
+      if (!user) return;
+      try {
+        let front: string;
+        let back: string;
+
+        // Try AI-powered flashcard generation
+        try {
+          const { data, error } = await supabase.functions.invoke("generate-flashcard", {
+            body: {
+              statement: question.statement,
+              alternatives: question.alternatives,
+              correctAnswer: question.correct_answer,
+              explanation: question.explanation,
+              area: question.area,
+            },
+          });
+
+          if (error || !data?.front || !data?.back) {
+            throw new Error(error?.message || "Invalid response");
+          }
+
+          front = data.front;
+          back = data.back;
+        } catch (aiErr) {
+          console.warn("AI flashcard generation failed, using fallback:", aiErr);
+          // Fallback: simplified version (better than raw statement)
+          const correctAlt = question.alternatives.find((a: any) => a.letter === question.correct_answer);
+          front = `[${question.area}] Qual conceito-chave da questao ${question.number}?`;
+          back = `Resposta: ${question.correct_answer}${correctAlt ? ` â€” ${correctAlt.text}` : ""}${question.explanation ? `\n\n${question.explanation}` : ""}`;
+        }
+
+        const firstImage = question.images?.[0]?.url ?? question.image_url ?? null;
+        const exampleContext = (question.statement || "").slice(0, 280) || null;
+
+        const { error: smartError } = await supabase.functions.invoke("flashcards-smart", {
+          body: {
+            action: "upsert_from_error",
+            payload: {
+              source_id: question.id,
+              source_type: "question",
+              area: question.area,
+              topic: question.topic,
+              subtopic: question.subtopic,
+              skills: question.skills,
+              front,
+              back,
+              example_context: exampleContext,
+              image_url: firstImage,
+              result_type: resultType,
+            },
+          },
+        });
+        if (smartError) throw smartError;
+        setFlashcardsGenerated((prev) => prev + 1);
+      } catch (err) {
+        console.error("Error generating flashcard:", err);
+      }
+    },
+    [user],
+  );
+
+  const answerQuestion = useCallback(
+    async (selectedLetter: string | null, autoFlashcard = true) => {
+      if (!currentQuestion || showFeedback) return;
+
+      const isCorrect = selectedLetter === currentQuestion.correct_answer;
+      const timeSpentSec = Math.max(1, Math.round((Date.now() - questionStartedAt) / 1000));
+      const nextAnswers = {
+        ...answers,
+        [currentIndex]: { selected: selectedLetter, correct: isCorrect },
+      };
+      setAnswers((prev) => ({
+        ...prev,
+        [currentIndex]: { selected: selectedLetter, correct: isCorrect },
+      }));
+      setShowFeedback(true);
+      saveToStorage({
+        questions,
+        currentIndex,
+        answers: nextAnswers,
+        startTime,
+        flashcardsGenerated,
+        area: questions[0]?.area ?? null,
+      });
+
+      // Record attempt
+      if (user) {
+        supabase
+          .from("question_attempts")
+          .insert({
+            user_id: user.id,
+            question_id: currentQuestion.id,
+            selected_answer: selectedLetter,
+            is_correct: isCorrect,
+            response_time_ms: timeSpentSec * 1000,
+            session_date: new Date().toISOString().split("T")[0],
+          })
+          .then(() => {});
+
+        syncTopicProfile({
+          question: currentQuestion,
+          selectedLetter,
+          isCorrect,
+          timeSpentSec,
+        }).then(() => {});
       }
 
-      await supabase.from('flashcards').insert({
-        user_id: user.id,
-        front,
-        back,
-        source_type: 'question',
-        source_id: question.id,
-        area: question.area,
-        next_review: new Date().toISOString().split('T')[0],
-      });
-      setFlashcardsGenerated(prev => prev + 1);
-    } catch (err) {
-      console.error('Error generating flashcard:', err);
-    }
-  }, [user]);
-
-  const answerQuestion = useCallback(async (selectedLetter: string | null, autoFlashcard = true) => {
-    if (!currentQuestion || showFeedback) return;
-
-    const isCorrect = selectedLetter === currentQuestion.correct_answer;
-    setAnswers(prev => ({
-      ...prev,
-      [currentIndex]: { selected: selectedLetter, correct: isCorrect },
-    }));
-    setShowFeedback(true);
-
-    // Record attempt
-    if (user) {
-      supabase.from('question_attempts').insert({
-        user_id: user.id,
-        question_id: currentQuestion.id,
-        selected_answer: selectedLetter,
-        is_correct: isCorrect,
-        session_date: new Date().toISOString().split('T')[0],
-      }).then(() => {});
-    }
-
-    // Auto-generate flashcard on wrong answer (only if plan allows)
-    if (!isCorrect && autoFlashcard) {
-      await generateFlashcard(currentQuestion);
-    }
-  }, [currentQuestion, currentIndex, showFeedback, user, generateFlashcard]);
+      // Auto-generate flashcard on wrong answer (only if plan allows)
+      if (!isCorrect && autoFlashcard) {
+        await generateFlashcard(currentQuestion, selectedLetter === null ? "dont_know" : "wrong");
+      }
+    },
+    [
+      answers,
+      currentQuestion,
+      currentIndex,
+      flashcardsGenerated,
+      generateFlashcard,
+      questionStartedAt,
+      questions,
+      showFeedback,
+      startTime,
+      syncTopicProfile,
+      user,
+    ],
+  );
 
   const nextQuestion = useCallback(async () => {
     if (currentIndex + 1 >= totalQuestions) {
       // Session complete
       const durationMinutes = Math.round((Date.now() - startTime) / 60000);
-      const totalCorrect = Object.values(answers).filter(a => a.correct).length;
+      const totalCorrect = Object.values(answers).filter((a) => a.correct).length;
 
       // Calculate per-block results
       const blocks = [];
@@ -243,7 +898,7 @@ export function useStudySession() {
           })
           .map(([, a]) => a);
         blocks.push({
-          correct: blockAnswers.filter(a => a.correct).length,
+          correct: blockAnswers.filter((a) => a.correct).length,
           total: blockAnswers.length,
         });
       }
@@ -257,36 +912,62 @@ export function useStudySession() {
       };
 
       setResult(sessionResult);
-      setState('result');
+      setState("result");
       clearStorage();
+      setHasSavedSession(false);
 
       // Save study session
       if (user && currentQuestion) {
-        supabase.from('study_sessions').insert({
-          user_id: user.id,
-          area: currentQuestion.area,
-          questions_answered: totalQuestions,
-          correct_answers: totalCorrect,
-          flashcards_reviewed: 0,
-          duration_minutes: Math.max(1, durationMinutes),
-          session_date: new Date().toISOString().split('T')[0],
-        }).then(() => {});
+        supabase
+          .from("study_sessions")
+          .insert({
+            user_id: user.id,
+            area: currentQuestion.area,
+            questions_answered: totalQuestions,
+            correct_answers: totalCorrect,
+            flashcards_reviewed: 0,
+            duration_minutes: Math.max(1, durationMinutes),
+            session_date: new Date().toISOString().split("T")[0],
+          })
+          .then(() => {});
       }
     } else {
-      setCurrentIndex(prev => prev + 1);
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
       setShowFeedback(false);
+      setQuestionStartedAt(Date.now());
+      saveToStorage({
+        questions,
+        currentIndex: nextIndex,
+        answers,
+        startTime,
+        flashcardsGenerated,
+        area: questions[0]?.area ?? null,
+      });
     }
-  }, [currentIndex, totalQuestions, answers, startTime, flashcardsGenerated, user, currentQuestion, showFeedback]);
+  }, [
+    currentIndex,
+    totalQuestions,
+    answers,
+    startTime,
+    flashcardsGenerated,
+    user,
+    currentQuestion,
+    showFeedback,
+    questions,
+  ]);
 
   const resetSession = useCallback(() => {
-    setState('idle');
+    setState("idle");
     setQuestions([]);
     setCurrentIndex(0);
     setAnswers({});
     setShowFeedback(false);
     setResult(null);
     setFlashcardsGenerated(0);
+    setQuestionStartedAt(0);
     clearStorage();
+    setHasSavedSession(false);
   }, []);
 
   return {
@@ -300,7 +981,11 @@ export function useStudySession() {
     showFeedback,
     answers,
     result,
+    hasSavedSession,
     startSession,
+    resumeSession,
+    exitSessionView,
+    startPreviewQuestion,
     answerQuestion,
     nextQuestion,
     resetSession,
