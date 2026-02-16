@@ -113,7 +113,7 @@ function normalizeQuestionImages(images: unknown, imageUrl: string | null): Ques
           order: typeof value.order === "number" ? value.order : index,
         };
       })
-      .filter((img): img is QuestionImage => Boolean(img));
+      .filter((img): img is NonNullable<typeof img> => img !== null) as QuestionImage[];
 
     if (parsed.length > 0) return parsed;
   }

@@ -137,7 +137,7 @@ function normalizeImages(images: unknown): QuestionImage[] {
         order: typeof value.order === 'number' ? value.order : index,
       };
     })
-    .filter((img): img is QuestionImage => Boolean(img));
+    .filter((img): img is NonNullable<typeof img> => img !== null) as QuestionImage[];
 }
 
 function inferImageRequirement(
@@ -625,7 +625,7 @@ export function useImportExam() {
 
       const previewUrl = URL.createObjectURL(file);
       nextPending.push({ file, previewUrl });
-      previewImages.push({ url: previewUrl, local: true });
+      previewImages.push({ url: previewUrl, local: true, order: nextPending.length - 1 });
     }
 
     if (previewImages.length === 0) return;

@@ -114,7 +114,7 @@ const QuestionsPanel = () => {
       console.error('Error fetching questions:', error);
       toast({ title: 'Erro ao carregar questões', variant: 'destructive' });
     } else {
-      setQuestions(data || []);
+      setQuestions((data as unknown as Question[]) || []);
       setTotalCount(count || 0);
     }
     setLoading(false);

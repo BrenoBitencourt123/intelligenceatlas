@@ -319,13 +319,17 @@ export type Database = {
           area: string
           correct_answer: string
           created_at: string
+          difficulty: number
           explanation: string | null
           id: string
           image_url: string | null
           images: Json
           number: number
+          skills: Json
           statement: string
+          subtopic: string
           tags: Json
+          topic: string
           user_id: string
           year: number
         }
@@ -334,13 +338,17 @@ export type Database = {
           area: string
           correct_answer: string
           created_at?: string
+          difficulty?: number
           explanation?: string | null
           id?: string
           image_url?: string | null
           images?: Json
           number: number
+          skills?: Json
           statement: string
+          subtopic?: string
           tags?: Json
+          topic?: string
           user_id: string
           year: number
         }
@@ -349,13 +357,17 @@ export type Database = {
           area?: string
           correct_answer?: string
           created_at?: string
+          difficulty?: number
           explanation?: string | null
           id?: string
           image_url?: string | null
           images?: Json
           number?: number
+          skills?: Json
           statement?: string
+          subtopic?: string
           tags?: Json
+          topic?: string
           user_id?: string
           year?: number
         }
@@ -427,6 +439,33 @@ export type Database = {
           operation_type?: string
           prompt_tokens?: number
           total_tokens?: number
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          daily_minutes_target: number
+          id: string
+          preferred_language: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_minutes_target?: number
+          id?: string
+          preferred_language?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_minutes_target?: number
+          id?: string
+          preferred_language?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
