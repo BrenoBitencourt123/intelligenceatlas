@@ -1,19 +1,30 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, DollarSign, Cpu, TrendingUp, Coins, Calendar, Upload, ListChecks } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
-import ThemesPanel from '@/components/admin/ThemesPanel';
-import ImportPanel from '@/pages/Import';
-import QuestionsPanel from '@/components/admin/QuestionsPanel';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  ArrowLeft,
+  DollarSign,
+  Cpu,
+  TrendingUp,
+  Coins,
+  Calendar,
+  Upload,
+  ListChecks,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
+import ThemesPanel from "@/components/admin/ThemesPanel";
+import ImportPanel from "@/pages/Import";
+import QuestionsPanel from "@/components/admin/QuestionsPanel";
 
 interface TokenUsageRecord {
   id: string;
@@ -42,29 +53,30 @@ const Admin = () => {
   const [records, setRecords] = useState<TokenUsageRecord[]>([]);
   const [stats, setStats] = useState<AggregatedStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
 
   // Redirect non-admins
   useEffect(() => {
     if (!isAdminLoading && !isAdmin) {
       toast({
-        title: 'Acesso negado',
-        description: 'Você não tem permissão para acessar esta página.',
-        variant: 'destructive',
+        title: "Acesso negado",
+        description: "Você não tem permissão para acessar esta página.",
+        variant: "destructive",
       });
-      navigate('/');
+      navigate("/");
     }
   }, [isAdmin, isAdminLoading, navigate]);
 
   useEffect(() => {
     const fetchData = async () => {
       const { data, error } = await supabase
-        .from('token_usage')
-        .select('*')
-        .order('created_at', { ascending: false })
+        .from("token_usage")
+        .select("*")
+        .order("created_at", { ascending: false })
         .limit(100);
 
       if (error) {
-        console.error('Error fetching token usage:', error);
+        console.error("Error fetching token usage:", error);
         setLoading(false);
         return;
       }
@@ -74,8 +86,8 @@ const Admin = () => {
 
       // Calculate aggregated stats
       if (typedData.length > 0) {
-        const analyzeOps = typedData.filter(r => r.operation_type === 'analyze-block');
-        const improveOps = typedData.filter(r => r.operation_type === 'improve-essay');
+        const analyzeOps = typedData.filter((r) => r.operation_type === "analyze-block");
+        const improveOps = typedData.filter((r) => r.operation_type === "improve-essay");
 
         const totalCost = typedData.reduce((sum, r) => sum + Number(r.estimated_cost_usd), 0);
         const analyzeCost = analyzeOps.reduce((sum, r) => sum + Number(r.estimated_cost_usd), 0);
@@ -103,29 +115,65 @@ const Admin = () => {
   const formatCost = (cost: number) => `$${cost.toFixed(6)}`;
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleString('pt-BR', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getOperationLabel = (type: string) => {
     switch (type) {
-      case 'analyze-block': return 'Análise';
-      case 'improve-essay': return 'Melhoria';
-      default: return type;
+      case "analyze-block":
+        return "Análise";
+      case "improve-essay":
+        return "Melhoria";
+      default:
+        return type;
     }
   };
 
   const getBlockLabel = (type: string | null) => {
     switch (type) {
-      case 'introduction': return 'Introdução';
-      case 'development': return 'Desenvolvimento';
-      case 'conclusion': return 'Conclusão';
-      default: return '-';
+      case "introduction":
+        return "Introdução";
+      case "development":
+        return "Desenvolvimento";
+      case "conclusion":
+        return "Conclusão";
+      default:
+        return "-";
+    }
+  };
+
+  const runMaintenance = async (action: "clear_questions" | "clear_flashcards") => {
+    const actionLabel = action === "clear_questions" ? "zerar o banco de questoes" : "zerar o banco de flashcards";
+    const confirmation = window.confirm(`Tem certeza que deseja ${actionLabel}? Esta acao nao pode ser desfeita.`);
+    if (!confirmation) return;
+
+    setMaintenanceLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-maintenance", {
+        body: { action },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Operacao concluida",
+        description: `${data?.message ?? "Banco atualizado com sucesso."}`,
+      });
+    } catch (err: any) {
+      console.error("Admin maintenance error:", err);
+      toast({
+        title: "Erro na operacao",
+        description: err?.message ?? "Nao foi possivel concluir a operacao.",
+        variant: "destructive",
+      });
+    } finally {
+      setMaintenanceLoading(false);
     }
   };
 
@@ -223,7 +271,8 @@ const Admin = () => {
                   <CardContent>
                     <div className="text-2xl font-bold">{stats.totalTokens.toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground">
-                      In: {stats.totalPromptTokens.toLocaleString()} | Out: {stats.totalCompletionTokens.toLocaleString()}
+                      In: {stats.totalPromptTokens.toLocaleString()} | Out:{" "}
+                      {stats.totalCompletionTokens.toLocaleString()}
                     </p>
                   </CardContent>
                 </Card>
@@ -274,7 +323,8 @@ const Admin = () => {
                   </div>
                 ) : records.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">
-                    Nenhuma operação registrada ainda. Faça uma análise ou gere uma versão melhorada para ver os dados aqui.
+                    Nenhuma operação registrada ainda. Faça uma análise ou gere uma versão melhorada para ver os dados
+                    aqui.
                   </p>
                 ) : (
                   <div className="overflow-x-auto">
@@ -297,7 +347,7 @@ const Admin = () => {
                               {formatDate(record.created_at)}
                             </TableCell>
                             <TableCell>
-                              <Badge variant={record.operation_type === 'analyze-block' ? 'secondary' : 'default'}>
+                              <Badge variant={record.operation_type === "analyze-block" ? "secondary" : "default"}>
                                 {getOperationLabel(record.operation_type)}
                               </Badge>
                             </TableCell>
@@ -344,7 +394,38 @@ const Admin = () => {
           </TabsContent>
 
           {/* Questions Tab */}
-          <TabsContent value="questions">
+          <TabsContent value="questions" className="space-y-4">
+            <Card className="border-destructive/40">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  Manutencao de banco (admin)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Use apenas quando precisar reiniciar dados globais do sistema.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="destructive"
+                    onClick={() => runMaintenance("clear_questions")}
+                    disabled={maintenanceLoading}
+                  >
+                    {maintenanceLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Zerar banco de questoes
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => runMaintenance("clear_flashcards")}
+                    disabled={maintenanceLoading}
+                  >
+                    {maintenanceLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Zerar banco de flashcards
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
             <QuestionsPanel />
           </TabsContent>
         </Tabs>
