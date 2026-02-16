@@ -322,6 +322,7 @@ export type Database = {
           explanation: string | null
           id: string
           image_url: string | null
+          images: Json
           number: number
           statement: string
           tags: Json
@@ -336,6 +337,7 @@ export type Database = {
           explanation?: string | null
           id?: string
           image_url?: string | null
+          images?: Json
           number: number
           statement: string
           tags?: Json
@@ -350,6 +352,7 @@ export type Database = {
           explanation?: string | null
           id?: string
           image_url?: string | null
+          images?: Json
           number?: number
           statement?: string
           tags?: Json
