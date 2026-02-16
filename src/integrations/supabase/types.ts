@@ -319,17 +319,13 @@ export type Database = {
           area: string
           correct_answer: string
           created_at: string
-          difficulty: number
           explanation: string | null
           id: string
           image_url: string | null
           images: Json
           number: number
-          skills: string[]
           statement: string
-          subtopic: string
           tags: Json
-          topic: string
           user_id: string
           year: number
         }
@@ -338,17 +334,13 @@ export type Database = {
           area: string
           correct_answer: string
           created_at?: string
-          difficulty?: number
           explanation?: string | null
           id?: string
           image_url?: string | null
           images?: Json
           number: number
-          skills?: string[]
           statement: string
-          subtopic?: string
           tags?: Json
-          topic?: string
           user_id: string
           year: number
         }
@@ -357,17 +349,13 @@ export type Database = {
           area?: string
           correct_answer?: string
           created_at?: string
-          difficulty?: number
           explanation?: string | null
           id?: string
           image_url?: string | null
           images?: Json
           number?: number
-          skills?: string[]
           statement?: string
-          subtopic?: string
           tags?: Json
-          topic?: string
           user_id?: string
           year?: number
         }
@@ -439,134 +427,6 @@ export type Database = {
           operation_type?: string
           prompt_tokens?: number
           total_tokens?: number
-        }
-        Relationships: []
-      }
-      user_preferences: {
-        Row: {
-          created_at: string
-          daily_minutes_target: number
-          difficulty_areas: Json
-          id: string
-          preferred_language: string | null
-          topic_self_report: Json
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          daily_minutes_target?: number
-          difficulty_areas?: Json
-          id?: string
-          preferred_language?: string | null
-          topic_self_report?: Json
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          daily_minutes_target?: number
-          difficulty_areas?: Json
-          id?: string
-          preferred_language?: string | null
-          topic_self_report?: Json
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_question_history: {
-        Row: {
-          answer: string
-          attempted_at: string
-          id: string
-          is_correct: boolean
-          question_id: string
-          time_spent_sec: number | null
-          user_id: string
-        }
-        Insert: {
-          answer: string
-          attempted_at?: string
-          id?: string
-          is_correct?: boolean
-          question_id: string
-          time_spent_sec?: number | null
-          user_id: string
-        }
-        Update: {
-          answer?: string
-          attempted_at?: string
-          id?: string
-          is_correct?: boolean
-          question_id?: string
-          time_spent_sec?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_question_history_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: false
-            referencedRelation: "questions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_topic_profile: {
-        Row: {
-          area: string
-          attempts: number
-          correct: number
-          correct_streak: number
-          created_at: string
-          dont_know: number
-          id: string
-          last_attempt_at: string | null
-          level: number
-          next_review_at: string | null
-          priority_score: number
-          subtopic: string
-          topic: string
-          updated_at: string
-          user_id: string
-          wrong: number
-        }
-        Insert: {
-          area: string
-          attempts?: number
-          correct?: number
-          correct_streak?: number
-          created_at?: string
-          dont_know?: number
-          id?: string
-          last_attempt_at?: string | null
-          level?: number
-          next_review_at?: string | null
-          priority_score?: number
-          subtopic?: string
-          topic: string
-          updated_at?: string
-          user_id: string
-          wrong?: number
-        }
-        Update: {
-          area?: string
-          attempts?: number
-          correct?: number
-          correct_streak?: number
-          created_at?: string
-          dont_know?: number
-          id?: string
-          last_attempt_at?: string | null
-          level?: number
-          next_review_at?: string | null
-          priority_score?: number
-          subtopic?: string
-          topic?: string
-          updated_at?: string
-          user_id?: string
-          wrong?: number
         }
         Relationships: []
       }
