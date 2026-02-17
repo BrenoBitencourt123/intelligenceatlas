@@ -67,11 +67,64 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (action === "clear_questions") {
+      // Count questions before deletion
       const { count: beforeCount, error: countError } = await supabase
         .from("questions")
         .select("*", { count: "exact", head: true });
       if (countError) throw countError;
 
+      // Delete dependent tables first (FK constraints)
+      const { error: e1 } = await supabase
+        .from("question_pedagogy")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e1) throw new Error(`Erro ao limpar question_pedagogy: ${e1.message}`);
+
+      const { error: e2 } = await supabase
+        .from("question_attempts")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e2) throw new Error(`Erro ao limpar question_attempts: ${e2.message}`);
+
+      const { error: e3 } = await supabase
+        .from("user_question_history")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e3) throw new Error(`Erro ao limpar user_question_history: ${e3.message}`);
+
+      // Reset user_topic_profile
+      const { error: e4 } = await supabase
+        .from("user_topic_profile")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e4) throw new Error(`Erro ao limpar user_topic_profile: ${e4.message}`);
+
+      // Clean up question images from storage
+      try {
+        const { data: files } = await supabase.storage
+          .from("question-images")
+          .list("", { limit: 1000 });
+        if (files && files.length > 0) {
+          // List all folders (user folders)
+          for (const folder of files) {
+            if (folder.id === null) {
+              // It's a folder, list its contents
+              const { data: innerFiles } = await supabase.storage
+                .from("question-images")
+                .list(folder.name, { limit: 1000 });
+              if (innerFiles && innerFiles.length > 0) {
+                const paths = innerFiles.map(f => `${folder.name}/${f.name}`);
+                await supabase.storage.from("question-images").remove(paths);
+              }
+            }
+          }
+        }
+      } catch (storageErr) {
+        console.warn("[admin-maintenance] storage cleanup warning:", storageErr);
+        // Don't fail the whole operation for storage cleanup
+      }
+
+      // Now delete questions
       const { error: deleteError } = await supabase
         .from("questions")
         .delete()
@@ -82,16 +135,24 @@ Deno.serve(async (req) => {
         JSON.stringify({
           success: true,
           deleted: beforeCount ?? 0,
-          message: `${beforeCount ?? 0} questoes removidas.`,
+          message: `${beforeCount ?? 0} questões removidas (incluindo dados relacionados).`,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // clear_flashcards
     const { count: flashcardsCount, error: flashcardsCountError } = await supabase
       .from("flashcards")
       .select("*", { count: "exact", head: true });
     if (flashcardsCountError) throw flashcardsCountError;
+
+    // Delete dependent flashcard_reviews first
+    const { error: reviewsError } = await supabase
+      .from("flashcard_reviews")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+    if (reviewsError) throw new Error(`Erro ao limpar flashcard_reviews: ${reviewsError.message}`);
 
     const { error: clearFlashcardsError } = await supabase
       .from("flashcards")
@@ -103,7 +164,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         deleted: flashcardsCount ?? 0,
-        message: `${flashcardsCount ?? 0} flashcards removidos.`,
+        message: `${flashcardsCount ?? 0} flashcards removidos (incluindo revisões).`,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
