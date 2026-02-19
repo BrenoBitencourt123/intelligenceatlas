@@ -82,38 +82,36 @@ function cleanPdfText(text: string): string {
   return cleaned.trim();
 }
 
-function splitTextIntoChunks(text: string, maxChunkSize = 12000): string[] {
-  // Split on question boundaries (QUESTAO XX) to never cut a question in half
-  const questionPattern = /(?=QUEST[AO]\s+\d+)/gi;
-  const questionBlocks = text.split(questionPattern).filter(b => b.trim());
-
-  // If no question markers found, fall back to line-based splitting
-  if (questionBlocks.length <= 1) {
-    const chunks: string[] = [];
-    const lines = text.split('\n');
-    let currentChunk = '';
-    for (const line of lines) {
-      if (currentChunk.length + line.length > maxChunkSize && currentChunk.length > 0) {
-        chunks.push(currentChunk);
-        currentChunk = '';
-      }
-      currentChunk += line + '\n';
-    }
-    if (currentChunk.trim()) chunks.push(currentChunk);
-    return chunks;
-  }
-
-  // Group question blocks into chunks that fit within maxChunkSize
+function splitByChars(text: string, maxChunkSize = 12000): string[] {
   const chunks: string[] = [];
+  const lines = text.split('\n');
   let currentChunk = '';
-  for (const block of questionBlocks) {
-    if (currentChunk.length + block.length > maxChunkSize && currentChunk.length > 0) {
+  for (const line of lines) {
+    if (currentChunk.length + line.length > maxChunkSize && currentChunk.length > 0) {
       chunks.push(currentChunk);
       currentChunk = '';
     }
-    currentChunk += block;
+    currentChunk += line + '\n';
   }
   if (currentChunk.trim()) chunks.push(currentChunk);
+  return chunks;
+}
+
+function splitTextIntoChunks(text: string, maxQuestionsPerChunk = 10): string[] {
+  // Regex corrigido: casa "QUESTÃO XX" (com Ã) e "QUESTAO XX" (sem acento)
+  const questionPattern = /(?=QUEST[AÃ]O\s+\d+)/gi;
+  const questionBlocks = text.split(questionPattern).filter(b => b.trim());
+
+  // Se não encontrou marcadores de questão, usar split por caracteres como fallback
+  if (questionBlocks.length <= 1) {
+    return splitByChars(text);
+  }
+
+  // Agrupa blocos em chunks de maxQuestionsPerChunk questões cada
+  const chunks: string[] = [];
+  for (let i = 0; i < questionBlocks.length; i += maxQuestionsPerChunk) {
+    chunks.push(questionBlocks.slice(i, i + maxQuestionsPerChunk).join(''));
+  }
   return chunks;
 }
 
@@ -347,7 +345,13 @@ async function requestChunk(
       throw new Error(`HTTP ${resp.status}: ${bodyText}`);
     }
 
-    return await resp.json();
+    const data = await resp.json();
+    // Se o modelo truncou a resposta sem extrair nenhuma questão, tratar como erro
+    // para acionar o fallback de divisão de chunk
+    if (data.truncated && (data.questions?.length || 0) === 0) {
+      throw new Error('Resposta truncada sem questoes extraidas');
+    }
+    return data;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -557,7 +561,24 @@ export function useImportExam() {
         });
 
         allQuestions.push(...dayQuestions);
-        toast.success(`Dia ${day}: ${dayQuestions.length} questoes extraidas`);
+
+        // Detectar gaps na numeração (o ENEM tem 90 questões por dia)
+        const foundNumbers = new Set(uniqueDayQuestions.map((q: any) => q.number));
+        const maxFound = Math.max(...Array.from(foundNumbers) as number[]);
+        const expectedTotal = maxFound >= 45 ? 90 : 45; // 90 questões se chegou na 45+, senão verifica 45
+        const missingNumbers = Array.from({ length: expectedTotal }, (_, i) => i + 1)
+          .filter(n => !foundNumbers.has(n));
+        if (missingNumbers.length > 0 && dayQuestions.length < expectedTotal * 0.8) {
+          const ranges = missingNumbers.reduce((acc: string[], n, i) => {
+            if (i === 0 || n !== missingNumbers[i - 1] + 1) acc.push(String(n));
+            else acc[acc.length - 1] += `–${n}`;
+            return acc;
+          }, []);
+          console.warn(`Dia ${day}: questoes faltando: ${ranges.join(', ')}`);
+          toast.warning(`Dia ${day}: ${missingNumbers.length} questoes nao encontradas (${ranges.join(', ')}). Adicione manualmente na revisão.`);
+        } else {
+          toast.success(`Dia ${day}: ${dayQuestions.length} questoes extraidas`);
+        }
       }
 
       if (allQuestions.length === 0) {

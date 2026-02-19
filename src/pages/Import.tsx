@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, AlertCircle, X, Pencil, ImagePlus, Trash2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useImportExam, ImportedQuestion, DayUpload } from '@/hooks/useImportExam';
 
 const AREA_LABELS: Record<string, string> = {
@@ -123,6 +124,30 @@ function DayRow({
   );
 }
 
+function QuestionCardSkeleton() {
+  return (
+    <Card>
+      <CardContent className="p-3 space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Skeleton className="h-4 w-6 rounded" />
+              <Skeleton className="h-5 w-20 rounded-full" />
+              <Skeleton className="h-5 w-10 rounded-full" />
+            </div>
+            <Skeleton className="h-3 w-3/4 rounded" />
+          </div>
+          <Skeleton className="h-7 w-7 rounded shrink-0" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-7 w-28 rounded" />
+          <Skeleton className="h-7 w-20 rounded" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function UploadStage({
   onProcess,
   onProcessJson,
@@ -147,6 +172,30 @@ function UploadStage({
     onProcess(days);
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+            <span>{loadingMessage || 'Processando...'}</span>
+          </div>
+          <Progress value={progress} className="h-2" />
+          <p className="text-xs text-muted-foreground text-right">{progress}%</p>
+        </div>
+
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-32 rounded" />
+          <div className="space-y-2 max-h-[55vh] overflow-hidden">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <QuestionCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <DayRow dayNum={1} upload={day1} onChange={setDay1} />
@@ -158,20 +207,8 @@ function UploadStage({
         onClick={handleSubmit}
         disabled={!hasAnyFile || loading}
       >
-        {loading ? (
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <div className="text-left">
-              <p className="text-sm">{loadingMessage || 'Processando...'}</p>
-              {progress > 0 && <p className="text-xs opacity-70">{progress}%</p>}
-            </div>
-          </div>
-        ) : (
-          <>
-            <Upload className="h-4 w-4 mr-2" />
-            Extrair Questoes (PDF)
-          </>
-        )}
+        <Upload className="h-4 w-4 mr-2" />
+        Extrair Questoes (PDF)
       </Button>
 
       <Card>
