@@ -314,14 +314,47 @@ function detectYearFromText(text: string): number | null {
   return match ? parseInt(match[1], 10) : null;
 }
 
+// Renderiza cada página do PDF como imagem JPEG base64 para envio ao Gemini Vision
+async function renderPdfPagesToImages(file: File, scale = 1.5): Promise<string[]> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const images: string[] = [];
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) continue;
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    images.push(canvas.toDataURL('image/jpeg', 0.85));
+  }
+
+  return images;
+}
+
+// Agrupa páginas em batches para envio ao Gemini Vision (3 páginas ≈ 6 questões no ENEM)
+function groupPagesIntoChunks(images: string[], pagesPerChunk = 3): string[][] {
+  const chunks: string[][] = [];
+  for (let i = 0; i < images.length; i += pagesPerChunk) {
+    chunks.push(images.slice(i, i + pagesPerChunk));
+  }
+  return chunks;
+}
+
 function buildChunkPayload(
-  chunk: string,
+  images: string[],
   chunkIndex: number,
   totalChunks: number,
   year: number | null,
   day: number
 ) {
-  return { chunk, chunkIndex, totalChunks, year, day };
+  return { images, chunkIndex, totalChunks, year, day };
 }
 
 async function requestChunk(
@@ -396,7 +429,7 @@ export function useImportExam() {
     }
 
     setLoading(true);
-    setLoadingMessage('Extraindo texto dos PDFs...');
+    setLoadingMessage('Renderizando paginas dos PDFs...');
     setProgress(0);
 
     try {
@@ -416,19 +449,19 @@ export function useImportExam() {
       }, 0);
       let completedExtractionSteps = 0;
 
-      // Count total chunks across all days for accurate progress
-      const dayChunks: { day: number; chunks: string[]; gabaritoText: string }[] = [];
+      // Count total chunks (grupos de páginas) across all days for accurate progress
+      const dayChunks: { day: number; chunks: string[][]; gabaritoText: string }[] = [];
 
       for (const dayUpload of activeDays) {
         const { examFile, gabaritoFile, gabaritoText, day } = dayUpload;
         if (examFile) pendingPdfFiles.set(day, examFile);
 
-        setLoadingMessage(`Dia ${day}: extraindo texto da prova...`);
-        const examText = await extractTextFromPdf(examFile!);
+        setLoadingMessage(`Dia ${day}: renderizando paginas da prova...`);
+        const pageImages = await renderPdfPagesToImages(examFile!);
         completedExtractionSteps += 1;
         setProgress(Math.round((completedExtractionSteps / extractionSteps) * EXTRACTION_PROGRESS_WEIGHT));
-        if (!examText.trim()) {
-          toast.error(`Dia ${day}: nao foi possivel extrair texto do PDF`);
+        if (pageImages.length === 0) {
+          toast.error(`Dia ${day}: nao foi possivel renderizar o PDF`);
           continue;
         }
 
@@ -442,7 +475,8 @@ export function useImportExam() {
           if (!yearFromPdf) yearFromPdf = detectYearFromText(gabText);
         }
 
-        const chunks = splitTextIntoChunks(examText);
+        // 3 páginas por chamada ≈ 6 questões por chamada no ENEM
+        const chunks = groupPagesIntoChunks(pageImages, 3);
         dayChunks.push({ day, chunks, gabaritoText: answerKey });
       }
 
@@ -450,7 +484,7 @@ export function useImportExam() {
       let completedChunks = 0;
 
       for (const { day, chunks, gabaritoText: answerKeyText } of dayChunks) {
-        setLoadingMessage(`Dia ${day}: IA analisando questoes (${chunks.length} partes)...`);
+        setLoadingMessage(`Dia ${day}: IA analisando questoes (${chunks.length} grupos de paginas)...`);
 
         // Process chunks in smaller batches to reduce gateway timeouts.
         const BATCH = CHUNK_BATCH_SIZE;
@@ -469,8 +503,8 @@ export function useImportExam() {
             } catch (err) {
               console.error(`Chunk ${i + 1} error:`, err);
 
-              // Last-resort fallback: split chunk once and retry in 2 smaller calls.
-              if (chunk.length > 4500) {
+              // Fallback: dividir o grupo de páginas ao meio e reprocessar separadamente
+              if (chunk.length > 1) {
                 const half = Math.floor(chunk.length / 2);
                 const left = chunk.slice(0, half);
                 const right = chunk.slice(half);
