@@ -191,7 +191,6 @@ Deno.serve(async (req) => {
           front: payload.front,
           back: payload.back,
           area: payload.area ?? null,
-          level: 0,
           interval_days: 1,
           next_review: today,
           ease_factor: 2.5,
