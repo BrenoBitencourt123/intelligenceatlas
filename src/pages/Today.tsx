@@ -1,4 +1,4 @@
-﻿import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { useStudyStats } from '@/hooks/useStudyStats';
 import { useUserStats } from '@/hooks/useUserStats';
 import { useDailyTheme } from '@/hooks/useDailyTheme';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
-import { BookOpen, Brain, PenLine, Target, Flame, CheckCircle2, ArrowRight, Calendar, Crown } from 'lucide-react';
+import { BookOpen, Brain, PenLine, Target, Flame, CheckCircle2, ArrowRight, Calendar, Sparkles } from 'lucide-react';
 
 const AREA_ICONS: Record<string, typeof BookOpen> = {
   matematica: Target,
@@ -39,6 +39,9 @@ const Today = () => {
     : null;
   const inDiagnosticMode = Boolean(currentAreaProgress?.inDiagnosticMode);
 
+  // Determine if this is truly a first-time / empty state user
+  const isFirstSession = !stats.isLoading && stats.questionsToday === 0 && stats.streak === 0;
+
   return (
     <MainLayout>
       <div className="container max-w-2xl mx-auto px-4 py-8">
@@ -47,6 +50,25 @@ const Today = () => {
             <h1 className="text-2xl font-bold text-foreground">Hoje - {schedule.dayName}</h1>
             <p className="text-muted-foreground">{schedule.label}</p>
           </div>
+
+          {/* First session welcome card */}
+          {isFirstSession && schedule.isObjectiveDay && (
+            <Card className="border-2 border-primary/30 bg-primary/5">
+              <CardContent className="p-6 space-y-3">
+                <div className="flex items-center gap-2 text-primary">
+                  <Sparkles className="h-5 w-5" />
+                  <span className="font-semibold">Pronto para começar?</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Comece sua primeira sessão de <strong>{schedule.label}</strong> hoje. O sistema vai aprender com suas respostas e personalizar seu estudo.
+                </p>
+                <Button onClick={() => navigate('/objetivas')} className="w-full gap-2 mt-1">
+                  Começar {schedule.label}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {stats.isLoading ? (
             <div className="grid grid-cols-3 gap-3">
@@ -80,7 +102,7 @@ const Today = () => {
             </div>
           )}
 
-          {schedule.isObjectiveDay && (
+          {schedule.isObjectiveDay && !isFirstSession && (
             <Card className="border-2 border-primary/20 bg-card">
               <CardContent className="p-6">
                 <div className="space-y-2">
@@ -142,7 +164,7 @@ const Today = () => {
                     {stats.flashcardsDue > 0 ? `${stats.flashcardsDue} para revisar` : 'Nenhum pendente hoje'}
                   </p>
                 </div>
-                <Button variant={stats.flashcardsDue > 0 ? 'default' : 'outline'} size="sm" onClick={() => navigate('/objetivas')} disabled={stats.flashcardsDue === 0}>
+                <Button variant={stats.flashcardsDue > 0 ? 'default' : 'outline'} size="sm" onClick={() => navigate('/flashcards')} disabled={stats.flashcardsDue === 0}>
                   Revisar
                 </Button>
               </div>
