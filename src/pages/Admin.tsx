@@ -18,6 +18,7 @@ import {
   ListChecks,
   AlertTriangle,
   Loader2,
+  ImageOff,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import { toast } from "@/hooks/use-toast";
 import ThemesPanel from "@/components/admin/ThemesPanel";
 import ImportPanel from "@/pages/Import";
 import QuestionsPanel from "@/components/admin/QuestionsPanel";
+import ImageManagerPanel from "@/components/admin/ImageManagerPanel";
 
 interface TokenUsageRecord {
   id: string;
@@ -212,7 +214,7 @@ const Admin = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="tokens" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5">
             <TabsTrigger value="tokens" className="flex items-center gap-2">
               <Coins className="h-4 w-4" />
               Tokens
@@ -228,6 +230,10 @@ const Admin = () => {
             <TabsTrigger value="questions" className="flex items-center gap-2">
               <ListChecks className="h-4 w-4" />
               Questões
+            </TabsTrigger>
+            <TabsTrigger value="images" className="flex items-center gap-2">
+              <ImageOff className="h-4 w-4" />
+              Imagens
             </TabsTrigger>
           </TabsList>
 
@@ -391,6 +397,11 @@ const Admin = () => {
           {/* Import Tab */}
           <TabsContent value="import">
             <ImportPanel embedded />
+          </TabsContent>
+
+          {/* Images Tab */}
+          <TabsContent value="images">
+            <ImageManagerPanel />
           </TabsContent>
 
           {/* Questions Tab */}

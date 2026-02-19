@@ -741,6 +741,8 @@ export function useImportExam() {
         batches.push(selected.slice(i, i + batchSize));
       }
 
+      const allInsertedIds: string[] = [];
+
       for (let i = 0; i < batches.length; i++) {
         const batch = batches[i];
         const rows = await Promise.all(batch.map(async (q) => {
@@ -817,7 +819,15 @@ export function useImportExam() {
         const { error } = await supabase.from('questions').insert(rows);
         if (error) throw error;
 
+        allInsertedIds.push(...rows.map((r) => r.id));
         setProgress(Math.round(((i + 1) / batches.length) * 100));
+      }
+
+      // Fire-and-forget: classify all inserted questions in background
+      if (allInsertedIds.length > 0) {
+        supabase.functions.invoke('reclassify-questions', {
+          body: { ids: allInsertedIds },
+        }).catch((err) => console.warn('[import] Auto-classification skipped:', err));
       }
 
       toast.success(`${selected.length} questoes importadas com sucesso!`);

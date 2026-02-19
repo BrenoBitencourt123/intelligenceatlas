@@ -121,7 +121,7 @@ const Plan = () => {
     'Análise das 5 competências ENEM',
     'Versão melhorada da redação',
     'Histórico de redações',
-    'Sessões completas (45 questões)',
+    'Sessões focadas (20 questões)',
   ];
 
   const proFeatures = [

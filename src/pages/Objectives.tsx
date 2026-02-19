@@ -22,7 +22,6 @@ const BLOCK_COLORS = [
   'bg-amber-500/10 text-amber-700 dark:text-amber-300',
   'bg-green-500/10 text-green-700 dark:text-green-300',
 ];
-const BLOCK_SIZE = 15;
 
 const Objectives = () => {
   const navigate = useNavigate();
@@ -73,6 +72,11 @@ const Objectives = () => {
   );
   const flashcards = useFlashcardReview();
   const [flashcardMode, setFlashcardMode] = useState(false);
+  const [blockTransition, setBlockTransition] = useState<{
+    completedBlock: number;
+    correct: number;
+    total: number;
+  } | null>(null);
 
   // Open a specific question directly when arriving from admin preview.
   useEffect(() => {
@@ -165,24 +169,98 @@ const Objectives = () => {
   if (state === 'active' && currentQuestion) {
     const currentAnswer = answers[currentIndex];
     const alternatives = currentQuestion.alternatives as { letter: string; text: string }[];
-    const totalBlocks = Math.ceil(totalQuestions / BLOCK_SIZE);
-    const sessionBlocks = Array.from({ length: totalBlocks }, (_, index) => {
-      const start = index * BLOCK_SIZE;
-      const endExclusive = Math.min(start + BLOCK_SIZE, totalQuestions);
-      const totalInBlock = Math.max(0, endExclusive - start);
-      const answeredInBlock = Object.keys(answers).filter((key) => {
-        const questionIndex = Number(key);
-        return questionIndex >= start && questionIndex < endExclusive;
-      }).length;
+    const warmSz = Math.max(1, Math.round(totalQuestions * 0.25));
+    const consSz = Math.max(1, Math.round(totalQuestions * 0.25));
+    const blockBounds = [0, warmSz, totalQuestions - consSz, totalQuestions];
 
-      return {
-        index,
-        totalInBlock,
-        answeredInBlock,
-        isCurrent: currentBlock === index,
-        progressPct: totalInBlock > 0 ? Math.round((answeredInBlock / totalInBlock) * 100) : 0,
-      };
-    });
+    // Current block progress
+    const currentBlockStart = blockBounds[currentBlock];
+    const currentBlockEnd = blockBounds[currentBlock + 1];
+    const currentBlockTotal = currentBlockEnd - currentBlockStart;
+    const currentBlockAnswered = Object.keys(answers).filter((key) => {
+      const i = Number(key);
+      return i >= currentBlockStart && i < currentBlockEnd;
+    }).length;
+    const currentBlockPct = currentBlockTotal > 0
+      ? Math.round((currentBlockAnswered / currentBlockTotal) * 100) : 0;
+
+    // Handle next: intercept at block boundary
+    const handleNext = () => {
+      const lastIndexOfBlock = blockBounds[currentBlock + 1] - 1;
+      if (currentIndex === lastIndexOfBlock && currentBlock < 2) {
+        const blockAnswers = Object.entries(answers)
+          .filter(([i]) => { const n = parseInt(i); return n >= currentBlockStart && n < currentBlockEnd; })
+          .map(([, a]) => a);
+        setBlockTransition({
+          completedBlock: currentBlock,
+          correct: blockAnswers.filter((a) => a.correct).length,
+          total: currentBlockTotal,
+        });
+      } else {
+        nextQuestion();
+      }
+    };
+
+    // Block transition screen
+    if (blockTransition !== null) {
+      const nextBlockIndex = blockTransition.completedBlock + 1;
+      const nextBlockTotal = blockBounds[nextBlockIndex + 1] - blockBounds[nextBlockIndex];
+      const accuracy = blockTransition.total > 0
+        ? Math.round((blockTransition.correct / blockTransition.total) * 100) : 0;
+      const BLOCK_BG = [
+        'bg-blue-500/10 border-blue-500/30',
+        'bg-amber-500/10 border-amber-500/30',
+        'bg-green-500/10 border-green-500/30',
+      ];
+      const CHECK_COLORS = ['text-blue-600 dark:text-blue-400', 'text-amber-600 dark:text-amber-400', 'text-green-600 dark:text-green-400'];
+      return (
+        <MainLayout>
+          <div className="container max-w-md mx-auto px-4 py-8 pb-24 flex flex-col items-center justify-center min-h-[70vh]">
+            <div className={`w-full rounded-2xl border p-6 space-y-6 ${BLOCK_BG[blockTransition.completedBlock]}`}>
+              {/* Completed block header */}
+              <div className="text-center space-y-1">
+                <div className={`text-4xl font-bold ${CHECK_COLORS[blockTransition.completedBlock]}`}>✓</div>
+                <h2 className="text-xl font-bold">
+                  {blockLabels[blockTransition.completedBlock]} concluído!
+                </h2>
+              </div>
+
+              {/* Score */}
+              <div className="bg-background/60 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Acertos</span>
+                  <span className="font-semibold">
+                    {blockTransition.correct} de {blockTransition.total} · {accuracy}%
+                  </span>
+                </div>
+                <Progress value={accuracy} className="h-2" />
+              </div>
+
+              {/* Separator + next block preview */}
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">A seguir</p>
+                <div className="flex items-center gap-2">
+                  <Badge className={BLOCK_COLORS[nextBlockIndex]}>
+                    {nextBlockIndex + 1}
+                  </Badge>
+                  <span className="font-medium">{blockLabels[nextBlockIndex]}</span>
+                  <span className="text-muted-foreground text-sm">· {nextBlockTotal} questões</span>
+                </div>
+              </div>
+
+              {/* CTA */}
+              <Button
+                className="w-full"
+                onClick={() => { setBlockTransition(null); nextQuestion(); }}
+              >
+                Iniciar {blockLabels[nextBlockIndex]}
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+          </div>
+        </MainLayout>
+      );
+    }
 
     return (
       <MainLayout>
@@ -223,28 +301,36 @@ const Objectives = () => {
               </Button>
             )}
 
-            <Progress value={progress} className="h-1.5" />
-
+            {/* Stepper + single block progress */}
             {totalQuestions > 1 && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {sessionBlocks.map((block) => (
-                  <Card
-                    key={block.index}
-                    className={block.isCurrent ? 'border-primary/60' : ''}
-                  >
-                    <CardContent className="p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Badge className={BLOCK_COLORS[block.index] || BLOCK_COLORS[0]}>
-                          {blockLabels[block.index] || `Bloco ${block.index + 1}`}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {block.answeredInBlock}/{block.totalInBlock}
-                        </span>
+              <div className="space-y-2">
+                {/* Step indicator */}
+                <div className="flex items-center gap-1.5">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                        i < currentBlock
+                          ? 'bg-green-500 text-white'
+                          : i === currentBlock
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {i < currentBlock ? '✓' : i + 1}
                       </div>
-                      <Progress value={block.progressPct} className="h-1.5" />
-                    </CardContent>
-                  </Card>
-                ))}
+                      <span className={`text-xs hidden sm:inline ${
+                        i === currentBlock ? 'font-medium text-foreground' : 'text-muted-foreground'
+                      }`}>
+                        {blockLabels[i]}
+                      </span>
+                      {i < 2 && <ChevronRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />}
+                    </div>
+                  ))}
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {currentBlockAnswered}/{currentBlockTotal}
+                  </span>
+                </div>
+                {/* Single bar for current block */}
+                <Progress value={currentBlockPct} className="h-1.5" />
               </div>
             )}
 
@@ -380,7 +466,7 @@ const Objectives = () => {
                   Não sei
                 </Button>
               ) : (
-                <Button className="flex-1" onClick={nextQuestion}>
+                <Button className="flex-1" onClick={handleNext}>
                   {currentIndex + 1 >= totalQuestions ? (
                     <>
                       <Check className="h-4 w-4 mr-2" />
@@ -530,7 +616,7 @@ const Objectives = () => {
               </p>
               {!hasFullSessionAccess && (
                 <div className="rounded-lg border border-muted bg-muted/30 p-3 text-center space-y-2">
-                  <p className="text-xs text-muted-foreground">Sessões completas de 45 questões com 3 blocos</p>
+                  <p className="text-xs text-muted-foreground">Sessões de 20 questões com 3 blocos</p>
                   <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/plano')}>
                     <Crown className="h-3.5 w-3.5 text-amber-500" />
                     Ver planos
@@ -582,7 +668,7 @@ const Objectives = () => {
                 <Badge className={BLOCK_COLORS[0]}>Bloco 1</Badge>
                 <p className="text-sm font-medium">Aquecimento</p>
                 <p className="text-xs text-muted-foreground">
-                  15 questoes para entrar no ritmo e mapear foco inicial.
+                  5 questões para entrar no ritmo e mapear o foco inicial.
                 </p>
               </CardContent>
             </Card>
@@ -591,7 +677,7 @@ const Objectives = () => {
                 <Badge className={BLOCK_COLORS[1]}>Bloco 2</Badge>
                 <p className="text-sm font-medium">Aprendizado</p>
                 <p className="text-xs text-muted-foreground">
-                  15 questoes no miolo da sessao para consolidar conceito.
+                  10 questões para aprender e consolidar os conceitos.
                 </p>
               </CardContent>
             </Card>
@@ -600,7 +686,7 @@ const Objectives = () => {
                 <Badge className={BLOCK_COLORS[2]}>Bloco 3</Badge>
                 <p className="text-sm font-medium">Consolidacao</p>
                 <p className="text-xs text-muted-foreground">
-                  15 questoes finais para fixar e fechar com seguranca.
+                  5 questões finais para fixar e fechar com segurança.
                 </p>
               </CardContent>
             </Card>

@@ -332,6 +332,14 @@ export type Database = {
           topic: string
           user_id: string
           year: number
+          // Taxonomy v2
+          disciplina: string | null
+          topics: string[] | null
+          cognitive_level: string | null
+          confidence: number | null
+          needs_review: boolean | null
+          classifier_version: string | null
+          classified_at: string | null
         }
         Insert: {
           alternatives?: Json
@@ -351,6 +359,13 @@ export type Database = {
           topic?: string
           user_id: string
           year: number
+          disciplina?: string | null
+          topics?: string[] | null
+          cognitive_level?: string | null
+          confidence?: number | null
+          needs_review?: boolean | null
+          classifier_version?: string | null
+          classified_at?: string | null
         }
         Update: {
           alternatives?: Json
@@ -370,6 +385,49 @@ export type Database = {
           topic?: string
           user_id?: string
           year?: number
+          disciplina?: string | null
+          topics?: string[] | null
+          cognitive_level?: string | null
+          confidence?: number | null
+          needs_review?: boolean | null
+          classifier_version?: string | null
+          classified_at?: string | null
+        }
+        Relationships: []
+      }
+      user_mastery: {
+        Row: {
+          id: string
+          user_id: string
+          dimension_type: string
+          dimension_id: string
+          mastery_score: number
+          attempts: number
+          correct: number
+          avg_time_sec: number | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          dimension_type: string
+          dimension_id: string
+          mastery_score?: number
+          attempts?: number
+          correct?: number
+          avg_time_sec?: number | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          dimension_type?: string
+          dimension_id?: string
+          mastery_score?: number
+          attempts?: number
+          correct?: number
+          avg_time_sec?: number | null
+          updated_at?: string
         }
         Relationships: []
       }

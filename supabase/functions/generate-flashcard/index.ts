@@ -27,31 +27,25 @@ serve(async (req) => {
 
     const correctAlt = alternatives?.find((a: { letter: string }) => a.letter === correctAnswer);
 
-    const prompt = `Você é um especialista em criar flashcards para o ENEM. Transforme a questão abaixo em um flashcard eficiente.
+    const prompt = `Você é um especialista em criar flashcards de estudo para o ENEM.
+
+OBJETIVO: Use a questão abaixo apenas como REFERÊNCIA para identificar o conceito central que ela testa. Depois, crie um flashcard que ensina esse conceito — NÃO que reproduz a questão.
 
 REGRAS OBRIGATÓRIAS:
-1. A FRENTE deve ser uma pergunta curta e objetiva (máximo 2 linhas) que teste decisão, reconhecimento de padrão ou conceito mínimo.
-2. O VERSO deve conter:
-   - Explicação resumida (3-4 linhas máximo)
-   - Uma linha final começando com "🎯 ENEM:" com dica prática para a prova
-3. NÃO copie trechos longos do enunciado. Sintetize o conceito.
-4. O flashcard deve ser respondível em 5-10 segundos.
+1. Identifique o conceito, fórmula ou habilidade que a questão exige (ex: proporção direta, bioma cerrado, Modernismo brasileiro).
+2. A FRENTE é uma pergunta direta sobre esse conceito. Exemplos: "Qual é a fórmula de proporção direta?", "O que caracteriza o Cerrado?", "O que define o Modernismo de 1922?".
+3. O VERSO traz a resposta objetiva: fórmula, definição, lista de características ou regra prática (máximo 4 linhas).
+4. Termine o verso com "🎯 ENEM: [dica de como identificar esse conceito na prova]".
+5. NUNCA copie o enunciado. NUNCA mencione "na questão" ou "neste caso". O flashcard deve servir para QUALQUER questão do mesmo tema.
 
-TIPOS DE FLASHCARD (escolha o mais adequado):
-- Decisão Estratégica: "Quando o enunciado traz X, o que isso indica?"
-- Conceito Mínimo: "O que é X?" ou "Qual a diferença entre X e Y?"
-- Pegadinha ENEM: "Se duas alternativas parecem corretas sobre X, como decidir?"
-
-DADOS DA QUESTÃO:
 Área: ${area}
-Enunciado: ${statement}
-Alternativas:
-${alternativesText}
-Resposta correta: ${correctAnswer}${correctAlt ? ` - ${correctAlt.text}` : ''}
+Questão (somente para referência):
+${statement}
+Resposta correta: ${correctAnswer}${correctAlt ? ` — ${correctAlt.text}` : ''}
 ${explanation ? `Explicação: ${explanation}` : ''}
 
 Responda EXATAMENTE neste formato JSON:
-{"front": "pergunta curta aqui", "back": "explicação resumida aqui\\n\\n🎯 ENEM: dica prática aqui"}`;
+{"front": "pergunta sobre o conceito", "back": "resposta objetiva\\n\\n🎯 ENEM: dica prática"}`;
 
     const apiKey = Deno.env.get('GEMINI_API_KEY');
     if (!apiKey) {

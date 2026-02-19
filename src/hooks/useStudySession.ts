@@ -295,10 +295,9 @@ function buildAdaptiveSelection(input: Question[], profiles: ProfileRow[], limit
     return true;
   };
 
-  const blockSize = Math.min(15, Math.max(1, Math.floor(limit / 3)));
-  const warmTarget = Math.min(blockSize, limit);
-  const learnTarget = Math.min(blockSize, Math.max(0, limit - warmTarget));
-  const consTarget = Math.max(0, limit - warmTarget - learnTarget);
+  const warmTarget = Math.max(1, Math.round(limit * 0.25));
+  const consTarget = Math.max(1, Math.round(limit * 0.25));
+  const learnTarget = Math.max(0, limit - warmTarget - consTarget);
 
   const pickForBlock = (
     candidates: typeof withPriority,
@@ -505,6 +504,60 @@ export function useStudySession() {
       if (profileUpsertError) {
         console.error("Error upserting user_topic_profile:", profileUpsertError);
       }
+
+      // Update user_mastery for each standardized topic and skill (fire-and-forget)
+      const stdTopics: string[] = Array.isArray((question as any).topics) ? (question as any).topics : [];
+      const stdSkills: string[] = Array.isArray((question as any).skills) ? (question as any).skills : [];
+
+      if (stdTopics.length > 0 || stdSkills.length > 0) {
+        type DimType = "topic" | "skill" | "topic_skill";
+        const masteryDims: Array<{ type: DimType; id: string }> = [
+          ...stdTopics.map((t) => ({ type: "topic" as DimType, id: t })),
+          ...stdSkills.map((s) => ({ type: "skill" as DimType, id: s })),
+          // Limit topic×skill combos to avoid explosion (max 2 topics × 2 skills)
+          ...stdTopics.slice(0, 2).flatMap((t) =>
+            stdSkills.slice(0, 2).map((s) => ({ type: "topic_skill" as DimType, id: `${t}__${s}` }))
+          ),
+        ];
+
+        (async () => {
+          for (const dim of masteryDims) {
+            try {
+              const { data: ex } = await supabase
+                .from("user_mastery")
+                .select("attempts, correct, avg_time_sec")
+                .eq("user_id", user.id)
+                .eq("dimension_type", dim.type)
+                .eq("dimension_id", dim.id)
+                .maybeSingle();
+
+              const newAttempts = (ex?.attempts ?? 0) + 1;
+              const newCorrect = (ex?.correct ?? 0) + (isCorrect ? 1 : 0);
+              // Bayesian smoothing: score = (correct + 1) / (attempts + 2)
+              const masteryScore = (newCorrect + 1) / (newAttempts + 2);
+              const newAvgTime = ex?.avg_time_sec
+                ? Math.round((ex.avg_time_sec * (newAttempts - 1) + timeSpentSec) / newAttempts)
+                : timeSpentSec;
+
+              await supabase.from("user_mastery").upsert(
+                {
+                  user_id: user.id,
+                  dimension_type: dim.type,
+                  dimension_id: dim.id,
+                  mastery_score: Math.round(masteryScore * 1000) / 1000,
+                  attempts: newAttempts,
+                  correct: newCorrect,
+                  avg_time_sec: newAvgTime,
+                  updated_at: nowIso,
+                },
+                { onConflict: "user_id,dimension_type,dimension_id" }
+              );
+            } catch (err) {
+              console.warn("[syncMastery] Error updating user_mastery:", err);
+            }
+          }
+        })();
+      }
     },
     [user],
   );
@@ -556,9 +609,11 @@ export function useStudySession() {
   }, []);
 
   const currentQuestion = questions[currentIndex] ?? null;
-  const currentBlock = Math.floor(currentIndex / 15);
-  const blockLabels = ["Aquecimento", "Aprendizado", "ConsolidaÃ§Ã£o"];
   const totalQuestions = questions.length;
+  const _warmSz = Math.max(1, Math.round(totalQuestions * 0.25));
+  const _consSz = Math.max(1, Math.round(totalQuestions * 0.25));
+  const currentBlock = currentIndex < _warmSz ? 0 : currentIndex < totalQuestions - _consSz ? 1 : 2;
+  const blockLabels = ["Aquecimento", "Aprendizado", "ConsolidaÃ§Ã£o"];
   const progress =
     totalQuestions > 0 ? Math.round(((currentIndex + (showFeedback ? 1 : 0)) / totalQuestions) * 100) : 0;
 
@@ -568,7 +623,7 @@ export function useStudySession() {
       setState("loading");
 
       try {
-        const limit = questionLimit ?? 45;
+        const limit = questionLimit ?? 20;
         const today = todayDateKey();
         const normalizedArea = area ?? null;
         const savedPlan = !forceNew ? loadDailyPlan() : null;
@@ -887,14 +942,18 @@ export function useStudySession() {
       const durationMinutes = Math.round((Date.now() - startTime) / 60000);
       const totalCorrect = Object.values(answers).filter((a) => a.correct).length;
 
-      // Calculate per-block results
+      // Calculate per-block results using 25%/50%/25% boundaries
       const blocks = [];
-      const blockSize = 15;
-      for (let b = 0; b < Math.ceil(totalQuestions / blockSize); b++) {
+      const resWarm = Math.max(1, Math.round(totalQuestions * 0.25));
+      const resCons = Math.max(1, Math.round(totalQuestions * 0.25));
+      const blockBounds = [0, resWarm, totalQuestions - resCons, totalQuestions];
+      for (let b = 0; b < 3; b++) {
+        const start = blockBounds[b];
+        const end = blockBounds[b + 1];
         const blockAnswers = Object.entries(answers)
           .filter(([idx]) => {
             const i = parseInt(idx);
-            return i >= b * blockSize && i < (b + 1) * blockSize;
+            return i >= start && i < end;
           })
           .map(([, a]) => a);
         blocks.push({
