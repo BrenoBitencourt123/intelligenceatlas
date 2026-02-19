@@ -110,7 +110,7 @@ interface ChunkResult {
 async function callAI(
   apiKey: string,
   userPrompt: string,
-  maxTokens = 8000,
+  maxTokens = 32000,
 ): Promise<{ parsed: any; finishReason: string; usage: any }> {
   const makeRequest = async () => {
     const controller = new AbortController();
@@ -130,7 +130,7 @@ async function callAI(
             { role: "user", content: userPrompt },
           ],
           temperature: 0.1,
-          max_tokens: Math.min(maxTokens, 8000),
+          max_tokens: Math.min(maxTokens, 32000),
           response_format: { type: "json_object" },
         }),
         signal: controller.signal,
