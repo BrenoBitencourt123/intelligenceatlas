@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadQuestionImage, QuestionImage } from '@/lib/questionImages';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface QuestionNeedingImage {
   id: string;
@@ -11,7 +12,6 @@ export interface QuestionNeedingImage {
   topic: string;
   subtopic: string | null;
   statement: string;
-  image_reason: string | null;
   images: QuestionImage[];
 }
 
@@ -32,8 +32,7 @@ export function useQuestionImageManager() {
     try {
       let query = supabase
         .from('questions')
-        .select('id, number, year, area, topic, subtopic, statement, image_reason, images', { count: 'exact' })
-        .eq('requires_image', true)
+        .select('id, number, year, area, topic, subtopic, statement, images', { count: 'exact' })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
         .order('year', { ascending: false })
         .order('number', { ascending: true });
@@ -45,11 +44,23 @@ export function useQuestionImageManager() {
       if (error) throw error;
 
       // Filter client-side: only questions without images
-      const withoutImages = (data ?? []).filter(
-        (q) => !q.images || (q.images as QuestionImage[]).length === 0
-      );
+      const withoutImages = (data ?? []).filter((q) => {
+        const imgs = (q.images as unknown) as QuestionImage[] | null;
+        return !imgs || imgs.length === 0;
+      });
 
-      setQuestions(withoutImages as QuestionNeedingImage[]);
+      setQuestions(
+        withoutImages.map((q) => ({
+          id: q.id,
+          number: q.number,
+          year: q.year,
+          area: q.area,
+          topic: q.topic,
+          subtopic: q.subtopic ?? null,
+          statement: q.statement,
+          images: ((q.images as unknown) as QuestionImage[]) ?? [],
+        }))
+      );
       setTotalCount(count ?? 0);
     } catch (err) {
       console.error('Erro ao buscar questões sem imagens:', err);
@@ -71,14 +82,14 @@ export function useQuestionImageManager() {
 
         const { error } = await supabase
           .from('questions')
-          .update({ images: uploaded })
+          .update({ images: uploaded as unknown as Json })
           .eq('id', questionId);
 
         if (error) throw error;
 
         // Remove from local list since it now has images
         setQuestions((prev) => prev.filter((q) => q.id !== questionId));
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Erro ao fazer upload:', err);
         throw err;
       } finally {

@@ -19,7 +19,7 @@ const AREA_LABELS: Record<string, string> = {
 const YEARS = [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017];
 
 function QuestionImageCard({ question, onSave, isSaving }: {
-  question: { id: string; number: number; year: number | null; area: string; topic: string; statement: string; image_reason: string | null };
+  question: { id: string; number: number; year: number | null; area: string; topic: string; statement: string; image_reason?: string | null };
   onSave: (id: string, files: File[], captions: string[]) => Promise<void>;
   isSaving: boolean;
 }) {
@@ -36,8 +36,8 @@ function QuestionImageCard({ question, onSave, isSaving }: {
       try {
         validateQuestionImageFile(f);
         valid.push(f);
-      } catch (err: any) {
-        toast({ title: 'Arquivo inválido', description: err.message, variant: 'destructive' });
+      } catch (err: unknown) {
+        toast({ title: 'Arquivo inválido', description: (err as Error).message, variant: 'destructive' });
       }
     }
     if (!valid.length) return;
@@ -161,8 +161,8 @@ export default function ImageManagerPanel() {
     try {
       await uploadAndSaveImages(id, files, captions);
       toast({ title: 'Imagens salvas com sucesso' });
-    } catch (err: any) {
-      toast({ title: 'Erro ao salvar imagens', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      toast({ title: 'Erro ao salvar imagens', description: (err as Error).message, variant: 'destructive' });
     }
   };
 
@@ -177,7 +177,7 @@ export default function ImageManagerPanel() {
             Questões sem imagens
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Questões marcadas como {'"requer imagem"'} mas sem nenhuma imagem associada.
+            Questões que precisam de imagem associada.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
