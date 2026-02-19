@@ -17,36 +17,33 @@ function nearestIntervalIndex(days: number) {
   return idx === -1 ? INTERVALS.length - 1 : idx;
 }
 
-function nextSchedule(current: { intervalDays: number; level: number; easeFactor: number }, rating: Rating) {
+function nextSchedule(
+  current: { intervalDays: number; easeFactor: number },
+  rating: Rating
+) {
   const currentIdx = nearestIntervalIndex(current.intervalDays);
   let nextIdx = currentIdx;
-  let nextLevel = current.level;
   let nextEase = current.easeFactor;
 
   if (rating === "again") {
     nextIdx = 0;
-    nextLevel = Math.max(0, current.level - 1);
     nextEase = Math.max(1.3, current.easeFactor - 0.2);
   } else if (rating === "hard") {
     nextIdx = Math.min(currentIdx + (currentIdx === 0 ? 1 : 0), INTERVALS.length - 1);
-    nextLevel = current.level;
     nextEase = Math.max(1.3, current.easeFactor - 0.05);
   } else {
     nextIdx = Math.min(currentIdx + 1, INTERVALS.length - 1);
-    nextLevel = Math.min(3, current.level + 1);
     nextEase = Math.min(3.0, current.easeFactor + 0.1);
   }
 
   const nextIntervalDays = INTERVALS[nextIdx];
-  const nextReviewAt = new Date();
-  nextReviewAt.setUTCDate(nextReviewAt.getUTCDate() + nextIntervalDays);
+  const nextReviewDate = new Date();
+  nextReviewDate.setUTCDate(nextReviewDate.getUTCDate() + nextIntervalDays);
 
   return {
-    nextLevel,
     nextEase,
     nextIntervalDays,
-    nextReviewAt: nextReviewAt.toISOString(),
-    nextReviewDate: nextReviewAt.toISOString().split("T")[0],
+    nextReviewDate: nextReviewDate.toISOString().split("T")[0],
   };
 }
 
@@ -87,83 +84,32 @@ Deno.serve(async (req) => {
     const action = body?.action as Action | undefined;
     if (!action) return jsonResponse({ error: "Missing action." }, 400);
 
+    // ─── GET DUE ────────────────────────────────────────────────────────────────
     if (action === "get_due") {
-      const nowIso = new Date().toISOString();
+      const today = new Date().toISOString().split("T")[0];
 
       const { data: dueCards, error: dueError } = await supabase
         .from("flashcards")
         .select("*")
         .eq("user_id", userId)
-        .lte("next_review", nowIso)
+        .lte("next_review", today)
         .order("next_review", { ascending: true })
-        .order("wrong_count", { ascending: false })
-        .order("level", { ascending: true });
+        .order("ease_factor", { ascending: true });
+
       if (dueError) throw dueError;
-
-      const { data: topicAgg, error: topicError } = await supabase
-        .from("flashcards")
-        .select("topic,subtopic,correct_count,wrong_count,dont_know_count,review_count")
-        .eq("user_id", userId);
-      if (topicError) throw topicError;
-
-      const topicMap = new Map<string, { key: string; wrong: number; correct: number; reviews: number }>();
-      for (const row of topicAgg ?? []) {
-        const key = `${row.topic}::${row.subtopic ?? ""}`;
-        const current = topicMap.get(key) ?? { key, wrong: 0, correct: 0, reviews: 0 };
-        current.wrong += (row.wrong_count ?? 0) + (row.dont_know_count ?? 0);
-        current.correct += row.correct_count ?? 0;
-        current.reviews += row.review_count ?? 0;
-        topicMap.set(key, current);
-      }
-
-      const weakTopics = [...topicMap.values()]
-        .map((row) => ({
-          topic: row.key.split("::")[0] || "Geral",
-          subtopic: row.key.split("::")[1] || "",
-          wrongRate: row.reviews > 0 ? row.wrong / Math.max(1, row.reviews) : 0,
-          reviews: row.reviews,
-        }))
-        .sort((a, b) => b.wrongRate - a.wrongRate || b.reviews - a.reviews)
-        .slice(0, 5);
-
-      const intervals = (dueCards ?? []).reduce(
-        (acc, row) => {
-          const d = row.interval_days ?? 1;
-          if (d <= 1) acc.d1 += 1;
-          else if (d <= 3) acc.d3 += 1;
-          else if (d <= 7) acc.d7 += 1;
-          else if (d <= 14) acc.d14 += 1;
-          else acc.d30 += 1;
-          return acc;
-        },
-        { d1: 0, d3: 0, d7: 0, d14: 0, d30: 0 },
-      );
-
-      const retentionTrend = (topicAgg ?? []).reduce(
-        (acc, row) => {
-          acc.correct += row.correct_count ?? 0;
-          acc.total += (row.correct_count ?? 0) + (row.wrong_count ?? 0) + (row.dont_know_count ?? 0);
-          return acc;
-        },
-        { correct: 0, total: 0 },
-      );
 
       return jsonResponse({
         cards: dueCards ?? [],
         metrics: {
           dueToday: (dueCards ?? []).length,
-          intervalBuckets: intervals,
-          weakTopics,
-          retentionPct:
-            retentionTrend.total > 0 ? Math.round((retentionTrend.correct / retentionTrend.total) * 100) : 0,
         },
       });
     }
 
+    // ─── REVIEW ─────────────────────────────────────────────────────────────────
     if (action === "review") {
       const flashcardId = body?.flashcardId as string | undefined;
       const rating = body?.rating as Rating | undefined;
-      const responseTimeSec = Number(body?.responseTimeSec ?? 0);
       if (!flashcardId || !rating) {
         return jsonResponse({ error: "flashcardId and rating are required." }, 400);
       }
@@ -179,28 +125,18 @@ Deno.serve(async (req) => {
       const schedule = nextSchedule(
         {
           intervalDays: card.interval_days ?? 1,
-          level: card.level ?? 0,
           easeFactor: Number(card.ease_factor ?? 2.5),
         },
-        rating,
+        rating
       );
-
-      const nowIso = new Date().toISOString();
-      const isAgain = rating === "again";
 
       const { error: updateError } = await supabase
         .from("flashcards")
         .update({
           interval_days: schedule.nextIntervalDays,
           next_review: schedule.nextReviewDate,
-          next_review_at: schedule.nextReviewAt,
           ease_factor: schedule.nextEase,
-          level: schedule.nextLevel,
           review_count: (card.review_count ?? 0) + 1,
-          last_seen_at: nowIso,
-          correct_count: (card.correct_count ?? 0) + (isAgain ? 0 : 1),
-          wrong_count: (card.wrong_count ?? 0) + (isAgain ? 1 : 0),
-          dont_know_count: card.dont_know_count ?? 0,
         })
         .eq("id", card.id);
       if (updateError) throw updateError;
@@ -209,24 +145,19 @@ Deno.serve(async (req) => {
         user_id: userId,
         flashcard_id: card.id,
         rating,
-        response_time_sec: Number.isFinite(responseTimeSec) ? Math.max(0, Math.round(responseTimeSec)) : null,
-        previous_level: card.level ?? 0,
-        new_level: schedule.nextLevel,
-        previous_interval_days: card.interval_days ?? 1,
-        new_interval_days: schedule.nextIntervalDays,
       });
       if (reviewError) throw reviewError;
 
       return jsonResponse({ success: true });
     }
 
+    // ─── UPSERT FROM ERROR ───────────────────────────────────────────────────────
     if (action === "upsert_from_error") {
       const payload = body?.payload as Record<string, unknown> | undefined;
       if (!payload) return jsonResponse({ error: "Missing payload." }, 400);
 
       const sourceId = typeof payload.source_id === "string" ? payload.source_id : null;
-      const resultType = payload.result_type === "dont_know" ? "dont_know" : "wrong";
-      const nowIso = new Date().toISOString();
+      const today = new Date().toISOString().split("T")[0];
 
       let existing = null as Record<string, unknown> | null;
       if (sourceId) {
@@ -246,18 +177,9 @@ Deno.serve(async (req) => {
           .update({
             front: payload.front ?? existing.front,
             back: payload.back ?? existing.back,
-            topic: payload.topic ?? existing.topic ?? "Geral",
-            subtopic: payload.subtopic ?? existing.subtopic ?? "",
-            skills: payload.skills ?? existing.skills ?? [],
-            example_context: payload.example_context ?? existing.example_context ?? null,
-            image_url: payload.image_url ?? existing.image_url ?? null,
-            last_seen_at: nowIso,
-            next_review_at: nowIso,
-            next_review: nowIso.split("T")[0],
+            next_review: today,
             interval_days: 1,
-            level: 0,
-            wrong_count: Number(existing.wrong_count ?? 0) + (resultType === "wrong" ? 1 : 0),
-            dont_know_count: Number(existing.dont_know_count ?? 0) + (resultType === "dont_know" ? 1 : 0),
+            ease_factor: Math.max(1.3, Number(existing.ease_factor ?? 2.5) - 0.2),
           })
           .eq("id", String(existing.id));
         if (updateError) throw updateError;
@@ -269,17 +191,11 @@ Deno.serve(async (req) => {
           front: payload.front,
           back: payload.back,
           area: payload.area ?? null,
-          topic: payload.topic ?? "Geral",
-          subtopic: payload.subtopic ?? "",
-          skills: payload.skills ?? [],
-          example_context: payload.example_context ?? null,
-          image_url: payload.image_url ?? null,
           level: 0,
           interval_days: 1,
-          next_review_at: nowIso,
-          next_review: nowIso.split("T")[0],
-          wrong_count: resultType === "wrong" ? 1 : 0,
-          dont_know_count: resultType === "dont_know" ? 1 : 0,
+          next_review: today,
+          ease_factor: 2.5,
+          review_count: 0,
         });
         if (insertError) throw insertError;
       }
