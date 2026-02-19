@@ -17,10 +17,7 @@ function nearestIntervalIndex(days: number) {
   return idx === -1 ? INTERVALS.length - 1 : idx;
 }
 
-function nextSchedule(
-  current: { intervalDays: number; level: number; easeFactor: number },
-  rating: Rating
-) {
+function nextSchedule(current: { intervalDays: number; level: number; easeFactor: number }, rating: Rating) {
   const currentIdx = nearestIntervalIndex(current.intervalDays);
   let nextIdx = currentIdx;
   let nextLevel = current.level;
@@ -97,8 +94,8 @@ Deno.serve(async (req) => {
         .from("flashcards")
         .select("*")
         .eq("user_id", userId)
-        .lte("next_review_at", nowIso)
-        .order("next_review_at", { ascending: true })
+        .lte("next_review", nowIso)
+        .order("next_review", { ascending: true })
         .order("wrong_count", { ascending: false })
         .order("level", { ascending: true });
       if (dueError) throw dueError;
@@ -139,7 +136,7 @@ Deno.serve(async (req) => {
           else acc.d30 += 1;
           return acc;
         },
-        { d1: 0, d3: 0, d7: 0, d14: 0, d30: 0 }
+        { d1: 0, d3: 0, d7: 0, d14: 0, d30: 0 },
       );
 
       const retentionTrend = (topicAgg ?? []).reduce(
@@ -148,7 +145,7 @@ Deno.serve(async (req) => {
           acc.total += (row.correct_count ?? 0) + (row.wrong_count ?? 0) + (row.dont_know_count ?? 0);
           return acc;
         },
-        { correct: 0, total: 0 }
+        { correct: 0, total: 0 },
       );
 
       return jsonResponse({
@@ -158,9 +155,7 @@ Deno.serve(async (req) => {
           intervalBuckets: intervals,
           weakTopics,
           retentionPct:
-            retentionTrend.total > 0
-              ? Math.round((retentionTrend.correct / retentionTrend.total) * 100)
-              : 0,
+            retentionTrend.total > 0 ? Math.round((retentionTrend.correct / retentionTrend.total) * 100) : 0,
         },
       });
     }
@@ -181,11 +176,14 @@ Deno.serve(async (req) => {
         .single();
       if (cardError || !card) return jsonResponse({ error: "Flashcard not found." }, 404);
 
-      const schedule = nextSchedule({
-        intervalDays: card.interval_days ?? 1,
-        level: card.level ?? 0,
-        easeFactor: Number(card.ease_factor ?? 2.5),
-      }, rating);
+      const schedule = nextSchedule(
+        {
+          intervalDays: card.interval_days ?? 1,
+          level: card.level ?? 0,
+          easeFactor: Number(card.ease_factor ?? 2.5),
+        },
+        rating,
+      );
 
       const nowIso = new Date().toISOString();
       const isAgain = rating === "again";
@@ -202,7 +200,7 @@ Deno.serve(async (req) => {
           last_seen_at: nowIso,
           correct_count: (card.correct_count ?? 0) + (isAgain ? 0 : 1),
           wrong_count: (card.wrong_count ?? 0) + (isAgain ? 1 : 0),
-          dont_know_count: (card.dont_know_count ?? 0),
+          dont_know_count: card.dont_know_count ?? 0,
         })
         .eq("id", card.id);
       if (updateError) throw updateError;
