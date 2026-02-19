@@ -317,117 +317,80 @@ export type Database = {
         Row: {
           alternatives: Json
           area: string
+          classified_at: string | null
+          classifier_version: string | null
+          cognitive_level: string | null
+          confidence: number | null
           correct_answer: string
           created_at: string
           difficulty: number
+          disciplina: string | null
           explanation: string | null
           id: string
           image_url: string | null
           images: Json
+          needs_review: boolean
           number: number
           skills: Json
           statement: string
           subtopic: string
           tags: Json
           topic: string
+          topics: string[] | null
           user_id: string
           year: number
-          // Taxonomy v2
-          disciplina: string | null
-          topics: string[] | null
-          cognitive_level: string | null
-          confidence: number | null
-          needs_review: boolean | null
-          classifier_version: string | null
-          classified_at: string | null
         }
         Insert: {
           alternatives?: Json
           area: string
+          classified_at?: string | null
+          classifier_version?: string | null
+          cognitive_level?: string | null
+          confidence?: number | null
           correct_answer: string
           created_at?: string
           difficulty?: number
+          disciplina?: string | null
           explanation?: string | null
           id?: string
           image_url?: string | null
           images?: Json
+          needs_review?: boolean
           number: number
           skills?: Json
           statement: string
           subtopic?: string
           tags?: Json
           topic?: string
+          topics?: string[] | null
           user_id: string
           year: number
-          disciplina?: string | null
-          topics?: string[] | null
-          cognitive_level?: string | null
-          confidence?: number | null
-          needs_review?: boolean | null
-          classifier_version?: string | null
-          classified_at?: string | null
         }
         Update: {
           alternatives?: Json
           area?: string
+          classified_at?: string | null
+          classifier_version?: string | null
+          cognitive_level?: string | null
+          confidence?: number | null
           correct_answer?: string
           created_at?: string
           difficulty?: number
+          disciplina?: string | null
           explanation?: string | null
           id?: string
           image_url?: string | null
           images?: Json
+          needs_review?: boolean
           number?: number
           skills?: Json
           statement?: string
           subtopic?: string
           tags?: Json
           topic?: string
+          topics?: string[] | null
           user_id?: string
           year?: number
-          disciplina?: string | null
-          topics?: string[] | null
-          cognitive_level?: string | null
-          confidence?: number | null
-          needs_review?: boolean | null
-          classifier_version?: string | null
-          classified_at?: string | null
-        }
-        Relationships: []
-      }
-      user_mastery: {
-        Row: {
-          id: string
-          user_id: string
-          dimension_type: string
-          dimension_id: string
-          mastery_score: number
-          attempts: number
-          correct: number
-          avg_time_sec: number | null
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          dimension_type: string
-          dimension_id: string
-          mastery_score?: number
-          attempts?: number
-          correct?: number
-          avg_time_sec?: number | null
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          dimension_type?: string
-          dimension_id?: string
-          mastery_score?: number
-          attempts?: number
-          correct?: number
-          avg_time_sec?: number | null
-          updated_at?: string
         }
         Relationships: []
       }
@@ -497,6 +460,42 @@ export type Database = {
           operation_type?: string
           prompt_tokens?: number
           total_tokens?: number
+        }
+        Relationships: []
+      }
+      user_mastery: {
+        Row: {
+          attempts: number
+          avg_time_sec: number | null
+          correct: number
+          dimension_id: string
+          dimension_type: string
+          id: string
+          mastery_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          avg_time_sec?: number | null
+          correct?: number
+          dimension_id: string
+          dimension_type: string
+          id?: string
+          mastery_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          avg_time_sec?: number | null
+          correct?: number
+          dimension_id?: string
+          dimension_type?: string
+          id?: string
+          mastery_score?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
