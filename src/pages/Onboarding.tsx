@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowRight, ArrowLeft, Check, Calendar, Target, BookOpen, Clock, Phone } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, Target, BookOpen, Clock, Phone } from 'lucide-react';
 
 const AREAS = [
   { id: 'matematica', label: 'Matemática', icon: '📐' },
@@ -45,28 +45,21 @@ export default function Onboarding() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 3;
 
   // Step 1: Name + Phone
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
 
-  // Step 2: ENEM date
-  const [enemDate, setEnemDate] = useState('');
-
-  // Step 3: Focus areas
+  // Step 2: Focus areas
   const [focusAreas, setFocusAreas] = useState<string[]>([]);
 
-  // Step 4: Schedule
+  // Step 3: Schedule
   const [dailyTarget, setDailyTarget] = useState('20');
   const [daySchedule, setDaySchedule] = useState<DaySchedule>({});
   const [customized, setCustomized] = useState(false);
 
   const [saving, setSaving] = useState(false);
-
-  const daysUntilEnem = enemDate
-    ? Math.max(0, Math.ceil((new Date(enemDate).getTime() - Date.now()) / 86400000))
-    : null;
 
   const toggleArea = (areaId: string) => {
     setFocusAreas((prev) =>
@@ -90,25 +83,24 @@ export default function Onboarding() {
     setCustomized(false);
   };
 
-  // When entering step 4, auto-generate schedule if not customized
-  const goToStep4 = () => {
+  // When entering step 3, auto-generate schedule if not customized
+  const goToStep3 = () => {
     if (!customized || Object.keys(daySchedule).length === 0) {
       applyRecommended();
     }
-    setStep(4);
+    setStep(3);
   };
 
   const handleFinish = async () => {
     if (!user) return;
     setSaving(true);
     try {
-      // Save name + enem_target_date + onboarding_completed to profiles
+      // Save name + phone + onboarding_completed to profiles
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           name: name.trim() || null,
           phone: phone.trim() || null,
-          enem_target_date: enemDate || null,
           onboarding_completed: true,
         })
         .eq('id', user.id);
@@ -204,58 +196,8 @@ export default function Onboarding() {
           </Card>
         )}
 
-        {/* Step 2: ENEM date */}
+        {/* Step 2: Focus areas */}
         {step === 2 && (
-          <Card>
-            <CardContent className="p-6 space-y-5">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-primary mb-3">
-                  <Calendar className="h-5 w-5" />
-                  <span className="text-sm font-medium uppercase tracking-wider">Data-alvo</span>
-                </div>
-                <h2 className="text-xl font-semibold">Quando é o seu ENEM?</h2>
-                <p className="text-sm text-muted-foreground">Usaremos para calcular urgência e prioridades</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="enem-date">Data do ENEM</Label>
-                <Input
-                  id="enem-date"
-                  type="date"
-                  value={enemDate}
-                  onChange={(e) => setEnemDate(e.target.value)}
-                />
-                {daysUntilEnem !== null && (
-                  <p className="text-sm text-primary font-medium">
-                    {daysUntilEnem === 0
-                      ? 'É hoje! 🎯'
-                      : `${daysUntilEnem} dias restantes para o ENEM`}
-                  </p>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Voltar
-                </Button>
-                <Button className="flex-1 gap-2" onClick={() => setStep(3)}>
-                  Continuar
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-              {!enemDate && (
-                <button
-                  className="w-full text-xs text-muted-foreground underline underline-offset-2"
-                  onClick={() => setStep(3)}
-                >
-                  Pular por agora
-                </button>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 3: Focus areas */}
-        {step === 3 && (
           <Card>
             <CardContent className="p-6 space-y-5">
               <div className="space-y-1">
@@ -292,11 +234,11 @@ export default function Onboarding() {
                 </p>
               )}
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>
+                <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Voltar
                 </Button>
-                <Button className="flex-1 gap-2" onClick={goToStep4}>
+                <Button className="flex-1 gap-2" onClick={goToStep3}>
                   Continuar
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -305,8 +247,8 @@ export default function Onboarding() {
           </Card>
         )}
 
-        {/* Step 4: Schedule */}
-        {step === 4 && (
+        {/* Step 3: Schedule */}
+        {step === 3 && (
           <Card>
             <CardContent className="p-6 space-y-5">
               <div className="space-y-1">
@@ -382,7 +324,7 @@ export default function Onboarding() {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep(3)}>
+                <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Voltar
                 </Button>
@@ -403,10 +345,7 @@ export default function Onboarding() {
         {step > 1 && (
           <div className="flex flex-wrap gap-2 justify-center">
             {name && <Badge variant="secondary">{name}</Badge>}
-            {enemDate && daysUntilEnem !== null && (
-              <Badge variant="secondary">{daysUntilEnem}d para o ENEM</Badge>
-            )}
-            {focusAreas.length > 0 && step >= 3 && (
+            {focusAreas.length > 0 && step >= 2 && (
               <Badge variant="secondary">
                 {focusAreas.map((a) => AREAS.find((x) => x.id === a)?.icon).join(' ')} foco
               </Badge>
