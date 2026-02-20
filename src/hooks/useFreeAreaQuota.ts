@@ -35,7 +35,7 @@ export function useFreeAreaQuota(): FreeAreaQuota {
         }
         setAttemptsPerArea(totals);
       })
-      .finally(() => setLoading(false));
+      .then(() => setLoading(false), () => setLoading(false));
   }, [user]);
 
   const isAreaLocked = (area: string) =>

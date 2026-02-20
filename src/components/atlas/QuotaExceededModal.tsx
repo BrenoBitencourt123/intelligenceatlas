@@ -46,9 +46,9 @@ export const QuotaExceededModal = ({
       return {
         icon: Calendar,
         title: 'Limite diário atingido',
-        description: `Você atingiu o limite de correções de hoje. Volte amanhã para continuar praticando!${planType === 'basic' ? ' O plano Pro oferece 2 correções por dia.' : ''}`,
-        cta: planType === 'basic' ? 'Fazer upgrade para Pro' : 'Entendi',
-        showUpgrade: planType === 'basic',
+        description: `Você atingiu o limite de correções de hoje. Volte amanhã para continuar praticando!${planType === 'free' ? ' O plano Pro oferece 2 correções por dia.' : ''}`,
+        cta: planType === 'free' ? 'Fazer upgrade para Pro' : 'Entendi',
+        showUpgrade: planType === 'free',
       };
     }
 
@@ -61,9 +61,9 @@ export const QuotaExceededModal = ({
       return {
         icon: Zap,
         title: 'Limite mensal atingido',
-        description: `Você usou todas as suas correções do mês. Sua cota renova em ${daysUntilReset} dia${daysUntilReset > 1 ? 's' : ''}.${planType === 'basic' ? ' O plano Pro oferece 60 correções por mês!' : ''}`,
-        cta: planType === 'basic' ? 'Fazer upgrade para Pro' : 'Entendi',
-        showUpgrade: planType === 'basic',
+        description: `Você usou todas as suas correções do mês. Sua cota renova em ${daysUntilReset} dia${daysUntilReset > 1 ? 's' : ''}.${planType === 'free' ? ' O plano Pro oferece 60 correções por mês!' : ''}`,
+        cta: planType === 'free' ? 'Fazer upgrade para Pro' : 'Entendi',
+        showUpgrade: planType === 'free',
       };
     }
 
