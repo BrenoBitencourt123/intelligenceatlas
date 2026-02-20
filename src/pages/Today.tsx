@@ -31,6 +31,8 @@ const Today = () => {
     ? AREA_ICONS[schedule.area] || Target
     : Target;
 
+  const isScheduleLoading = schedule.isLoading;
+
   const usedEssays = isFree ? userStats.totalEssays : userStats.monthlyEssays;
   const usagePercentage = Math.min(100, Math.round((usedEssays / monthlyLimit) * 100));
 
@@ -102,7 +104,16 @@ const Today = () => {
             </div>
           )}
 
-          {schedule.isObjectiveDay && !isFirstSession && (
+          {isScheduleLoading ? (
+            <Card className="border-2 border-primary/20 bg-card">
+              <CardContent className="p-6 space-y-3">
+                <Skeleton className="h-5 w-24 rounded" />
+                <Skeleton className="h-7 w-48 rounded" />
+                <Skeleton className="h-4 w-32 rounded" />
+                <Skeleton className="h-10 w-full rounded mt-4" />
+              </CardContent>
+            </Card>
+          ) : schedule.isObjectiveDay && !isFirstSession && (
             <Card className="border-2 border-primary/20 bg-card">
               <CardContent className="p-6">
                 <div className="space-y-2">

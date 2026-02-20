@@ -614,7 +614,11 @@ const Objectives = () => {
           {/* Start session card */}
           <Card className="border-2 border-primary/20 bg-card">
             <CardContent className="p-6 space-y-3">
-              <h2 className="text-lg font-semibold">Área do dia: {schedule.label}</h2>
+              {schedule.isLoading ? (
+                <Skeleton className="h-6 w-48 rounded" />
+              ) : (
+                <h2 className="text-lg font-semibold">Área do dia: {schedule.label}</h2>
+              )}
               <p className="text-sm text-muted-foreground">
                 {hasFullSessionAccess
                   ? `Até ${schedule.questionCount} questões divididas em 3 blocos`
@@ -678,6 +682,7 @@ const Objectives = () => {
                   ) : (
                     <Button
                       className="w-full gap-2"
+                      disabled={schedule.isLoading}
                       onClick={() => startSession(schedule.area, hasFullSessionAccess ? undefined : freeQuestionLimit)}
                     >
                       Iniciar Sessão

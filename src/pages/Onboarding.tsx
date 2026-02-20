@@ -32,12 +32,30 @@ const DAY_LABELS: Record<string, string> = {
 
 type DaySchedule = Record<string, string[]>;
 
+const ALL_AREAS = AREAS.map((a) => a.id);
+const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
+
+// Áreas de foco ganham peso 2 (aparecem mais vezes na semana)
+// Outras áreas ganham peso 1 — garante cobertura completa
 function generateRecommendedSchedule(focusAreas: string[]): DaySchedule {
-  if (focusAreas.length === 0) return {};
   const schedule: DaySchedule = {};
-  DAYS.forEach((day, i) => {
-    schedule[day] = [focusAreas[i % focusAreas.length]];
+
+  // Sábado e Domingo ficam vazios (o schedule fallback já trata como Simulado/Descanso)
+  schedule['saturday'] = [];
+  schedule['sunday'] = [];
+
+  // Monta lista ponderada: focus_areas com peso 2, demais com peso 1
+  const weighted: string[] = [];
+  for (const area of ALL_AREAS) {
+    const weight = focusAreas.includes(area) ? 2 : 1;
+    for (let i = 0; i < weight; i++) weighted.push(area);
+  }
+
+  // Distribui pelos 5 dias úteis de forma proporcional
+  WEEKDAYS.forEach((day, i) => {
+    schedule[day] = [weighted[i % weighted.length]];
   });
+
   return schedule;
 }
 
