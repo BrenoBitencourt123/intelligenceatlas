@@ -206,9 +206,12 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           email: string
+          enem_target_date: string | null
           flexible_quota: boolean
           id: string
           name: string | null
+          onboarding_completed: boolean
+          phone: string | null
           plan_started_at: string
           plan_type: string
         }
@@ -216,9 +219,12 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email: string
+          enem_target_date?: string | null
           flexible_quota?: boolean
           id: string
           name?: string | null
+          onboarding_completed?: boolean
+          phone?: string | null
           plan_started_at?: string
           plan_type?: string
         }
@@ -226,9 +232,12 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email?: string
+          enem_target_date?: string | null
           flexible_quota?: boolean
           id?: string
           name?: string | null
+          onboarding_completed?: boolean
+          phone?: string | null
           plan_started_at?: string
           plan_type?: string
         }
@@ -503,6 +512,9 @@ export type Database = {
         Row: {
           created_at: string
           daily_minutes_target: number
+          daily_questions_target: number | null
+          day_schedule: Json | null
+          focus_areas: string[] | null
           id: string
           preferred_language: string
           updated_at: string
@@ -511,6 +523,9 @@ export type Database = {
         Insert: {
           created_at?: string
           daily_minutes_target?: number
+          daily_questions_target?: number | null
+          day_schedule?: Json | null
+          focus_areas?: string[] | null
           id?: string
           preferred_language?: string
           updated_at?: string
@@ -519,6 +534,9 @@ export type Database = {
         Update: {
           created_at?: string
           daily_minutes_target?: number
+          daily_questions_target?: number | null
+          day_schedule?: Json | null
+          focus_areas?: string[] | null
           id?: string
           preferred_language?: string
           updated_at?: string
