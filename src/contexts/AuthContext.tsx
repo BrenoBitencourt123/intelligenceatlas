@@ -51,40 +51,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Set up auth state listener — skip INITIAL_SESSION (handled by getSession below)
+    let isMounted = true;
+
+    const loadProfile = async (userId: string) => {
+      try {
+        const profileData = await fetchProfile(userId);
+        if (isMounted) setProfile(profileData);
+      } catch (err) {
+        console.error('Error loading profile:', err);
+      }
+    };
+
+    // Listener for ongoing auth changes — defer Supabase calls to avoid deadlock
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (event === 'INITIAL_SESSION') return;
+        if (!isMounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
+
         if (session?.user) {
-          const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
+          setTimeout(() => loadProfile(session.user.id), 0);
         } else {
           setProfile(null);
         }
       }
     );
 
-    // Load initial session once — single fetch, no race condition
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    // Initial session load
+    const initializeAuth = async () => {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
+
         if (session?.user) {
-          const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
+          await loadProfile(session.user.id);
         }
       } catch (err) {
         console.error('Error initializing auth:', err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
-    }).catch(() => {
-      setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
