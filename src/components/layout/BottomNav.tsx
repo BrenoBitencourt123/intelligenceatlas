@@ -1,4 +1,4 @@
-import { CalendarCheck, ListChecks, PenLine, User } from 'lucide-react';
+import { CalendarCheck, ListChecks, PenLine, BarChart2, User } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 
@@ -6,6 +6,7 @@ const navItems = [
   { title: 'Hoje', path: '/', icon: CalendarCheck },
   { title: 'Objetivas', path: '/objetivas', icon: ListChecks },
   { title: 'Redação', path: '/redacao', icon: PenLine },
+  { title: 'Desempenho', path: '/errors', icon: BarChart2 },
   { title: 'Perfil', path: '/perfil', icon: User },
 ];
 

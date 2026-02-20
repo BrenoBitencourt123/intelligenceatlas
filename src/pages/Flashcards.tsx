@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useFlashcardReview } from '@/hooks/useFlashcardReview';
 import { Brain, Check, Eye, Loader2, RotateCcw, Trash2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import MarkdownText from '@/components/atlas/MarkdownText';
 import { supabase } from '@/integrations/supabase/client';
@@ -64,8 +65,28 @@ const Flashcards = () => {
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="container max-w-2xl mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="container max-w-2xl mx-auto px-4 py-8 space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-7 w-32" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+          <Skeleton className="h-1.5 w-full" />
+          <div className="grid grid-cols-3 gap-2">
+            <Skeleton className="h-14 rounded-lg" />
+            <Skeleton className="h-14 rounded-lg" />
+            <Skeleton className="h-14 rounded-lg" />
+          </div>
+          <Card className="min-h-[240px]">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex gap-2">
+                <Skeleton className="h-5 w-20 rounded-full" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-16 w-full" />
+            </CardContent>
+          </Card>
+          <Skeleton className="h-11 w-full rounded-lg" />
         </div>
       </MainLayout>
     );

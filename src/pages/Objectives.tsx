@@ -11,6 +11,7 @@ import { useFlashcardReview } from '@/hooks/useFlashcardReview';
 import { useExamPdf } from '@/hooks/useExamPdf';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { ArrowRight, BookOpen, Brain, Check, Crown, FileText, HelpCircle, Loader2, RotateCcw, Target, X, Eye, EyeOff, ChevronRight } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import MarkdownText from '@/components/atlas/MarkdownText';
 import { useQuestionPedagogy } from '@/hooks/useQuestionPedagogy';
 import { PreConceptBlock, PostAnswerBlocks } from '@/components/atlas/PedagogyBlocks';
@@ -36,6 +37,7 @@ const Objectives = () => {
     freeQuestionLimit,
     isFree,
     isPro,
+    isAreaLocked,
   } = usePlanFeatures();
   const {
     state,
@@ -96,10 +98,14 @@ const Objectives = () => {
   if (state === 'loading') {
     return (
       <MainLayout>
-        <div className="container max-w-2xl mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
-          <div className="text-center space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-            <p className="text-muted-foreground">Carregando questões...</p>
+        <div className="container max-w-2xl mx-auto px-4 py-8 space-y-4">
+          <Skeleton className="h-5 w-1/3" />
+          <Skeleton className="h-2 w-full" />
+          <div className="space-y-3 pt-2">
+            <Skeleton className="h-20 w-full rounded-xl" />
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-11 w-full rounded-lg" />
+            ))}
           </div>
         </div>
       </MainLayout>
@@ -614,50 +620,71 @@ const Objectives = () => {
                   ? `Até ${schedule.questionCount} questões divididas em 3 blocos`
                   : `${freeQuestionLimit} questões (degustação gratuita)`}
               </p>
-              {!hasFullSessionAccess && (
-                <div className="rounded-lg border border-muted bg-muted/30 p-3 text-center space-y-2">
-                  <p className="text-xs text-muted-foreground">Sessões de 20 questões com 3 blocos</p>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/plano')}>
-                    <Crown className="h-3.5 w-3.5 text-amber-500" />
-                    Ver planos
-                  </Button>
-                </div>
-              )}
-              {hasSavedSession ? (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-2"
-                    onClick={resumeSession}
-                  >
-                    Continuar estudo
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() =>
-                      startSession(
-                        schedule.area,
-                        hasFullSessionAccess ? undefined : freeQuestionLimit,
-                        false,
-                        true
-                      )
-                    }
-                    title="Resetar respostas de hoje"
-                    aria-label="Resetar respostas de hoje"
-                  >
-                    <RotateCcw className="h-4 w-4" />
+
+              {/* Free area locked paywall */}
+              {isFree && isAreaLocked(schedule.area) ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 p-4 space-y-3 text-center">
+                  <Crown className="h-6 w-6 text-amber-500 mx-auto" />
+                  <div>
+                    <p className="text-sm font-semibold">Degustação de {schedule.label} encerrada</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Você já usou suas {freeQuestionLimit} questões gratuitas nesta área.
+                      Assine o PRO para continuar estudando sem limites.
+                    </p>
+                  </div>
+                  <Button className="w-full gap-2" onClick={() => navigate('/plano')}>
+                    <Crown className="h-4 w-4" />
+                    Ver plano PRO
                   </Button>
                 </div>
               ) : (
-                <Button
-                  className="w-full gap-2"
-                  onClick={() => startSession(schedule.area, hasFullSessionAccess ? undefined : freeQuestionLimit)}
-                >
-                  Iniciar Sessao
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+                <>
+                  {!hasFullSessionAccess && (
+                    <div className="rounded-lg border border-muted bg-muted/30 p-3 text-center space-y-2">
+                      <p className="text-xs text-muted-foreground">Sessões de 20 questões com 3 blocos</p>
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/plano')}>
+                        <Crown className="h-3.5 w-3.5 text-amber-500" />
+                        Ver planos
+                      </Button>
+                    </div>
+                  )}
+                  {hasSavedSession ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-2"
+                        onClick={resumeSession}
+                      >
+                        Continuar estudo
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          startSession(
+                            schedule.area,
+                            hasFullSessionAccess ? undefined : freeQuestionLimit,
+                            false,
+                            true
+                          )
+                        }
+                        title="Resetar respostas de hoje"
+                        aria-label="Resetar respostas de hoje"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      className="w-full gap-2"
+                      onClick={() => startSession(schedule.area, hasFullSessionAccess ? undefined : freeQuestionLimit)}
+                    >
+                      Iniciar Sessão
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>

@@ -11,6 +11,9 @@ interface Profile {
   plan_started_at: string;
   created_at: string;
   flexible_quota: boolean;
+  onboarding_completed: boolean;
+  enem_target_date: string | null;
+  phone: string | null;
 }
 
 interface AuthContextType {
@@ -48,36 +51,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Set up auth state listener — skip INITIAL_SESSION (handled by getSession below)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (event === 'INITIAL_SESSION') return;
         setSession(session);
         setUser(session?.user ?? null);
-        
         if (session?.user) {
-          // Use setTimeout to avoid potential race conditions
-          setTimeout(async () => {
-            const profileData = await fetchProfile(session.user.id);
-            setProfile(profileData);
-          }, 0);
+          const profileData = await fetchProfile(session.user.id);
+          setProfile(profileData);
         } else {
           setProfile(null);
         }
-        
-        setLoading(false);
       }
     );
 
-    // THEN get the initial session
+    // Load initial session once — single fetch, no race condition
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
       if (session?.user) {
         const profileData = await fetchProfile(session.user.id);
         setProfile(profileData);
       }
-      
       setLoading(false);
     });
 

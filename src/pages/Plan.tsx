@@ -1,4 +1,4 @@
-import { Check, Zap, Crown, Loader2, Settings, Sparkles, Star, Clock } from 'lucide-react';
+import { Check, Crown, Loader2, Settings, Star, Clock } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,11 +17,11 @@ import { toast } from 'sonner';
 import { STRIPE_PLANS, getMonthsUntilEnem, getDiscountTier } from '@/lib/stripe';
 
 const Plan = () => {
-  const { planType, isFree, isBasic, isPro, monthlyLimit } = usePlanFeatures();
+  const { planType, isFree, isPro, monthlyLimit } = usePlanFeatures();
   const { monthlyEssays, totalEssays, isLoading } = useUserStats();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
-  const [checkoutPlan, setCheckoutPlan] = useState<'basic' | 'pro' | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<'pro' | null>(null);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [useEnemDiscount, setUseEnemDiscount] = useState(false);
 
@@ -52,7 +52,7 @@ const Plan = () => {
       if (error) throw error;
       
       if (data?.subscribed) {
-        toast.success(`Assinatura ${data.plan_type === 'pro' ? 'Pro' : 'Básica'} ativada!`);
+        toast.success('Assinatura PRO ativada!');
         window.location.reload();
       }
     } catch (error) {
@@ -70,7 +70,7 @@ const Plan = () => {
     }
   }, [searchParams, setSearchParams, checkSubscription]);
 
-  const handleUpgrade = (targetPlan: 'basic' | 'pro') => {
+  const handleUpgrade = (targetPlan: 'pro') => {
     setCheckoutCouponId(useEnemDiscount && discountTier ? discountTier.id : undefined);
     setCheckoutPlan(targetPlan);
   };
@@ -110,22 +110,15 @@ const Plan = () => {
 
   // Features reais de cada plano
   const freeFeatures = [
+    '5 questões por área (one-time)',
     '1 redação gratuita',
     'Editor completo',
     'Feedback resumido',
-    '5 questões por dia',
-  ];
-
-  const basicFeatures = [
-    '30 correções por mês',
-    'Análise das 5 competências ENEM',
-    'Versão melhorada da redação',
-    'Histórico de redações',
-    'Sessões focadas (20 questões)',
   ];
 
   const proFeatures = [
-    '60 correções por mês',
+    'Questões ilimitadas em todas as áreas',
+    '60 redações por mês',
     'Tema do dia automático',
     'Contexto e fundamentação',
     'Perguntas norteadoras',
@@ -133,7 +126,8 @@ const Plan = () => {
     'Análise das 5 competências ENEM',
     'Versão melhorada da redação',
     'Histórico de redações',
-    'Sessões completas + flashcards automáticos',
+    'Sessões completas (20 questões) com 3 blocos',
+    'Flashcards automáticos ao errar',
     'Cápsulas de conhecimento',
   ];
 
@@ -206,8 +200,42 @@ const Plan = () => {
             </Card>
           )}
 
-          {/* Plans Grid - 3 columns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          {/* Plans Grid - 2 columns: Free + PRO */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-3xl mx-auto w-full">
+            {/* Free Plan Card */}
+            <Card className={`relative flex flex-col ${isFree ? 'border-2 border-primary ring-2 ring-primary/20' : 'border'}`}>
+              <CardHeader className="pb-4">
+                <div className="space-y-2">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    Grátis
+                    {isFree && (
+                      <Badge variant="secondary" className="text-xs">Seu plano</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>Degustação — experimente sem compromisso</CardDescription>
+                </div>
+                <div className="pt-2">
+                  <p className="text-3xl font-bold text-foreground">R$ 0</p>
+                  <p className="text-xs text-muted-foreground">para sempre</p>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col">
+                <ul className="space-y-2.5 flex-1">
+                  {freeFeatures.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <span className="text-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="pt-6">
+                  <Button className="w-full" variant="outline" disabled>
+                    {isFree ? 'Plano atual' : 'Gratuito'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Pro Plan Card - Featured */}
             <Card className={`relative flex flex-col border-2 ${isPro ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-amber-500/70'} bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-950/20 dark:to-transparent`}>
               {/* Recommended Badge */}
@@ -217,17 +245,17 @@ const Plan = () => {
                   Recomendado
                 </Badge>
               </div>
-              
+
               <CardHeader className="pb-4 pt-6">
                 <div className="space-y-2">
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Crown className="h-5 w-5 text-amber-500" />
-                    Pro
+                    PRO
                     {isPro && (
                       <Badge variant="secondary" className="text-xs">Seu plano</Badge>
                     )}
                   </CardTitle>
-                  <CardDescription>Preparação completa para o ENEM</CardDescription>
+                  <CardDescription>Preparação completa e ilimitada para o ENEM</CardDescription>
                 </div>
                 <div className="pt-2">
                   {useEnemDiscount && discountTier ? (
@@ -267,119 +295,14 @@ const Plan = () => {
                       Plano atual
                     </Button>
                   ) : (
-                    <Button 
-                      className="w-full bg-amber-500 hover:bg-amber-600 text-white" 
+                    <Button
+                      className="w-full bg-amber-500 hover:bg-amber-600 text-white"
                       onClick={() => handleUpgrade('pro')}
                     >
                       <Crown className="h-4 w-4 mr-2" />
-                      {isBasic ? 'Fazer upgrade' : 'Começar agora'}
+                      Começar agora
                     </Button>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Basic Plan Card */}
-            <Card className={`relative flex flex-col ${isBasic ? 'border-2 border-primary ring-2 ring-primary/20' : 'border'}`}>
-              <CardHeader className="pb-4">
-                <div className="space-y-2">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-primary" />
-                    Básico
-                    {isBasic && (
-                      <Badge variant="secondary" className="text-xs">Seu plano</Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription>Para quem quer praticar mais</CardDescription>
-                </div>
-                <div className="pt-2">
-                  {useEnemDiscount && discountTier ? (
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground line-through">
-                        R$ {STRIPE_PLANS.basic.price.toFixed(2).replace('.', ',')}
-                      </p>
-                      <p className="text-3xl font-bold text-foreground">
-                        R$ {getDiscountedPrice(STRIPE_PLANS.basic.price).toFixed(2).replace('.', ',')}
-                      </p>
-                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                        -{discountTier.percent}% por {monthsUntilEnem} meses
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-3xl font-bold text-foreground">
-                        R$ {STRIPE_PLANS.basic.price.toFixed(2).replace('.', ',')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">/mês</p>
-                    </>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col">
-                <ul className="space-y-2.5 flex-1">
-                  {basicFeatures.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                      <span className="text-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="pt-6">
-                  {isBasic ? (
-                    <Button className="w-full" variant="outline" disabled>
-                      Plano atual
-                    </Button>
-                  ) : isPro ? (
-                    <Button className="w-full" variant="outline" disabled>
-                      Incluído no Pro
-                    </Button>
-                  ) : (
-                    <Button 
-                      className="w-full" 
-                      onClick={() => handleUpgrade('basic')}
-                    >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Assinar Básico
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Free Plan Card */}
-            <Card className={`relative flex flex-col ${isFree ? 'border-2 border-primary ring-2 ring-primary/20' : 'border'}`}>
-              <CardHeader className="pb-4">
-                <div className="space-y-2">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    Grátis
-                    {isFree && (
-                      <Badge variant="secondary" className="text-xs">Seu plano</Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription>Experimente grátis</CardDescription>
-                </div>
-                <div className="pt-2">
-                  <p className="text-3xl font-bold text-foreground">R$ 0</p>
-                  <p className="text-xs text-muted-foreground">para sempre</p>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col">
-                <ul className="space-y-2.5 flex-1">
-                  {freeFeatures.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                      <span className="text-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="pt-6">
-                  <Button 
-                    className="w-full" 
-                    variant="outline"
-                    disabled
-                  >
-                    {isFree ? 'Plano atual' : 'Gratuito'}
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -414,7 +337,7 @@ const Plan = () => {
           )}
 
           {/* Manage subscription for paying users */}
-          {(isBasic || isPro) && (
+          {isPro && (
             <div className="flex justify-center">
               <Button 
                 className="gap-2" 
