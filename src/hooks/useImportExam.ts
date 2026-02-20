@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -37,6 +37,49 @@ let pendingQuestionImageFiles: Map<string, { file: File; previewUrl: string }[]>
 let pendingAlternativeImageFiles: Map<string, { letter: string; file: File; previewUrl: string }[]> = new Map();
 
 type Stage = 'upload' | 'preview' | 'confirm';
+
+const DRAFT_KEY = 'atlas_import_draft';
+
+interface ImportDraft {
+  questions: ImportedQuestion[];
+  detectedYear: number | null;
+  stage: Stage;
+}
+
+function saveDraft(questions: ImportedQuestion[], detectedYear: number | null, stage: Stage) {
+  if (stage === 'upload') {
+    sessionStorage.removeItem(DRAFT_KEY);
+    return;
+  }
+  try {
+    // Strip local blob URLs — they don't survive a page refresh
+    const serializable: ImportedQuestion[] = questions.map(q => ({
+      ...q,
+      images: q.images.filter(img => !img.local),
+      alternatives: q.alternatives.map(alt => ({
+        ...alt,
+        image_url: alt.image_url?.startsWith('blob:') ? null : (alt.image_url ?? null),
+      })),
+    }));
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ questions: serializable, detectedYear, stage }));
+  } catch {
+    // sessionStorage might be full; fail silently
+  }
+}
+
+function loadDraft(): ImportDraft | null {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY);
+    return raw ? (JSON.parse(raw) as ImportDraft) : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearDraft() {
+  sessionStorage.removeItem(DRAFT_KEY);
+}
+
 const EXTRACTION_PROGRESS_WEIGHT = 30;
 const AI_PROGRESS_WEIGHT = 70;
 const REQUEST_TIMEOUT_MS = 4 * 60 * 1000;
@@ -414,12 +457,22 @@ async function requestChunkWithRetry(
 
 export function useImportExam() {
   const { user } = useAuth();
-  const [stage, setStage] = useState<Stage>('upload');
-  const [questions, setQuestions] = useState<ImportedQuestion[]>([]);
+
+  // Hydrate from sessionStorage on first mount (survives accidental page refresh)
+  const _draft = loadDraft();
+  const [stage, setStage] = useState<Stage>(_draft?.stage ?? 'upload');
+  const [questions, setQuestions] = useState<ImportedQuestion[]>(_draft?.questions ?? []);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [detectedYear, setDetectedYear] = useState<number | null>(null);
+  const [detectedYear, setDetectedYear] = useState<number | null>(_draft?.detectedYear ?? null);
   const [loadingMessage, setLoadingMessage] = useState('');
+
+  // Persist draft to sessionStorage whenever questions/stage/year change (but not while loading)
+  useEffect(() => {
+    if (!loading) {
+      saveDraft(questions, detectedYear, stage);
+    }
+  }, [questions, detectedYear, stage, loading]);
 
   async function processUploads(days: DayUpload[]) {
     const activeDays = days.filter(d => d.examFile);
@@ -885,6 +938,7 @@ export function useImportExam() {
         }).catch((err) => console.warn('[import] Auto-classification skipped:', err));
       }
 
+      clearDraft();
       toast.success(`${selected.length} questoes importadas com sucesso!`);
       setStage('upload');
       setQuestions([]);
@@ -920,6 +974,7 @@ export function useImportExam() {
   }
 
   function reset() {
+    clearDraft();
     setStage('upload');
     setQuestions([]);
     setProgress(0);
