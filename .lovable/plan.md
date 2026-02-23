@@ -1,44 +1,77 @@
 
-# Corrigir erros de build + Redeploy da parse-exam-pdf
 
-## Erros identificados
+# Auditoria e Correção do Sistema de Planos Atlas
 
-Sao 3 categorias de erros de build que precisam ser corrigidos:
+## Resultado da Auditoria
 
-### 1. Edge Functions: `error` is of type `unknown` (3 arquivos)
-Os catch blocks em 3 edge functions usam `error.message` sem type guard.
+### O que FUNCIONA corretamente
+- Checkout embedded com Stripe (create-checkout) -- funcional
+- Verificação de assinatura (check-subscription) -- parcialmente funcional
+- Redação: enforcement no backend (analyze-essay) bloqueia Free apos 1 redação -- OK
+- Redação: enforcement no frontend (useQuotaCheck) -- OK
+- Página de planos (/plano) mostra apenas Free e Pro -- OK
+- Portal do Stripe para gerenciar assinatura -- OK
 
-**Arquivos afetados:**
-- `supabase/functions/clean-flashcards/index.ts` (linha 64)
-- `supabase/functions/generate-flashcard/index.ts` (linha 92)
-- `supabase/functions/generate-pedagogy/index.ts` (linha 137)
+### O que está QUEBRADO ou INCONSISTENTE
 
-**Correção:** Trocar `error.message` por `error instanceof Error ? error.message : "Unknown error"` nos 3 arquivos.
+| # | Problema | Impacto | Arquivos |
+|---|---|---|---|
+| 1 | **Limite de questões é 5 POR ÁREA, não 5 TOTAL** | Free pode fazer 20 questões (5 x 4 áreas) em vez de 5 total | `useFreeAreaQuota.ts`, `usePlanFeatures.ts`, `Objectives.tsx` |
+| 2 | **`STRIPE_PLANS` ainda tem plano `basic`** | Código referencia plano inexistente; PlanType exporta 3 tipos | `src/lib/stripe.ts` |
+| 3 | **`check-subscription` mapeia produto para `basic`** | Se alguém assinou o Básico antigo, recebe tipo `basic` no DB | `check-subscription/index.ts` |
+| 4 | **`analyze-essay` tem limites para `basic` (30/mês, 1/dia)** | Backend aceita plano intermediário que não deveria existir | `analyze-essay/index.ts` |
+| 5 | **Cancelamento NÃO reverte plano para `free`** | Quando não há assinatura ativa, `check-subscription` retorna `free` mas NÃO atualiza o profiles. Usuário que cancela mantém `pro` no banco eternamente | `check-subscription/index.ts` |
+| 6 | **Sem enforcement de questões no backend** | O limite de 5 questões é apenas frontend. Nada impede chamadas diretas à API | Sem validação server-side |
 
-### 2. QuotaExceededModal: tipo `'basic'` nao existe no union type
-O componente compara `planType` com `'basic'`, mas o tipo so aceita `'free' | 'pro'`.
+---
 
-**Arquivo:** `src/components/atlas/QuotaExceededModal.tsx` (linhas 49-51, 64-66)
+## Plano de Correções
 
-**Correção:** Trocar todas as 6 ocorrencias de `'basic'` por `'free'`.
+### 1. Corrigir limite de questões: 5 TOTAL (não por área)
 
-### 3. useFreeAreaQuota: `.finally()` nao existe em `PromiseLike`
-O retorno de `.then()` do Supabase e `PromiseLike`, nao `Promise`, e nao tem `.finally()`.
+**Arquivo: `src/hooks/useFreeAreaQuota.ts`**
+- Mudar a lógica para contar o TOTAL de tentativas do usuário (soma de todas as áreas), não por área individual
+- `isAreaLocked` passa a verificar se o total global >= 5 (qualquer área fica bloqueada quando o total atinge 5)
 
-**Arquivo:** `src/hooks/useFreeAreaQuota.ts` (linha 38)
+**Arquivo: `src/pages/Objectives.tsx`**
+- Ajustar textos: "5 questões gratuitas" em vez de "5 questões nesta área"
+- O lock deve aparecer quando o total global >= 5
 
-**Correção:** Substituir `.finally(() => setLoading(false))` por `.then(() => setLoading(false), () => setLoading(false))`.
+### 2. Remover plano `basic` do `STRIPE_PLANS`
 
-### 4. Redeploy da edge function `parse-exam-pdf`
-O codigo local ja esta correto. Apenas precisa ser redeployado para que a versao em producao aceite o campo `images`.
+**Arquivo: `src/lib/stripe.ts`**
+- Remover a entrada `basic` do objeto `STRIPE_PLANS`
+- Tipo `PlanType` passa a ser apenas `'free' | 'pro'`
 
-## Resumo das mudancas
+### 3. Corrigir `check-subscription` -- mapear tudo para `pro` e reverter cancelamentos
 
-| Arquivo | Mudanca |
+**Arquivo: `supabase/functions/check-subscription/index.ts`**
+- Remover `basic` do `PRODUCT_TO_PLAN` -- ambos os product IDs mapeiam para `pro`
+- Quando NÃO há assinatura ativa mas o customer existe: atualizar `profiles.plan_type` para `'free'` (reverte cancelamentos)
+- Quando NÃO há customer: também garantir que profile está como `'free'`
+
+### 4. Remover limites de `basic` do backend de redações
+
+**Arquivo: `supabase/functions/analyze-essay/index.ts`**
+- Remover entrada `basic` do objeto `limits`
+- Manter apenas `free` (1 total) e `pro` (60/mês, 2/dia)
+- Se `planType` for `basic` (legado), tratar como `pro`
+
+### 5. Redeploy das edge functions alteradas
+
+Funções que precisam ser redeployadas:
+- `check-subscription`
+- `analyze-essay`
+
+---
+
+## Resumo das mudanças
+
+| Arquivo | Mudança |
 |---|---|
-| `supabase/functions/clean-flashcards/index.ts` | Type guard no catch |
-| `supabase/functions/generate-flashcard/index.ts` | Type guard no catch |
-| `supabase/functions/generate-pedagogy/index.ts` | Type guard no catch |
-| `src/components/atlas/QuotaExceededModal.tsx` | `'basic'` -> `'free'` |
-| `src/hooks/useFreeAreaQuota.ts` | `.finally()` -> `.then(ok, err)` |
-| `supabase/functions/parse-exam-pdf/index.ts` | Redeploy (sem mudanca de codigo) |
+| `src/hooks/useFreeAreaQuota.ts` | Contar questões TOTAL em vez de por área |
+| `src/lib/stripe.ts` | Remover plano `basic` |
+| `supabase/functions/check-subscription/index.ts` | Mapear basic para pro, reverter cancelamentos para free |
+| `supabase/functions/analyze-essay/index.ts` | Remover limites de basic |
+| `src/pages/Objectives.tsx` | Ajustar textos do limite de questões |
+
