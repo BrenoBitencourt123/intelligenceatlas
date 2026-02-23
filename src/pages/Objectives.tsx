@@ -628,11 +628,11 @@ const Objectives = () => {
               {/* Free area locked paywall */}
               {isFree && isAreaLocked(schedule.area) ? (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 p-4 space-y-3 text-center">
-                  <Crown className="h-6 w-6 text-amber-500 mx-auto" />
+                   <Crown className="h-6 w-6 text-amber-500 mx-auto" />
                   <div>
-                    <p className="text-sm font-semibold">Degustação de {schedule.label} encerrada</p>
+                    <p className="text-sm font-semibold">Degustação gratuita encerrada</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Você já usou suas {freeQuestionLimit} questões gratuitas nesta área.
+                      Você já usou suas {freeQuestionLimit} questões gratuitas.
                       Assine o PRO para continuar estudando sem limites.
                     </p>
                   </div>

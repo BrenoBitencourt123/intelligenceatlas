@@ -182,13 +182,14 @@ serve(async (req) => {
       );
     }
 
-    const planType = profile.plan_type || 'free';
+    // Treat legacy 'basic' as 'pro'
+    const rawPlan = profile.plan_type || 'free';
+    const planType = rawPlan === 'basic' ? 'pro' : rawPlan;
     const isFlexibleMode = profile.flexible_quota === true;
     
-    // Define limits per plan
+    // Define limits per plan (only free and pro)
     const limits: Record<string, { monthly: number; daily: number }> = {
       free: { monthly: 1, daily: 1 },
-      basic: { monthly: 30, daily: 1 },
       pro: { monthly: 60, daily: 2 },
     };
 

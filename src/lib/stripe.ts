@@ -6,13 +6,6 @@ export const STRIPE_PLANS = {
     price: 0,
     limit: 1, // 1 redação total
   },
-  basic: {
-    product_id: 'prod_TudMGgwl1PEvof',
-    price_id: 'price_1Swo60LCrHbXOvxeeFKbnJCO',
-    name: 'Básico',
-    price: 29.90,
-    limit: 30, // 30/mês (1/dia)
-  },
   pro: {
     product_id: 'prod_TudN04n9u6Wdvf',
     price_id: 'price_1Swo6ILCrHbXOvxe2DGBWebl',
@@ -35,13 +28,11 @@ export const DISCOUNT_COUPONS = {
 export function getMonthsUntilEnem(): number {
   const now = new Date();
   const currentYear = now.getFullYear();
-  // ENEM is typically in November
   const enemMonth = 10; // November (0-indexed)
-  const enemDay = 15; // approximate
+  const enemDay = 15;
 
   let enemDate = new Date(currentYear, enemMonth, enemDay);
   if (now > enemDate) {
-    // Next year's ENEM
     enemDate = new Date(currentYear + 1, enemMonth, enemDay);
   }
 
