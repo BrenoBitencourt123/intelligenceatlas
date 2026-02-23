@@ -13,9 +13,9 @@ const logStep = (step: string, details?: unknown) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Map Stripe product IDs to plan types
-const PRODUCT_TO_PLAN: Record<string, "free" | "basic" | "pro"> = {
-  prod_TudMGgwl1PEvof: "basic",
+// Map ALL Stripe product IDs to 'pro' (legacy basic product also maps to pro)
+const PRODUCT_TO_PLAN: Record<string, "pro"> = {
+  prod_TudMGgwl1PEvof: "pro", // legacy "Básico" → now pro
   prod_TudN04n9u6Wdvf: "pro",
 };
 
@@ -35,11 +35,9 @@ serve(async (req) => {
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
-    logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
@@ -52,7 +50,13 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 
     if (customers.data.length === 0) {
-      logStep("No customer found, returning free state");
+      logStep("No customer found, ensuring profile is free");
+      // Ensure profile is set to free
+      await supabaseClient
+        .from("profiles")
+        .update({ plan_type: "free" })
+        .eq("id", user.id);
+
       return new Response(
         JSON.stringify({
           subscribed: false,
@@ -78,34 +82,34 @@ serve(async (req) => {
 
     const hasActiveSub = subscriptions.data.length > 0;
     let productId: string | null = null;
-    let planType: "free" | "basic" | "pro" = "free";
+    let planType: "free" | "pro" = "free";
     let subscriptionEnd: string | null = null;
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       productId = subscription.items.data[0].price.product as string;
-      planType = PRODUCT_TO_PLAN[productId] || "basic";
+      planType = PRODUCT_TO_PLAN[productId] || "pro";
       logStep("Active subscription found", {
         subscriptionId: subscription.id,
         productId,
         planType,
         endDate: subscriptionEnd,
       });
-
-      // Update the profile with the current plan type
-      const { error: updateError } = await supabaseClient
-        .from("profiles")
-        .update({ plan_type: planType })
-        .eq("id", user.id);
-
-      if (updateError) {
-        logStep("Warning: Failed to update profile", { error: updateError.message });
-      } else {
-        logStep("Profile updated with plan type", { planType });
-      }
     } else {
-      logStep("No active subscription found, keeping current plan");
+      logStep("No active subscription, reverting to free");
+    }
+
+    // Always sync profile plan_type with Stripe state
+    const { error: updateError } = await supabaseClient
+      .from("profiles")
+      .update({ plan_type: planType })
+      .eq("id", user.id);
+
+    if (updateError) {
+      logStep("Warning: Failed to update profile", { error: updateError.message });
+    } else {
+      logStep("Profile synced", { planType });
     }
 
     return new Response(
