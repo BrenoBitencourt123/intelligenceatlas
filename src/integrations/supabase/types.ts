@@ -335,6 +335,7 @@ export type Database = {
           difficulty: number
           disciplina: string | null
           explanation: string | null
+          foreign_language: string | null
           id: string
           image_url: string | null
           images: Json
@@ -361,6 +362,7 @@ export type Database = {
           difficulty?: number
           disciplina?: string | null
           explanation?: string | null
+          foreign_language?: string | null
           id?: string
           image_url?: string | null
           images?: Json
@@ -387,6 +389,7 @@ export type Database = {
           difficulty?: number
           disciplina?: string | null
           explanation?: string | null
+          foreign_language?: string | null
           id?: string
           image_url?: string | null
           images?: Json
@@ -515,6 +518,7 @@ export type Database = {
           daily_questions_target: number | null
           day_schedule: Json | null
           focus_areas: string[] | null
+          foreign_language: string | null
           id: string
           preferred_language: string
           updated_at: string
@@ -526,6 +530,7 @@ export type Database = {
           daily_questions_target?: number | null
           day_schedule?: Json | null
           focus_areas?: string[] | null
+          foreign_language?: string | null
           id?: string
           preferred_language?: string
           updated_at?: string
@@ -537,6 +542,7 @@ export type Database = {
           daily_questions_target?: number | null
           day_schedule?: Json | null
           focus_areas?: string[] | null
+          foreign_language?: string | null
           id?: string
           preferred_language?: string
           updated_at?: string

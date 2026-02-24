@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowRight, ArrowLeft, Check, Target, BookOpen, Clock, Phone } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, Target, BookOpen, Clock, Phone, Languages } from 'lucide-react';
 
 const AREAS = [
   { id: 'matematica', label: 'Matemática', icon: '📐' },
@@ -35,23 +35,17 @@ type DaySchedule = Record<string, string[]>;
 const ALL_AREAS = AREAS.map((a) => a.id);
 const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
 
-// Áreas de foco ganham peso 2 (aparecem mais vezes na semana)
-// Outras áreas ganham peso 1 — garante cobertura completa
 function generateRecommendedSchedule(focusAreas: string[]): DaySchedule {
   const schedule: DaySchedule = {};
-
-  // Sábado e Domingo ficam vazios (o schedule fallback já trata como Simulado/Descanso)
   schedule['saturday'] = [];
   schedule['sunday'] = [];
 
-  // Monta lista ponderada: focus_areas com peso 2, demais com peso 1
   const weighted: string[] = [];
   for (const area of ALL_AREAS) {
     const weight = focusAreas.includes(area) ? 2 : 1;
     for (let i = 0; i < weight; i++) weighted.push(area);
   }
 
-  // Distribui pelos 5 dias úteis de forma proporcional
   WEEKDAYS.forEach((day, i) => {
     schedule[day] = [weighted[i % weighted.length]];
   });
@@ -63,16 +57,19 @@ export default function Onboarding() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const totalSteps = 3;
+  const totalSteps = 4;
 
   // Step 1: Name + Phone
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
 
-  // Step 2: Focus areas
+  // Step 2: Foreign language preference
+  const [foreignLanguage, setForeignLanguage] = useState<string>('ingles');
+
+  // Step 3: Focus areas
   const [focusAreas, setFocusAreas] = useState<string[]>([]);
 
-  // Step 3: Schedule
+  // Step 4: Schedule
   const [dailyTarget, setDailyTarget] = useState('20');
   const [daySchedule, setDaySchedule] = useState<DaySchedule>({});
   const [customized, setCustomized] = useState(false);
@@ -101,19 +98,17 @@ export default function Onboarding() {
     setCustomized(false);
   };
 
-  // When entering step 3, auto-generate schedule if not customized
-  const goToStep3 = () => {
+  const goToStep4 = () => {
     if (!customized || Object.keys(daySchedule).length === 0) {
       applyRecommended();
     }
-    setStep(3);
+    setStep(4);
   };
 
   const handleFinish = async () => {
     if (!user) return;
     setSaving(true);
     try {
-      // Save name + phone + onboarding_completed to profiles
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -125,7 +120,6 @@ export default function Onboarding() {
 
       if (profileError) throw profileError;
 
-      // Save focus_areas + daily_questions_target + day_schedule to user_preferences
       const { error: prefError } = await supabase
         .from('user_preferences')
         .upsert({
@@ -133,6 +127,7 @@ export default function Onboarding() {
           focus_areas: focusAreas,
           daily_questions_target: Number(dailyTarget),
           day_schedule: daySchedule,
+          foreign_language: foreignLanguage,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
 
@@ -214,8 +209,60 @@ export default function Onboarding() {
           </Card>
         )}
 
-        {/* Step 2: Focus areas */}
+        {/* Step 2: Foreign Language */}
         {step === 2 && (
+          <Card>
+            <CardContent className="p-6 space-y-5">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-primary mb-3">
+                  <Languages className="h-5 w-5" />
+                  <span className="text-sm font-medium uppercase tracking-wider">Língua Estrangeira</span>
+                </div>
+                <h2 className="text-xl font-semibold">Qual língua estrangeira você vai fazer?</h2>
+                <p className="text-sm text-muted-foreground">
+                  No ENEM, as questões 1 a 5 de Linguagens são de língua estrangeira. Escolha a sua:
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { id: 'ingles', label: 'Inglês', icon: '🇬🇧', desc: 'English' },
+                  { id: 'espanhol', label: 'Espanhol', icon: '🇪🇸', desc: 'Español' },
+                ].map((lang) => {
+                  const selected = foreignLanguage === lang.id;
+                  return (
+                    <button
+                      key={lang.id}
+                      onClick={() => setForeignLanguage(lang.id)}
+                      className={`p-5 rounded-lg border-2 text-left transition-all ${
+                        selected
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <span className="text-3xl block mb-2">{lang.icon}</span>
+                      <span className="text-base font-semibold block">{lang.label}</span>
+                      <span className="text-xs text-muted-foreground">{lang.desc}</span>
+                      {selected && <Check className="h-4 w-4 text-primary mt-2" />}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Voltar
+                </Button>
+                <Button className="flex-1 gap-2" onClick={() => setStep(3)}>
+                  Continuar
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: Focus areas */}
+        {step === 3 && (
           <Card>
             <CardContent className="p-6 space-y-5">
               <div className="space-y-1">
@@ -252,11 +299,11 @@ export default function Onboarding() {
                 </p>
               )}
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
+                <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Voltar
                 </Button>
-                <Button className="flex-1 gap-2" onClick={goToStep3}>
+                <Button className="flex-1 gap-2" onClick={goToStep4}>
                   Continuar
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -265,8 +312,8 @@ export default function Onboarding() {
           </Card>
         )}
 
-        {/* Step 3: Schedule */}
-        {step === 3 && (
+        {/* Step 4: Schedule */}
+        {step === 4 && (
           <Card>
             <CardContent className="p-6 space-y-5">
               <div className="space-y-1">
@@ -342,7 +389,7 @@ export default function Onboarding() {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>
+                <Button variant="outline" className="flex-1" onClick={() => setStep(3)}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Voltar
                 </Button>
@@ -363,7 +410,12 @@ export default function Onboarding() {
         {step > 1 && (
           <div className="flex flex-wrap gap-2 justify-center">
             {name && <Badge variant="secondary">{name}</Badge>}
-            {focusAreas.length > 0 && step >= 2 && (
+            {step >= 2 && (
+              <Badge variant="secondary">
+                {foreignLanguage === 'ingles' ? '🇬🇧 Inglês' : '🇪🇸 Espanhol'}
+              </Badge>
+            )}
+            {focusAreas.length > 0 && step >= 3 && (
               <Badge variant="secondary">
                 {focusAreas.map((a) => AREAS.find((x) => x.id === a)?.icon).join(' ')} foco
               </Badge>

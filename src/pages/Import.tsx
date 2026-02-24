@@ -539,6 +539,11 @@ function PreviewStage({
                               {q.requires_image && (
                                 <Badge variant="destructive" className="text-xs px-1.5 py-0">Precisa imagem</Badge>
                               )}
+                              {q.foreign_language && (
+                                <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                  {q.foreign_language === 'ingles' ? '🇬🇧 Inglês' : '🇪🇸 Espanhol'}
+                                </Badge>
+                              )}
                               {wasEdited && <Pencil className="h-3 w-3 text-muted-foreground" />}
                             </div>
                             <p className="text-xs text-muted-foreground line-clamp-1">
