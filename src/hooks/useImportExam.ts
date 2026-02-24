@@ -258,6 +258,7 @@ function parseImportedJson(jsonText: string): { year: number | null; questions: 
       alts: any[],
       correctAns: string | null,
       foreignLang: string | null,
+      imagesOverride?: unknown,
     ): ImportedQuestion => {
       const safeAlternatives = alts
         .filter((alt: any) => alt && typeof alt.letter === 'string' && typeof alt.text === 'string')
@@ -291,7 +292,7 @@ function parseImportedJson(jsonText: string): { year: number | null; questions: 
         correct_answer: annulled ? null : correct,
         explanation: typeof item.explanation === 'string' ? item.explanation : null,
         tags: Array.isArray(item.tags) ? item.tags.filter((t: unknown) => typeof t === 'string') : [],
-        images: normalizeImages(item.images),
+        images: normalizeImages(imagesOverride !== undefined ? imagesOverride : item.images),
         requires_image: inferred.requiresImage,
         image_reason: inferred.imageReason,
         selected: true,
@@ -301,17 +302,19 @@ function parseImportedJson(jsonText: string): { year: number | null; questions: 
     };
 
     if (isBilingual) {
-      // Create English version
+      // Create English version — use images_english if available, fallback to images
       const engStatement = typeof item.statement_english === 'string' ? item.statement_english : (item.statement || '');
       const engAlts = Array.isArray(item.alternatives_english) ? item.alternatives_english : (item.alternatives || []);
       const engCorrect = typeof item.correct_answer_english === 'string' ? item.correct_answer_english : (item.correct_answer || null);
-      questions.push(buildQuestion(engStatement, engAlts, engCorrect, 'ingles'));
+      const engImages = Array.isArray(item.images_english) ? item.images_english : item.images;
+      questions.push(buildQuestion(engStatement, engAlts, engCorrect, 'ingles', engImages));
 
-      // Create Spanish version
+      // Create Spanish version — use images_spanish if available, fallback to images
       const espStatement = typeof item.statement_spanish === 'string' ? item.statement_spanish : '';
       const espAlts = Array.isArray(item.alternatives_spanish) ? item.alternatives_spanish : [];
       const espCorrect = typeof item.correct_answer_spanish === 'string' ? item.correct_answer_spanish : (item.correct_answer || null);
-      questions.push(buildQuestion(espStatement, espAlts, espCorrect, 'espanhol'));
+      const espImages = Array.isArray(item.images_spanish) ? item.images_spanish : item.images;
+      questions.push(buildQuestion(espStatement, espAlts, espCorrect, 'espanhol', espImages));
     } else {
       // Regular question (no bilingual variant)
       const statement = typeof item.statement === 'string' ? item.statement : '';
