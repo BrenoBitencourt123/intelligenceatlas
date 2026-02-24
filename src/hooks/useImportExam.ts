@@ -22,6 +22,7 @@ export interface ImportedQuestion {
   selected: boolean;
   day: number;
   annulled: boolean;
+  foreign_language?: string | null;
 }
 
 export interface DayUpload {
@@ -242,19 +243,31 @@ function parseImportedJson(jsonText: string): { year: number | null; questions: 
     throw new Error('JSON sem questions validas.');
   }
 
-  const questions: ImportedQuestion[] = inputQuestions
-    .map((item: any, index: number) => {
-      const alternatives = Array.isArray(item.alternatives) ? item.alternatives : [];
-      const safeAlternatives = alternatives
+  const questions: ImportedQuestion[] = [];
+
+  for (let index = 0; index < inputQuestions.length; index++) {
+    const item = inputQuestions[index];
+
+    // Check if this question has bilingual variants (_english / _spanish)
+    const hasEnglish = typeof item.statement_english === 'string' || Array.isArray(item.alternatives_english);
+    const hasSpanish = typeof item.statement_spanish === 'string' || Array.isArray(item.alternatives_spanish);
+    const isBilingual = hasEnglish && hasSpanish;
+
+    const buildQuestion = (
+      stmt: string,
+      alts: any[],
+      correctAns: string | null,
+      foreignLang: string | null,
+    ): ImportedQuestion => {
+      const safeAlternatives = alts
         .filter((alt: any) => alt && typeof alt.letter === 'string' && typeof alt.text === 'string')
         .map((alt: any) => ({
           letter: alt.letter.toUpperCase(),
           text: alt.text,
           image_url: typeof alt.image_url === 'string' ? alt.image_url : null,
         }));
-      const statement = typeof item.statement === 'string' ? item.statement : '';
       const inferred = inferImageRequirement(
-        statement,
+        stmt,
         safeAlternatives,
         Boolean(item.requires_image),
         typeof item.image_reason === 'string' ? item.image_reason : null
@@ -262,7 +275,7 @@ function parseImportedJson(jsonText: string): { year: number | null; questions: 
 
       const parsedNumber = Number(item.number);
       const number = Number.isFinite(parsedNumber) ? parsedNumber : index + 1;
-      const correct = typeof item.correct_answer === 'string' ? item.correct_answer.toUpperCase() : null;
+      const correct = typeof correctAns === 'string' ? correctAns.toUpperCase() : null;
       const annulled = correct === 'ANULADA';
 
       return {
@@ -273,7 +286,7 @@ function parseImportedJson(jsonText: string): { year: number | null; questions: 
         subtopic: typeof item.subtopic === 'string' ? item.subtopic.trim() : '',
         difficulty: [1, 2, 3].includes(Number(item.difficulty)) ? Number(item.difficulty) as 1 | 2 | 3 : 2,
         skills: Array.isArray(item.skills) ? item.skills.filter((s: unknown) => typeof s === 'string') : [],
-        statement,
+        statement: stmt,
         alternatives: safeAlternatives,
         correct_answer: annulled ? null : correct,
         explanation: typeof item.explanation === 'string' ? item.explanation : null,
@@ -283,8 +296,29 @@ function parseImportedJson(jsonText: string): { year: number | null; questions: 
         image_reason: inferred.imageReason,
         selected: true,
         annulled,
-      } satisfies ImportedQuestion;
-    });
+        foreign_language: foreignLang,
+      };
+    };
+
+    if (isBilingual) {
+      // Create English version
+      const engStatement = typeof item.statement_english === 'string' ? item.statement_english : (item.statement || '');
+      const engAlts = Array.isArray(item.alternatives_english) ? item.alternatives_english : (item.alternatives || []);
+      const engCorrect = typeof item.correct_answer_english === 'string' ? item.correct_answer_english : (item.correct_answer || null);
+      questions.push(buildQuestion(engStatement, engAlts, engCorrect, 'ingles'));
+
+      // Create Spanish version
+      const espStatement = typeof item.statement_spanish === 'string' ? item.statement_spanish : '';
+      const espAlts = Array.isArray(item.alternatives_spanish) ? item.alternatives_spanish : [];
+      const espCorrect = typeof item.correct_answer_spanish === 'string' ? item.correct_answer_spanish : (item.correct_answer || null);
+      questions.push(buildQuestion(espStatement, espAlts, espCorrect, 'espanhol'));
+    } else {
+      // Regular question (no bilingual variant)
+      const statement = typeof item.statement === 'string' ? item.statement : '';
+      const alternatives = Array.isArray(item.alternatives) ? item.alternatives : [];
+      questions.push(buildQuestion(statement, alternatives, item.correct_answer ?? null, null));
+    }
+  }
 
   return { year: detectedYear, questions };
 }
@@ -921,6 +955,7 @@ export function useImportExam() {
             explanation: q.explanation || null,
             tags: (q.tags && q.tags.length > 0 ? q.tags : []) as any,
             images: allImages as any,
+            foreign_language: q.foreign_language || null,
           };
         }));
 

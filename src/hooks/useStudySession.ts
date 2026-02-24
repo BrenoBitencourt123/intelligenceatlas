@@ -706,7 +706,31 @@ export function useStudySession() {
           return;
         }
 
-        const parsedQuestions = data.map(mapQuestion);
+        // Filter out questions with the wrong foreign language based on user preference
+        const { data: prefs } = await supabase
+          .from("user_preferences")
+          .select("foreign_language")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        const userLang = (prefs?.foreign_language as string) || "ingles";
+        const oppositeLanguage = userLang === "ingles" ? "espanhol" : "ingles";
+
+        const filteredData = data.filter((q: any) => {
+          // Keep questions with no foreign_language (regular questions)
+          // Keep questions matching the user's chosen language
+          // Exclude questions in the opposite language
+          if (!q.foreign_language) return true;
+          return q.foreign_language !== oppositeLanguage;
+        });
+
+        if (filteredData.length === 0) {
+          toast.error("Nenhuma questão disponível para esta área");
+          setState("idle");
+          return;
+        }
+
+        const parsedQuestions = filteredData.map(mapQuestion);
         const hasTaxonomy = parsedQuestions.some((q) => q.topic && q.topic !== "Geral");
         let selectedQuestions = shuffleArray(parsedQuestions).slice(0, limit);
 
