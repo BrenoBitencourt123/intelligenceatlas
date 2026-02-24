@@ -183,51 +183,18 @@ function normalizeImages(images: unknown): QuestionImage[] {
 }
 
 function inferImageRequirement(
-  statement: string,
-  alternatives: { letter: string; text: string; image_url?: string | null }[],
-  aiRequiresImage?: boolean,
-  aiReason?: string | null
+  _statement: string,
+  _alternatives: { letter: string; text: string; image_url?: string | null }[],
+  jsonRequiresImage?: boolean,
+  jsonReason?: string | null
 ) {
-  if (aiRequiresImage) {
+  // Simply pass through what the JSON declares — no heuristic
+  if (jsonRequiresImage) {
     return {
       requiresImage: true,
-      imageReason: aiReason || 'IA indicou que a questao depende de elemento visual.',
+      imageReason: jsonReason || 'Indicado no JSON.',
     };
   }
-
-  const text = `${statement}\n${alternatives.map((a) => a.text).join('\n')}`.toLowerCase();
-  const imageHints = [
-    'figura',
-    'grafico',
-    'gráfico',
-    'tabela',
-    'mapa',
-    'esquema',
-    'imagem',
-    'ilustracao',
-    'ilustração',
-    'observe',
-    'com base na figura',
-    'de acordo com o grafico',
-    'de acordo com o gráfico',
-  ];
-
-  const matched = imageHints.find((hint) => text.includes(hint));
-  if (matched) {
-    return {
-      requiresImage: true,
-      imageReason: `Detectado indicio textual ("${matched}") de dependencia visual.`,
-    };
-  }
-
-  const hasAlternativeImage = alternatives.some((alt) => Boolean(alt.image_url));
-  if (hasAlternativeImage) {
-    return {
-      requiresImage: true,
-      imageReason: 'Alternativa com imagem anexada.',
-    };
-  }
-
   return { requiresImage: false, imageReason: null };
 }
 
