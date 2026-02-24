@@ -1,13 +1,144 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQuestionImageManager } from '@/hooks/useQuestionImageManager';
 import { validateQuestionImageFile } from '@/lib/questionImages';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Loader2, Upload, ImageOff, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Loader2, Upload, ImageOff, ChevronLeft, ChevronRight, X, FolderUp, CheckCircle2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+
+function BulkFolderUpload() {
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0, errors: 0 });
+  const [lastResult, setLastResult] = useState<{ success: number; errors: number } | null>(null);
+
+  const handleFolderSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const imageFiles = Array.from(files).filter(f =>
+      ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(f.type)
+    );
+
+    if (imageFiles.length === 0) {
+      toast({ title: 'Nenhuma imagem encontrada na pasta', variant: 'destructive' });
+      return;
+    }
+
+    setUploading(true);
+    setProgress({ done: 0, total: imageFiles.length, errors: 0 });
+    setLastResult(null);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Upload in batches of 5 for performance
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < imageFiles.length; i += BATCH_SIZE) {
+      const batch = imageFiles.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(async (file) => {
+          // webkitRelativePath gives us the full relative path like "enem/2020/d1/q001/stmt_0.webp"
+          const path = (file as any).webkitRelativePath || file.name;
+
+          const { error } = await supabase.storage
+            .from('question-images')
+            .upload(path, file, {
+              contentType: file.type,
+              upsert: true,
+            });
+
+          if (error) throw new Error(`${path}: ${error.message}`);
+        })
+      );
+
+      for (const r of results) {
+        if (r.status === 'fulfilled') successCount++;
+        else {
+          errorCount++;
+          console.error('[BulkUpload]', (r as PromiseRejectedResult).reason);
+        }
+      }
+
+      setProgress({ done: successCount + errorCount, total: imageFiles.length, errors: errorCount });
+    }
+
+    setUploading(false);
+    setLastResult({ success: successCount, errors: errorCount });
+
+    // Reset input so the same folder can be re-selected
+    if (folderInputRef.current) folderInputRef.current.value = '';
+
+    toast({
+      title: `Upload concluído`,
+      description: `${successCount} arquivo(s) enviado(s)${errorCount > 0 ? `, ${errorCount} erro(s)` : ''}`,
+      variant: errorCount > 0 ? 'destructive' : 'default',
+    });
+  }, []);
+
+  const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <FolderUp className="h-4 w-4 text-primary" />
+          Upload de pasta em lote
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Selecione uma pasta inteira (ex: <code className="bg-muted px-1 rounded">enem/</code>) para subir todas as imagens preservando a estrutura de pastas.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => folderInputRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FolderUp className="h-4 w-4 mr-2" />}
+            {uploading ? 'Enviando...' : 'Selecionar pasta'}
+          </Button>
+          <input
+            ref={folderInputRef}
+            type="file"
+            className="hidden"
+            onChange={handleFolderSelect}
+            {...({ webkitdirectory: '', directory: '', multiple: true } as any)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Os arquivos serão enviados para o bucket <code className="bg-muted px-1 rounded">question-images</code> com os mesmos caminhos.
+          </p>
+        </div>
+
+        {uploading && (
+          <div className="space-y-1">
+            <Progress value={pct} className="h-2" />
+            <p className="text-xs text-muted-foreground">
+              {progress.done} / {progress.total} ({pct}%)
+              {progress.errors > 0 && <span className="text-destructive ml-2">{progress.errors} erro(s)</span>}
+            </p>
+          </div>
+        )}
+
+        {lastResult && !uploading && (
+          <div className="flex items-center gap-2 text-sm">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>{lastResult.success} arquivo(s) enviado(s) com sucesso</span>
+            {lastResult.errors > 0 && (
+              <span className="text-destructive">• {lastResult.errors} erro(s)</span>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 const AREA_LABELS: Record<string, string> = {
   matematica: 'Matemática',
@@ -170,6 +301,7 @@ export default function ImageManagerPanel() {
 
   return (
     <div className="space-y-4">
+      <BulkFolderUpload />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
