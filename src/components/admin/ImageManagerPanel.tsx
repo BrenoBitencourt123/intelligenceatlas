@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Upload, ImageOff, ChevronLeft, ChevronRight, X, FolderUp, CheckCircle2 } from 'lucide-react';
+import { Loader2, Upload, ImageOff, ChevronLeft, ChevronRight, X, FolderUp, CheckCircle2, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
 
 function BulkFolderUpload() {
@@ -300,8 +301,63 @@ export default function ImageManagerPanel() {
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
+  const [clearingBucket, setClearingBucket] = useState(false);
+
+  const handleClearBucket = async () => {
+    setClearingBucket(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('clear-storage-bucket', {
+        body: { bucket: 'question-images' },
+      });
+      if (error) throw error;
+      toast({
+        title: 'Bucket limpo com sucesso',
+        description: `${data.deleted} arquivo(s) removido(s)${data.errors > 0 ? `, ${data.errors} erro(s)` : ''}`,
+      });
+    } catch (err: unknown) {
+      toast({ title: 'Erro ao limpar bucket', description: (err as Error).message, variant: 'destructive' });
+    } finally {
+      setClearingBucket(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {/* Danger zone: clear bucket */}
+      <Card className="border-destructive/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base text-destructive">
+            <Trash2 className="h-4 w-4" />
+            Limpar bucket de imagens
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Remove <strong>todos</strong> os arquivos do storage de imagens. Use para limpar imagens antigas antes de re-enviar.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={clearingBucket}>
+                {clearingBucket ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                {clearingBucket ? 'Limpando...' : 'Esvaziar bucket question-images'}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Isso vai remover <strong>todos</strong> os arquivos de imagem do storage. Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleClearBucket}>Sim, limpar tudo</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </CardContent>
+      </Card>
+
       <BulkFolderUpload />
       <Card>
         <CardHeader>
