@@ -46,12 +46,13 @@ function BulkFolderUpload() {
           // webkitRelativePath gives us the full relative path like "enem/2020/d1/q001/stmt_0.webp"
           const path = (file as any).webkitRelativePath || file.name;
 
-          const { error } = await supabase.storage
-            .from('question-images')
-            .upload(path, file, {
-              contentType: file.type,
-              upsert: true,
-            });
+            const { error } = await supabase.storage
+              .from('question-images')
+              .upload(path, file, {
+                contentType: file.type,
+                upsert: true,
+                cacheControl: '0',
+              });
 
           if (error) throw new Error(`${path}: ${error.message}`);
         })
