@@ -360,26 +360,41 @@ const Objectives = () => {
                   });
                   return (
                     <>
-                      {statementImages.length > 0 && (
-                        <QuestionImageGallery
-                          images={statementImages}
-                          questionNumber={currentQuestion.number}
-                        />
+                      {/* Question number + year tag */}
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="outline">Q{currentQuestion.number}</Badge>
+                        <span className="text-xs text-muted-foreground">ENEM {currentQuestion.year}</span>
+                      </div>
+
+                      {/* Statement text */}
+                      {currentQuestion.statement?.trim() ? (
+                        <MarkdownText content={currentQuestion.statement} className="text-sm leading-relaxed" />
+                      ) : (
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          Esta questão usa imagem como enunciado principal.
+                        </p>
                       )}
 
-                      <div className="flex items-start gap-2">
-                        <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-                          <Badge variant="outline">Q{currentQuestion.number}</Badge>
-                          <span className="text-xs text-muted-foreground">ENEM {currentQuestion.year}</span>
+                      {/* Statement images – between text and alternatives, centered like in the PDF */}
+                      {statementImages.length > 0 && (
+                        <div className="flex flex-col items-center gap-3 py-2">
+                          {[...statementImages].sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)).map((img: any, idx: number) => (
+                            <div key={`stmt-${idx}`} className="relative max-w-sm w-full">
+                              <img
+                                src={img.url}
+                                alt={img.caption || `Imagem da questão ${currentQuestion.number}`}
+                                className="w-full h-auto rounded-lg border bg-muted/20 object-contain"
+                                loading="lazy"
+                              />
+                              {img.caption && (
+                                <p className="text-[11px] text-muted-foreground text-center mt-1.5 italic">
+                                  {img.caption}
+                                </p>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                        {currentQuestion.statement?.trim() ? (
-                          <MarkdownText content={currentQuestion.statement} className="text-sm leading-relaxed" />
-                        ) : (
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            Esta questao usa imagem como enunciado principal.
-                          </p>
-                        )}
-                      </div>
+                      )}
 
                       {/* Pre-concept block - before alternatives */}
                       {hasKnowledgeCapsules && !showFeedback && (
@@ -391,6 +406,7 @@ const Objectives = () => {
                         {alternatives.map((alt) => {
                           let extraClass = 'hover:bg-muted/50 cursor-pointer';
                           const altImages = altImageMap.get(alt.letter) || [];
+                          const hasAltImage = altImages.length > 0 || (alt as any).image_url;
 
                           if (showFeedback) {
                             extraClass = 'cursor-default';
@@ -413,13 +429,13 @@ const Objectives = () => {
                               <span className="font-bold text-sm shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center">
                                 {alt.letter}
                               </span>
-                              <span className="text-sm flex-1">
+                              <span className={`text-sm flex-1 ${hasAltImage ? 'flex items-center gap-2' : ''}`}>
                                 {alt.text && <span>{alt.text}</span>}
                                 {(alt as any).image_url && (
                                   <img
                                     src={(alt as any).image_url}
                                     alt={`Alternativa ${alt.letter}`}
-                                    className="mt-2 w-full max-w-full rounded border object-contain"
+                                    className="max-h-20 max-w-[180px] rounded border object-contain bg-muted/10"
                                     loading="lazy"
                                   />
                                 )}
@@ -428,7 +444,7 @@ const Objectives = () => {
                                     key={idx}
                                     src={img.url}
                                     alt={`Alternativa ${alt.letter}`}
-                                    className="mt-2 w-full max-w-full rounded border object-contain"
+                                    className="max-h-20 max-w-[180px] rounded border object-contain bg-muted/10"
                                     loading="lazy"
                                   />
                                 ))}
