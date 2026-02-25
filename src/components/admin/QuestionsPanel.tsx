@@ -12,8 +12,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
-import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
+import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, AlertTriangle, RefreshCw, Loader2, ImageOff } from 'lucide-react';
 import { DISCIPLINAS, getDisciplinasForArea } from '@/taxonomy/taxonomy';
+import type { QuestionImage } from '@/lib/questionImages';
+import type { Json } from '@/integrations/supabase/types';
 
 interface Question {
   id: string;
@@ -29,6 +31,7 @@ interface Question {
   explanation: string | null;
   tags: unknown;
   image_url: string | null;
+  images: QuestionImage[];
   created_at: string;
   // Taxonomy v2
   disciplina: string | null;
@@ -92,6 +95,7 @@ const QuestionsPanel = () => {
   const [editDisciplina, setEditDisciplina] = useState('');
   const [editCognitiveLevel, setEditCognitiveLevel] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editImages, setEditImages] = useState<QuestionImage[]>([]);
 
   // Reclassify
   const [reclassifying, setReclassifying] = useState(false);
@@ -147,6 +151,7 @@ const QuestionsPanel = () => {
     setEditExplanation(q.explanation || '');
     setEditDisciplina(q.disciplina || '');
     setEditCognitiveLevel(q.cognitive_level || '');
+    setEditImages((q.images as unknown as QuestionImage[]) ?? []);
   };
 
   const handleSave = async () => {
@@ -165,6 +170,7 @@ const QuestionsPanel = () => {
         explanation: editExplanation || null,
         disciplina: editDisciplina || null,
         cognitive_level: editCognitiveLevel || null,
+        images: editImages as unknown as Json,
         // Manual edit clears needs_review
         needs_review: false,
       })
@@ -486,6 +492,50 @@ const QuestionsPanel = () => {
             <div>
               <Label>Explicação</Label>
               <Textarea value={editExplanation} onChange={(e) => setEditExplanation(e.target.value)} rows={4} />
+            </div>
+
+            {/* Images management */}
+            <div>
+              <Label className="flex items-center gap-2">
+                Imagens ({editImages.length})
+                {editImages.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="h-6 text-xs px-2"
+                    onClick={() => setEditImages([])}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Remover todas
+                  </Button>
+                )}
+              </Label>
+              {editImages.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {editImages.map((img, i) => (
+                    <div key={`${img.url}-${i}`} className="relative rounded-md overflow-hidden border bg-muted/20">
+                      <img
+                        src={`${img.url}${img.url.includes('?') ? '&' : '?'}t=${Date.now()}`}
+                        alt={`Imagem ${i + 1}`}
+                        className="h-20 w-full object-cover"
+                        loading="lazy"
+                      />
+                      <button
+                        type="button"
+                        className="absolute top-1 right-1 rounded-full bg-destructive text-destructive-foreground p-0.5"
+                        onClick={() => setEditImages(prev => prev.filter((_, idx) => idx !== i))}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <ImageOff className="h-3.5 w-3.5" /> Nenhuma imagem associada
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
