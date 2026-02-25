@@ -343,73 +343,103 @@ const Objectives = () => {
             {/* Question */}
             <Card>
               <CardContent className="p-4 space-y-4">
-                {currentQuestion.images && currentQuestion.images.length > 0 && (
-                  <QuestionImageGallery
-                    images={currentQuestion.images}
-                    questionNumber={currentQuestion.number}
-                  />
-                )}
-
-                <div className="flex items-start gap-2">
-                  <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-                    <Badge variant="outline">Q{currentQuestion.number}</Badge>
-                    <span className="text-xs text-muted-foreground">ENEM {currentQuestion.year}</span>
-                  </div>
-                  {currentQuestion.statement?.trim() ? (
-                    <MarkdownText content={currentQuestion.statement} className="text-sm leading-relaxed" />
-                  ) : (
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      Esta questao usa imagem como enunciado principal.
-                    </p>
-                  )}
-                </div>
-
-                {/* Pre-concept block - before alternatives */}
-                {hasKnowledgeCapsules && !showFeedback && (
-                  <PreConceptBlock pedagogy={pedagogy} loading={pedagogyLoading} />
-                )}
-
-                {/* Alternatives */}
-                <div className="space-y-2">
-                  {alternatives.map((alt) => {
-                    let extraClass = 'hover:bg-muted/50 cursor-pointer';
-
-                    if (showFeedback) {
-                      extraClass = 'cursor-default';
-                      if (alt.letter === currentQuestion.correct_answer) {
-                        extraClass = 'border-green-500 bg-green-500/10 cursor-default';
-                      } else if (currentAnswer?.selected === alt.letter && !currentAnswer.correct) {
-                        extraClass = 'border-red-500 bg-red-500/10 cursor-default';
-                      }
-                    } else if (currentAnswer?.selected === alt.letter) {
-                      extraClass = 'border-primary bg-primary/10';
+                {/* Split images: statement images vs alternative images */}
+                {(() => {
+                  const allImages = currentQuestion.images || [];
+                  const ALT_LETTERS = ['A', 'B', 'C', 'D', 'E'];
+                  const statementImages = allImages.filter(
+                    (img: any) => !img.caption || !ALT_LETTERS.includes(img.caption.trim().toUpperCase())
+                  );
+                  const altImageMap = new Map<string, any[]>();
+                  allImages.forEach((img: any) => {
+                    if (img.caption && ALT_LETTERS.includes(img.caption.trim().toUpperCase())) {
+                      const letter = img.caption.trim().toUpperCase();
+                      if (!altImageMap.has(letter)) altImageMap.set(letter, []);
+                      altImageMap.get(letter)!.push(img);
                     }
+                  });
+                  return (
+                    <>
+                      {statementImages.length > 0 && (
+                        <QuestionImageGallery
+                          images={statementImages}
+                          questionNumber={currentQuestion.number}
+                        />
+                      )}
 
-                    return (
-                      <button
-                        key={alt.letter}
-                        className={`w-full text-left p-3 rounded-lg border transition-colors flex items-start gap-3 ${extraClass}`}
-                        onClick={() => !showFeedback && answerQuestion(alt.letter, hasAutoFlashcards)}
-                        disabled={showFeedback}
-                      >
-                        <span className="font-bold text-sm shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center">
-                          {alt.letter}
-                        </span>
-                        <span className="text-sm flex-1">
-                          <span>{alt.text}</span>
-                          {(alt as any).image_url && (
-                            <img
-                              src={(alt as any).image_url}
-                              alt={`Alternativa ${alt.letter}`}
-                              className="mt-2 w-full max-w-full rounded border object-contain"
-                              loading="lazy"
-                            />
-                          )}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                      <div className="flex items-start gap-2">
+                        <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                          <Badge variant="outline">Q{currentQuestion.number}</Badge>
+                          <span className="text-xs text-muted-foreground">ENEM {currentQuestion.year}</span>
+                        </div>
+                        {currentQuestion.statement?.trim() ? (
+                          <MarkdownText content={currentQuestion.statement} className="text-sm leading-relaxed" />
+                        ) : (
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            Esta questao usa imagem como enunciado principal.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Pre-concept block - before alternatives */}
+                      {hasKnowledgeCapsules && !showFeedback && (
+                        <PreConceptBlock pedagogy={pedagogy} loading={pedagogyLoading} />
+                      )}
+
+                      {/* Alternatives */}
+                      <div className="space-y-2">
+                        {alternatives.map((alt) => {
+                          let extraClass = 'hover:bg-muted/50 cursor-pointer';
+                          const altImages = altImageMap.get(alt.letter) || [];
+
+                          if (showFeedback) {
+                            extraClass = 'cursor-default';
+                            if (alt.letter === currentQuestion.correct_answer) {
+                              extraClass = 'border-green-500 bg-green-500/10 cursor-default';
+                            } else if (currentAnswer?.selected === alt.letter && !currentAnswer.correct) {
+                              extraClass = 'border-red-500 bg-red-500/10 cursor-default';
+                            }
+                          } else if (currentAnswer?.selected === alt.letter) {
+                            extraClass = 'border-primary bg-primary/10';
+                          }
+
+                          return (
+                            <button
+                              key={alt.letter}
+                              className={`w-full text-left p-3 rounded-lg border transition-colors flex items-start gap-3 ${extraClass}`}
+                              onClick={() => !showFeedback && answerQuestion(alt.letter, hasAutoFlashcards)}
+                              disabled={showFeedback}
+                            >
+                              <span className="font-bold text-sm shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                                {alt.letter}
+                              </span>
+                              <span className="text-sm flex-1">
+                                {alt.text && <span>{alt.text}</span>}
+                                {(alt as any).image_url && (
+                                  <img
+                                    src={(alt as any).image_url}
+                                    alt={`Alternativa ${alt.letter}`}
+                                    className="mt-2 w-full max-w-full rounded border object-contain"
+                                    loading="lazy"
+                                  />
+                                )}
+                                {altImages.map((img: any, idx: number) => (
+                                  <img
+                                    key={idx}
+                                    src={img.url}
+                                    alt={`Alternativa ${alt.letter}`}
+                                    className="mt-2 w-full max-w-full rounded border object-contain"
+                                    loading="lazy"
+                                  />
+                                ))}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                })()}
 
                 {/* Post-answer pedagogical blocks - Pro only */}
                 {showFeedback && hasKnowledgeCapsules && (
