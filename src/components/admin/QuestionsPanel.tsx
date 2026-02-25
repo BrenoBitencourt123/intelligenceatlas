@@ -82,6 +82,7 @@ const QuestionsPanel = () => {
   const [filterYear, setFilterYear] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterNeedsReview, setFilterNeedsReview] = useState(false);
+  const [filterHasImages, setFilterHasImages] = useState(false);
 
   // Edit modal
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
@@ -105,9 +106,9 @@ const QuestionsPanel = () => {
 
   useEffect(() => { fetchYears(); }, []);
 
-  useEffect(() => { setPage(0); }, [filterArea, filterYear, searchQuery, filterNeedsReview]);
+  useEffect(() => { setPage(0); }, [filterArea, filterYear, searchQuery, filterNeedsReview, filterHasImages]);
 
-  useEffect(() => { fetchQuestions(); }, [page, filterArea, filterYear, searchQuery, filterNeedsReview]);
+  useEffect(() => { fetchQuestions(); }, [page, filterArea, filterYear, searchQuery, filterNeedsReview, filterHasImages]);
 
   const fetchYears = async () => {
     const { data } = await supabase.from('questions').select('year').order('year', { ascending: false });
@@ -126,6 +127,7 @@ const QuestionsPanel = () => {
     if (filterArea !== 'all') query = query.eq('area', filterArea);
     if (filterYear !== 'all') query = query.eq('year', parseInt(filterYear));
     if (filterNeedsReview) query = query.eq('needs_review', true);
+    if (filterHasImages) query = query.neq('images', '[]');
     if (searchQuery.trim()) {
       query = query.or(`statement.ilike.%${searchQuery}%,number.eq.${parseInt(searchQuery) || 0}`);
     }
@@ -297,7 +299,39 @@ const QuestionsPanel = () => {
               <AlertTriangle className="h-4 w-4 mr-1" />
               Needs review
             </Button>
+            <Button
+              variant={filterHasImages ? 'default' : 'outline'}
+              size="sm"
+              className="shrink-0"
+              onClick={() => setFilterHasImages((v) => !v)}
+            >
+              🖼️ Com imagens
+            </Button>
           </div>
+          {filterHasImages && questions.length > 0 && (
+            <div className="mt-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={async () => {
+                  const ids = questions.map(q => q.id);
+                  const { error } = await supabase
+                    .from('questions')
+                    .update({ images: [] as unknown as Json })
+                    .in('id', ids);
+                  if (error) {
+                    toast({ title: 'Erro ao limpar imagens', description: error.message, variant: 'destructive' });
+                  } else {
+                    toast({ title: `Imagens removidas de ${ids.length} questões` });
+                    fetchQuestions();
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Remover imagens da página ({questions.length} questões)
+              </Button>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground mt-2">
             {totalCount} questão(ões) encontrada(s)
           </p>
