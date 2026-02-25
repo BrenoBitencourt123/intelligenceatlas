@@ -264,7 +264,18 @@ function QuestionEditDialog({
   if (question && question !== lastQ) {
     setLastQ(question);
     setStatement(question.statement);
-    setAlternatives(question.alternatives.map(a => ({ ...a })));
+    // Map images with caption A-E to alternative image_url
+    const ALT_LETTERS = ['A', 'B', 'C', 'D', 'E'];
+    const altImageMap = new Map<string, string>();
+    (question.images || []).forEach((img: any) => {
+      if (img.caption && ALT_LETTERS.includes(String(img.caption).trim().toUpperCase())) {
+        altImageMap.set(String(img.caption).trim().toUpperCase(), img.url);
+      }
+    });
+    setAlternatives(question.alternatives.map(a => ({
+      ...a,
+      image_url: a.image_url || altImageMap.get(a.letter) || null,
+    })));
     setCorrectAnswer(question.annulled ? 'anulada' : (question.correct_answer || 'none'));
     setArea(question.area);
     setTags(question.tags.join(', '));
@@ -614,30 +625,76 @@ function PreviewStage({
                           </p>
                         )}
 
-                        {q.images.length > 0 && (
-                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2" onClick={(e) => e.stopPropagation()}>
-                            {q.images.map((img, imageIndex) => (
-                              <div key={`${img.url}-${imageIndex}`} className="relative rounded-md overflow-hidden border bg-muted/20">
-                                <img
-                                  src={img.url}
-                                  alt={`Questao ${q.number} imagem ${imageIndex + 1}`}
-                                  className="h-16 w-full object-cover"
-                                  loading="lazy"
-                                />
-                                <button
-                                  type="button"
-                                  className="absolute top-1 right-1 rounded-full bg-black/60 text-white p-0.5"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRemoveImage(q.number, q.day, imageIndex);
-                                  }}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        {/* Statement images (exclude images with caption matching A-E) */}
+                        {(() => {
+                          const ALT_LETTERS = ['A', 'B', 'C', 'D', 'E'];
+                          const stmtImages = q.images.filter(
+                            (img) => !img.caption || !ALT_LETTERS.includes(String(img.caption).trim().toUpperCase())
+                          );
+                          const altImages = q.images.filter(
+                            (img) => img.caption && ALT_LETTERS.includes(String(img.caption).trim().toUpperCase())
+                          );
+                          return (
+                            <>
+                              {stmtImages.length > 0 && (
+                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2" onClick={(e) => e.stopPropagation()}>
+                                  {stmtImages.map((img, imageIndex) => (
+                                    <div key={`${img.url}-${imageIndex}`} className="relative rounded-md overflow-hidden border bg-muted/20">
+                                      <img
+                                        src={img.url}
+                                        alt={`Questao ${q.number} imagem ${imageIndex + 1}`}
+                                        className="h-16 w-full object-cover"
+                                        loading="lazy"
+                                      />
+                                      <button
+                                        type="button"
+                                        className="absolute top-1 right-1 rounded-full bg-black/60 text-white p-0.5"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const origIndex = q.images.indexOf(img);
+                                          onRemoveImage(q.number, q.day, origIndex);
+                                        }}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {altImages.length > 0 && (
+                                <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
+                                  <p className="text-[11px] text-muted-foreground font-medium">Imagens das alternativas:</p>
+                                  <div className="grid grid-cols-5 gap-1.5">
+                                    {altImages.map((img, idx) => (
+                                      <div key={`${img.url}-${idx}`} className="relative rounded-md overflow-hidden border bg-muted/20">
+                                        <span className="absolute top-0.5 left-0.5 bg-black/60 text-white text-[9px] font-bold px-1 rounded">
+                                          {String(img.caption).trim().toUpperCase()}
+                                        </span>
+                                        <img
+                                          src={img.url}
+                                          alt={`Alt ${img.caption}`}
+                                          className="h-14 w-full object-cover"
+                                          loading="lazy"
+                                        />
+                                        <button
+                                          type="button"
+                                          className="absolute top-0.5 right-0.5 rounded-full bg-black/60 text-white p-0.5"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const origIndex = q.images.indexOf(img);
+                                            onRemoveImage(q.number, q.day, origIndex);
+                                          }}
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </CardContent>
                     </Card>
                   );
