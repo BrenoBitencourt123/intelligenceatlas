@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, AlertCircle, X, Pencil, ImagePlus, Trash2, Globe } from 'lucide-react';
+import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, AlertCircle, X, Pencil, ImagePlus, Trash2, Globe, Camera, ClipboardPaste } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useImportExam, ImportedQuestion, DayUpload } from '@/hooks/useImportExam';
 
@@ -240,6 +240,8 @@ function UploadStage({
       </Card>
 
       <EnemDevImportSection onProcessJson={onProcessJson} loading={loading} />
+
+      <ScreenshotImportSection onProcessJson={onProcessJson} loading={loading} />
     </div>
   );
 }
@@ -493,6 +495,281 @@ function EnemDevImportSection({
               <>
                 <Globe className="h-4 w-4 mr-2" />
                 Buscar e Classificar
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ScreenshotImportSection({
+  onProcessJson,
+  loading: parentLoading,
+}: {
+  onProcessJson: (jsonText: string) => void;
+  loading: boolean;
+}) {
+  const [screenshots, setScreenshots] = useState<{ id: string; file: File; preview: string }[]>([]);
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [processing, setProcessing] = useState(false);
+  const [processStatus, setProcessStatus] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  const MAX_IMAGES = 20;
+  const BATCH_SIZE = 5;
+
+  const addImages = useCallback((files: File[]) => {
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+
+    setScreenshots(prev => {
+      const remaining = MAX_IMAGES - prev.length;
+      if (remaining <= 0) {
+        toast({ title: 'Limite atingido', description: `Máximo de ${MAX_IMAGES} imagens por vez.`, variant: 'destructive' });
+        return prev;
+      }
+      const toAdd = imageFiles.slice(0, remaining);
+      const newItems = toAdd.map(file => ({
+        id: crypto.randomUUID(),
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      return [...prev, ...newItems];
+    });
+  }, []);
+
+  const removeImage = useCallback((id: string) => {
+    setScreenshots(prev => {
+      const item = prev.find(s => s.id === id);
+      if (item) URL.revokeObjectURL(item.preview);
+      return prev.filter(s => s.id !== id);
+    });
+  }, []);
+
+  // Ctrl+V paste listener
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (processing || parentLoading) return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const imageFiles: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) imageFiles.push(file);
+        }
+      }
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        addImages(imageFiles);
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [addImages, processing, parentLoading]);
+
+  // Cleanup previews on unmount
+  useEffect(() => {
+    return () => {
+      screenshots.forEach(s => URL.revokeObjectURL(s.preview));
+    };
+  }, []);
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleExtract = useCallback(async () => {
+    if (screenshots.length === 0) return;
+    setProcessing(true);
+    setProcessStatus('Convertendo imagens...');
+
+    try {
+      // Convert all to base64
+      const base64Images = await Promise.all(screenshots.map(s => fileToBase64(s.file)));
+
+      // Process in batches
+      const allQuestions: any[] = [];
+      let detectedYear: number | null = null;
+      const totalBatches = Math.ceil(base64Images.length / BATCH_SIZE);
+
+      for (let i = 0; i < base64Images.length; i += BATCH_SIZE) {
+        const batch = base64Images.slice(i, i + BATCH_SIZE);
+        const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+        setProcessStatus(`Extraindo questões... (lote ${batchNum}/${totalBatches})`);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min
+
+        try {
+          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          const url = `https://${projectId}.supabase.co/functions/v1/parse-exam-pdf`;
+
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${anonKey}`,
+              'apikey': anonKey,
+            },
+            body: JSON.stringify({
+              images: batch,
+              year: selectedYear ? parseInt(selectedYear) : undefined,
+              chunkIndex: i / BATCH_SIZE,
+              totalChunks: totalBatches,
+            }),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(`Erro na extração: ${res.status} - ${errText}`);
+          }
+
+          const data = await res.json();
+          if (data.questions?.length) {
+            allQuestions.push(...data.questions);
+          }
+          if (data.detected_year && !detectedYear) {
+            detectedYear = data.detected_year;
+          }
+        } catch (batchErr: any) {
+          clearTimeout(timeoutId);
+          if (batchErr.name === 'AbortError') {
+            throw new Error('Timeout: a extração demorou mais de 5 minutos.');
+          }
+          throw batchErr;
+        }
+      }
+
+      if (allQuestions.length === 0) {
+        toast({ title: 'Nenhuma questão encontrada', description: 'A IA não conseguiu extrair questões dessas imagens.', variant: 'destructive' });
+        return;
+      }
+
+      const year = selectedYear ? parseInt(selectedYear) : detectedYear;
+      const jsonPayload = JSON.stringify({
+        year,
+        questions: allQuestions,
+      });
+
+      toast({ title: `${allQuestions.length} questões extraídas`, description: 'Revise no preview antes de salvar.' });
+      onProcessJson(jsonPayload);
+    } catch (err: any) {
+      console.error('Screenshot extraction error:', err);
+      toast({ title: 'Erro na extração', description: err?.message ?? 'Erro desconhecido.', variant: 'destructive' });
+    } finally {
+      setProcessing(false);
+      setProcessStatus('');
+    }
+  }, [screenshots, selectedYear, onProcessJson]);
+
+  const busy = processing || parentLoading;
+  const availableYears = Array.from({ length: 20 }, (_, i) => String(2009 + i));
+
+  return (
+    <Card className="border-primary/30">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Camera className="h-4 w-4 text-primary" />
+          Importar por Screenshots
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Cole prints de questões (Ctrl+V), arraste ou selecione imagens. A IA extrai o texto, alternativas e classifica automaticamente.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {/* Drop/paste area */}
+        <div
+          ref={dropRef}
+          onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+          onDrop={e => {
+            e.preventDefault();
+            e.stopPropagation();
+            const files = Array.from(e.dataTransfer.files);
+            addImages(files);
+          }}
+          onClick={() => fileInputRef.current?.click()}
+          className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+        >
+          <div className="flex flex-col items-center gap-2">
+            <ClipboardPaste className="h-8 w-8 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Cole imagens (Ctrl+V) ou arraste aqui</p>
+              <p className="text-xs text-muted-foreground/60">PNG, JPG — até {MAX_IMAGES} imagens por vez</p>
+            </div>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={e => {
+              if (e.target.files) addImages(Array.from(e.target.files));
+              e.target.value = '';
+            }}
+          />
+        </div>
+
+        {/* Thumbnail gallery */}
+        {screenshots.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">{screenshots.length} imagem(ns) selecionada(s)</p>
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+              {screenshots.map(s => (
+                <div key={s.id} className="relative group aspect-square rounded-md overflow-hidden border border-border">
+                  <img src={s.preview} alt="Screenshot" className="w-full h-full object-cover" />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); removeImage(s.id); }}
+                    className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Year + extract button */}
+        <div className="flex gap-2">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-32 h-9">
+              <SelectValue placeholder="Ano (opc.)" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableYears.map(y => (
+                <SelectItem key={y} value={y}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={handleExtract}
+            disabled={screenshots.length === 0 || busy}
+            className="flex-1"
+          >
+            {processing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {processStatus || 'Extraindo...'}
+              </>
+            ) : (
+              <>
+                <Camera className="h-4 w-4 mr-2" />
+                Extrair Questões ({screenshots.length})
               </>
             )}
           </Button>
