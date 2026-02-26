@@ -1,4 +1,6 @@
-﻿import { useState, useRef, useCallback } from 'react';
+﻿import { useState, useRef, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -249,13 +251,36 @@ function EnemDevImportSection({
   onProcessJson: (jsonText: string) => void;
   loading: boolean;
 }) {
+  const { user } = useAuth();
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [fetching, setFetching] = useState(false);
+  const [userLang, setUserLang] = useState<string | null>(null);
+
+  // Fetch user's preferred foreign language from preferences
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('user_preferences')
+      .select('foreign_language')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setUserLang(data?.foreign_language || null);
+      });
+  }, [user]);
 
   const DISCIPLINE_MAP: Record<string, string> = {
     linguagens: 'linguagens',
     'ciencias-humanas': 'humanas',
     'ciencias-natureza': 'natureza',
+    matematica: 'matematica',
+  };
+
+  // Map enem.dev discipline values to our taxonomy disciplina IDs
+  const DISCIPLINA_MAP: Record<string, string | null> = {
+    linguagens: 'lingua_portuguesa',
+    'ciencias-humanas': null, // mixed (historia, geografia, etc.) — let classify-question resolve
+    'ciencias-natureza': null, // mixed (quimica, fisica, biologia) — let classify-question resolve
     matematica: 'matematica',
   };
 
@@ -266,7 +291,18 @@ function EnemDevImportSection({
     setFetching(true);
 
     try {
-      // Fetch all questions from enem.dev (paginate)
+      // 1) Check for already-imported questions for this year (dedup)
+      const { data: existingQuestions } = await supabase
+        .from('questions')
+        .select('number, foreign_language')
+        .eq('year', parseInt(selectedYear))
+        .limit(1000);
+
+      const existingSet = new Set(
+        (existingQuestions || []).map((q) => `${q.number}_${q.foreign_language || ''}`)
+      );
+
+      // 2) Fetch all questions from enem.dev (paginate)
       const allQuestions: any[] = [];
       let offset = 0;
       const limit = 50;
@@ -287,64 +323,87 @@ function EnemDevImportSection({
         return;
       }
 
-      // Convert to our JSON format
-      const mapped = allQuestions.map((q: any) => {
-        const area = DISCIPLINE_MAP[q.discipline] || 'linguagens';
-
-        let statement = (q.context || '').trim();
-        if (q.alternativesIntroduction?.trim()) {
-          statement += `\n\n${q.alternativesIntroduction.trim()}`;
-        }
-
-        const images = (q.files || [])
-          .filter((f: string) => f && f.length > 0)
-          .map((url: string, i: number) => ({ url, order: i }));
-
-        // Add image placeholders if images exist
-        if (images.length > 0 && !statement.includes('{{IMG_')) {
-          const placeholders = images.map((_: any, i: number) => `{{IMG_${i}}}`).join('\n');
-          if (q.alternativesIntroduction?.trim()) {
-            const contextPart = (q.context || '').trim();
-            statement = `${contextPart}\n\n${placeholders}\n\n${q.alternativesIntroduction.trim()}`;
-          } else {
-            statement += `\n\n${placeholders}`;
-          }
-        }
-
-        const alternatives = (q.alternatives || []).map((alt: any) => ({
-          letter: alt.letter,
-          text: alt.text || '',
-          image_url: alt.file || undefined,
-        }));
-
-        let foreign_language: string | null = null;
-        if (q.language && q.language !== 'portugues') {
-          foreign_language = q.language;
-        }
-
-        // ENEM day 1 = linguagens + humanas, day 2 = natureza + matemática
-        const DAY2_DISCIPLINES = ['ciencias-natureza', 'matematica'];
-        const day = DAY2_DISCIPLINES.includes(q.discipline) ? 2 : 1;
-
-        return {
-          number: q.index,
-          day,
-          area,
-          statement,
-          alternatives,
-          correct_answer: q.correctAlternative || 'A',
-          images,
-          foreign_language,
-          explanation: null,
-        };
+      // 3) Filter bilingual questions by user's preferred language
+      const preferredLang = userLang || 'ingles'; // default to ingles if not set
+      const filtered = allQuestions.filter((q: any) => {
+        // Non-language questions pass through
+        if (!q.language || q.language === 'portugues') return true;
+        // For bilingual (espanhol/ingles), keep only the user's preferred
+        return q.language === preferredLang;
       });
 
+      // 4) Convert to our JSON format
+      const mapped = filtered
+        .map((q: any) => {
+          const area = DISCIPLINE_MAP[q.discipline] || 'linguagens';
+
+          let foreign_language: string | null = null;
+          if (q.language && q.language !== 'portugues') {
+            foreign_language = q.language;
+          }
+
+          // Skip if already imported
+          const dedupKey = `${q.index}_${foreign_language || ''}`;
+          if (existingSet.has(dedupKey)) return null;
+
+          let statement = (q.context || '').trim();
+          if (q.alternativesIntroduction?.trim()) {
+            statement += `\n\n${q.alternativesIntroduction.trim()}`;
+          }
+
+          const images = (q.files || [])
+            .filter((f: string) => f && f.length > 0)
+            .map((url: string, i: number) => ({ url, order: i }));
+
+          // Add image placeholders if images exist
+          if (images.length > 0 && !statement.includes('{{IMG_')) {
+            const placeholders = images.map((_: any, i: number) => `{{IMG_${i}}}`).join('\n');
+            if (q.alternativesIntroduction?.trim()) {
+              const contextPart = (q.context || '').trim();
+              statement = `${contextPart}\n\n${placeholders}\n\n${q.alternativesIntroduction.trim()}`;
+            } else {
+              statement += `\n\n${placeholders}`;
+            }
+          }
+
+          const alternatives = (q.alternatives || []).map((alt: any) => ({
+            letter: alt.letter,
+            text: alt.text || '',
+            image_url: alt.file || undefined,
+          }));
+
+          // ENEM day 1 = linguagens + humanas, day 2 = natureza + matemática
+          const DAY2_DISCIPLINES = ['ciencias-natureza', 'matematica'];
+          const day = DAY2_DISCIPLINES.includes(q.discipline) ? 2 : 1;
+
+          // Map discipline to our taxonomy disciplina
+          const disciplina = DISCIPLINA_MAP[q.discipline] ?? null;
+
+          return {
+            number: q.index,
+            day,
+            area,
+            disciplina,
+            statement,
+            alternatives,
+            correct_answer: q.correctAlternative || 'A',
+            images,
+            foreign_language,
+            explanation: null,
+          };
+        })
+        .filter(Boolean);
+
+      const skipped = filtered.length - mapped.length;
       const jsonPayload = JSON.stringify({
         year: parseInt(selectedYear),
         questions: mapped,
       });
 
-      toast({ title: `${mapped.length} questões carregadas`, description: 'Revise no preview antes de importar.' });
+      const desc = skipped > 0
+        ? `${skipped} já importadas foram ignoradas. Revise no preview.`
+        : 'Revise no preview antes de importar.';
+      toast({ title: `${mapped.length} questões carregadas`, description: desc });
       onProcessJson(jsonPayload);
     } catch (err: any) {
       console.error('Erro ao buscar do enem.dev:', err);
@@ -352,7 +411,7 @@ function EnemDevImportSection({
     } finally {
       setFetching(false);
     }
-  }, [selectedYear, onProcessJson]);
+  }, [selectedYear, onProcessJson, userLang]);
 
   const busy = fetching || parentLoading;
 

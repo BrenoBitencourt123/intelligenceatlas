@@ -7,6 +7,7 @@ import { QuestionImage, uploadQuestionImage, validateQuestionImageFile } from '@
 export interface ImportedQuestion {
   number: number;
   area: string;
+  disciplina?: string | null;
   topic?: string;
   subtopic?: string;
   difficulty?: 1 | 2 | 3;
@@ -913,6 +914,7 @@ export function useImportExam() {
             id: questionId,
             number: q.number,
             area: q.area,
+            disciplina: q.disciplina || null,
             topic: q.topic || 'Geral',
             subtopic: q.subtopic || '',
             difficulty: q.difficulty || 2,
