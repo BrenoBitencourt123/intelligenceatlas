@@ -12,7 +12,8 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, AlertCircle, X, Pencil, ImagePlus, Trash2, Globe, Camera, ClipboardPaste } from 'lucide-react';
+import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, AlertCircle, X, Pencil, ImagePlus, Trash2, Globe, Camera, ClipboardPaste, Plus, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useImportExam, ImportedQuestion, DayUpload } from '@/hooks/useImportExam';
 
@@ -327,14 +328,8 @@ function EnemDevImportSection({
         return;
       }
 
-      // 3) Filter bilingual questions by user's preferred language
-      const preferredLang = userLang || 'ingles'; // default to ingles if not set
-      const filtered = allQuestions.filter((q: any) => {
-        // Non-language questions pass through
-        if (!q.language || q.language === 'portugues') return true;
-        // For bilingual (espanhol/ingles), keep only the user's preferred
-        return q.language === preferredLang;
-      });
+      // 3) Keep ALL questions including both foreign languages (ingles + espanhol)
+      const filtered = allQuestions;
 
       // 4) Convert to our JSON format
       const mapped = filtered
@@ -990,6 +985,137 @@ function QuestionEditDialog({
   );
 }
 
+function ManualAddDialog({
+  open,
+  onClose,
+  onAdd,
+  existingQuestions,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onAdd: (q: Partial<ImportedQuestion>) => void;
+  existingQuestions: ImportedQuestion[];
+}) {
+  const [number, setNumber] = useState<number>(1);
+  const [day, setDay] = useState<string>('1');
+  const [area, setArea] = useState<string>('linguagens');
+  const [foreignLang, setForeignLang] = useState<string>('none');
+  const [statement, setStatement] = useState('');
+  const [correctAnswer, setCorrectAnswer] = useState<string>('A');
+  const [alternatives, setAlternatives] = useState([
+    { letter: 'A', text: '' }, { letter: 'B', text: '' },
+    { letter: 'C', text: '' }, { letter: 'D', text: '' }, { letter: 'E', text: '' },
+  ]);
+
+  const handleSubmit = () => {
+    onAdd({
+      number,
+      day: parseInt(day),
+      area,
+      statement,
+      alternatives,
+      correct_answer: correctAnswer,
+      foreign_language: foreignLang === 'none' ? null : foreignLang,
+    });
+    // Reset
+    setStatement('');
+    setAlternatives([
+      { letter: 'A', text: '' }, { letter: 'B', text: '' },
+      { letter: 'C', text: '' }, { letter: 'D', text: '' }, { letter: 'E', text: '' },
+    ]);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Adicionar questão manualmente</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Número</Label>
+              <Input type="number" min={1} max={180} value={number} onChange={e => setNumber(parseInt(e.target.value))} className="h-9" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Dia</Label>
+              <Select value={day} onValueChange={setDay}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Dia 1</SelectItem>
+                  <SelectItem value="2">Dia 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Área</Label>
+              <Select value={area} onValueChange={setArea}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(AREA_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Resposta correta</Label>
+              <Select value={correctAnswer} onValueChange={setCorrectAnswer}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {['A', 'B', 'C', 'D', 'E'].map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Língua estrangeira</Label>
+              <Select value={foreignLang} onValueChange={setForeignLang}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhuma</SelectItem>
+                  <SelectItem value="ingles">Inglês</SelectItem>
+                  <SelectItem value="espanhol">Espanhol</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Enunciado</Label>
+            <Textarea value={statement} onChange={e => setStatement(e.target.value)} rows={4} className="text-xs" placeholder="Cole o texto da questão aqui..." />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs">Alternativas</Label>
+            {alternatives.map((alt, i) => (
+              <div key={alt.letter} className="flex items-start gap-2">
+                <span className="text-xs font-bold mt-2.5 w-4 shrink-0">{alt.letter}</span>
+                <Textarea
+                  value={alt.text}
+                  onChange={e => {
+                    const updated = [...alternatives];
+                    updated[i] = { ...alt, text: e.target.value };
+                    setAlternatives(updated);
+                  }}
+                  rows={1}
+                  className="text-xs flex-1"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={onClose}>Cancelar</Button>
+          <Button size="sm" onClick={handleSubmit}>Adicionar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function PreviewStage({
   questions,
   onToggle,
@@ -1017,11 +1143,60 @@ function PreviewStage({
   const days = [...new Set(questions.map(q => q.day))].sort();
   const [editingQuestion, setEditingQuestion] = useState<ImportedQuestion | null>(null);
   const [editedSet, setEditedSet] = useState<Set<string>>(new Set());
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const handleSaveEdit = (updates: Partial<ImportedQuestion>) => {
     if (!editingQuestion) return;
     onUpdateQuestion(editingQuestion.number, editingQuestion.day, updates);
     setEditedSet(prev => new Set(prev).add(`${editingQuestion.day}-${editingQuestion.number}`));
+  };
+
+  // Calculate missing questions
+  const missingInfo = (() => {
+    const TOTAL_PER_DAY: Record<number, number> = { 1: 90, 2: 90 };
+    const missing: { day: number; numbers: number[] }[] = [];
+    for (const day of days) {
+      const dayQs = questions.filter(q => q.day === day);
+      const maxQ = TOTAL_PER_DAY[day] || 90;
+      const existingNumbers = new Set(dayQs.map(q => q.number));
+      const missingNums: number[] = [];
+      for (let i = 1; i <= maxQ; i++) {
+        if (!existingNumbers.has(i)) missingNums.push(i);
+      }
+      if (missingNums.length > 0) missing.push({ day, numbers: missingNums });
+    }
+    const bilingualMissing: string[] = [];
+    for (const day of days) {
+      const dayQs = questions.filter(q => q.day === day);
+      for (let n = 1; n <= 5; n++) {
+        const qs = dayQs.filter(q => q.number === n);
+        const hasIngles = qs.some(q => q.foreign_language === 'ingles');
+        const hasEspanhol = qs.some(q => q.foreign_language === 'espanhol');
+        if (qs.length > 0 && !hasIngles) bilingualMissing.push(`Q${n} Dia${day} Inglês`);
+        if (qs.length > 0 && !hasEspanhol) bilingualMissing.push(`Q${n} Dia${day} Espanhol`);
+      }
+    }
+    return { missing, bilingualMissing };
+  })();
+
+  const handleAddManualQuestion = (newQ: Partial<ImportedQuestion>) => {
+    const day = newQ.day || 1;
+    const number = newQ.number || (questions.length + 1);
+    const fullQ: ImportedQuestion = {
+      number, day,
+      area: newQ.area || 'linguagens',
+      statement: newQ.statement || '',
+      alternatives: newQ.alternatives || [
+        { letter: 'A', text: '' }, { letter: 'B', text: '' },
+        { letter: 'C', text: '' }, { letter: 'D', text: '' }, { letter: 'E', text: '' },
+      ],
+      correct_answer: newQ.correct_answer || null,
+      explanation: null,
+      images: [], tags: [], selected: true, annulled: false,
+      foreign_language: newQ.foreign_language || null,
+    };
+    onUpdateQuestion(number, day, fullQ);
+    setShowAddForm(false);
   };
 
   return (
@@ -1030,8 +1205,13 @@ function PreviewStage({
         <Button variant="ghost" size="sm" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
         </Button>
-        <div className="text-sm text-muted-foreground">
-          {selected.length} de {questions.length} selecionadas
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowAddForm(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar questão
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {selected.length} de {questions.length} selecionadas
+          </span>
         </div>
       </div>
 
@@ -1048,6 +1228,32 @@ function PreviewStage({
           {withoutAnswer.length} questoes sem gabarito - clique para editar
         </div>
       )}
+
+      {(missingInfo.missing.length > 0 || missingInfo.bilingualMissing.length > 0) && (
+        <div className="p-3 rounded-lg bg-blue-500/10 text-blue-700 dark:text-blue-300 text-sm space-y-1">
+          <div className="flex items-center gap-2">
+            <Info className="h-4 w-4 shrink-0" />
+            <span className="font-medium">Questões faltando</span>
+          </div>
+          {missingInfo.missing.map(m => (
+            <p key={m.day} className="text-xs ml-6">
+              Dia {m.day}: {m.numbers.length} faltando — Q{m.numbers.slice(0, 15).join(', Q')}{m.numbers.length > 15 ? ` (+${m.numbers.length - 15})` : ''}
+            </p>
+          ))}
+          {missingInfo.bilingualMissing.length > 0 && (
+            <p className="text-xs ml-6">
+              Idioma faltando: {missingInfo.bilingualMissing.join(', ')}
+            </p>
+          )}
+        </div>
+      )}
+
+      <ManualAddDialog
+        open={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        onAdd={handleAddManualQuestion}
+        existingQuestions={questions}
+      />
 
       <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-1">
         {days.map(day => {

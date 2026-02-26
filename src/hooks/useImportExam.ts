@@ -715,9 +715,20 @@ export function useImportExam() {
   }
 
   function updateQuestion(number: number, day: number, updates: Partial<ImportedQuestion>) {
-    setQuestions(prev => prev.map(q =>
-      q.number === number && q.day === day ? { ...q, ...updates } : q
-    ));
+    setQuestions(prev => {
+      const exists = prev.some(q => q.number === number && q.day === day);
+      if (exists) {
+        return prev.map(q =>
+          q.number === number && q.day === day ? { ...q, ...updates } : q
+        );
+      }
+      // Add as new question if it doesn't exist and updates has all required fields
+      if ('statement' in updates && 'alternatives' in updates) {
+        const newQ = updates as ImportedQuestion;
+        return [...prev, newQ].sort((a, b) => a.day - b.day || a.number - b.number);
+      }
+      return prev;
+    });
   }
 
   function addQuestionImages(number: number, day: number, files: File[]) {
