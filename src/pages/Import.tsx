@@ -1152,29 +1152,32 @@ function PreviewStage({
   };
 
   // Calculate missing questions
+  // ENEM: Dia 1 = questões 1-90, Dia 2 = questões 91-180
   const missingInfo = (() => {
-    const TOTAL_PER_DAY: Record<number, number> = { 1: 90, 2: 90 };
+    const DAY_RANGES: Record<number, { start: number; end: number }> = {
+      1: { start: 1, end: 90 },
+      2: { start: 91, end: 180 },
+    };
     const missing: { day: number; numbers: number[] }[] = [];
     for (const day of days) {
       const dayQs = questions.filter(q => q.day === day);
-      const maxQ = TOTAL_PER_DAY[day] || 90;
+      const range = DAY_RANGES[day] || { start: (day - 1) * 90 + 1, end: day * 90 };
       const existingNumbers = new Set(dayQs.map(q => q.number));
       const missingNums: number[] = [];
-      for (let i = 1; i <= maxQ; i++) {
+      for (let i = range.start; i <= range.end; i++) {
         if (!existingNumbers.has(i)) missingNums.push(i);
       }
       if (missingNums.length > 0) missing.push({ day, numbers: missingNums });
     }
+    // Bilingual check: questões de língua estrangeira são 1-5 no Dia 1 (Linguagens)
     const bilingualMissing: string[] = [];
-    for (const day of days) {
-      const dayQs = questions.filter(q => q.day === day);
-      for (let n = 1; n <= 5; n++) {
-        const qs = dayQs.filter(q => q.number === n);
-        const hasIngles = qs.some(q => q.foreign_language === 'ingles');
-        const hasEspanhol = qs.some(q => q.foreign_language === 'espanhol');
-        if (qs.length > 0 && !hasIngles) bilingualMissing.push(`Q${n} Dia${day} Inglês`);
-        if (qs.length > 0 && !hasEspanhol) bilingualMissing.push(`Q${n} Dia${day} Espanhol`);
-      }
+    const day1Qs = questions.filter(q => q.day === 1);
+    for (let n = 1; n <= 5; n++) {
+      const qs = day1Qs.filter(q => q.number === n);
+      const hasIngles = qs.some(q => q.foreign_language === 'ingles');
+      const hasEspanhol = qs.some(q => q.foreign_language === 'espanhol');
+      if (qs.length > 0 && !hasIngles) bilingualMissing.push(`Q${n} Inglês`);
+      if (qs.length > 0 && !hasEspanhol) bilingualMissing.push(`Q${n} Espanhol`);
     }
     return { missing, bilingualMissing };
   })();
