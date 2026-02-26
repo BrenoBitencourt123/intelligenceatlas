@@ -395,10 +395,25 @@ Deno.serve(async (req) => {
 
     // If called with questionId, persist to DB immediately
     if (questionId) {
+      // Derive topic/subtopic from the first topics[] entry (format: "disciplina__topico")
+      let topic = "Geral";
+      let subtopic = "";
+      if (result.topics.length > 0) {
+        const parts = result.topics[0].split("__");
+        if (parts.length === 2) {
+          topic = parts[1].replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+          subtopic = result.topics.length > 1
+            ? result.topics[1].split("__")[1]?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) ?? ""
+            : "";
+        }
+      }
+
       const { error: updateError } = await supabase
         .from("questions")
         .update({
           disciplina: result.disciplina,
+          topic,
+          subtopic,
           topics: result.topics,
           skills: result.skills,
           difficulty: result.difficulty,
