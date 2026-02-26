@@ -21,6 +21,12 @@ REGRAS:
    Exemplo: [Gráfico de barras mostrando crescimento do PIB brasileiro de 2010 a 2020, onde o eixo Y representa bilhões de reais]
    Exemplo: [Mapa do Brasil destacando a região Nordeste com distribuição de biomas]
    Exemplo: [Tabela com 3 colunas: Elemento, Número atômico, Massa atômica — contendo Fe, Cu, Zn]
+6. POSICIONAMENTO DE IMAGENS NO ENUNCIADO: Quando uma questão possui imagens (gráficos, figuras, esquemas, mapas),
+   insira o placeholder {{IMG_0}}, {{IMG_1}}, etc. EXATAMENTE no ponto do enunciado onde a imagem aparece na prova original.
+   O índice corresponde à ordem da imagem no array "images" (0-indexed).
+   Exemplo: Se há um gráfico entre dois parágrafos de texto, o statement deve ser:
+   "Primeiro parágrafo de contexto.\n\n{{IMG_0}}\n\nSegundo parágrafo com a pergunta em **negrito**"
+   Se a questão tem requires_image=true, SEMPRE inclua pelo menos {{IMG_0}} no local correto do enunciado.
 
 FORMATAÇÃO DO CAMPO "statement" (USE MARKDOWN):
 - Textos de apoio (poemas, trechos, citações, letras de música) devem vir em bloco de citação com "> " no início de cada linha
@@ -88,6 +94,8 @@ FORMATAÇÃO DO CAMPO "statement" (USE MARKDOWN):
 - Pergunta final em **negrito**
 
 CLASSIFICAÇÃO POR ÁREA: linguagens, humanas, natureza, matematica
+
+POSICIONAMENTO DE IMAGENS: Se uma questão depende de imagem, insira {{IMG_0}}, {{IMG_1}}, etc. no ponto exato do enunciado onde a imagem aparece na prova. Índices são 0-based e correspondem à ordem no array "images".
 
 CÁPSULAS DE CONHECIMENTO: explanation (2-4 frases pedagógicas), tags (1-3 palavras-chave), requires_image (boolean), image_reason (string ou null)
 

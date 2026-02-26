@@ -17,6 +17,7 @@ import { useQuestionPedagogy } from '@/hooks/useQuestionPedagogy';
 import { PreConceptBlock, PostAnswerBlocks } from '@/components/atlas/PedagogyBlocks';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QuestionImageGallery } from '@/components/study/QuestionImageGallery';
+import { InlineStatementRenderer } from '@/components/study/InlineStatementRenderer';
 
 const BLOCK_COLORS = [
   'bg-blue-500/10 text-blue-700 dark:text-blue-300',
@@ -366,35 +367,12 @@ const Objectives = () => {
                         <span className="text-xs text-muted-foreground">ENEM {currentQuestion.year}</span>
                       </div>
 
-                      {/* Statement text */}
-                      {currentQuestion.statement?.trim() ? (
-                        <MarkdownText content={currentQuestion.statement} className="text-sm leading-relaxed" />
-                      ) : (
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          Esta questão usa imagem como enunciado principal.
-                        </p>
-                      )}
-
-                      {/* Statement images – between text and alternatives, centered like in the PDF */}
-                      {statementImages.length > 0 && (
-                        <div className="flex flex-col items-center gap-3 py-2">
-                          {[...statementImages].sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)).map((img: any, idx: number) => (
-                            <div key={`stmt-${idx}`} className="relative max-w-sm w-full">
-                              <img
-                                src={img.url}
-                                alt={img.caption || `Imagem da questão ${currentQuestion.number}`}
-                                className="w-full h-auto rounded-lg border bg-muted/20 object-contain"
-                                loading="lazy"
-                              />
-                              {img.caption && (
-                                <p className="text-[11px] text-muted-foreground text-center mt-1.5 italic">
-                                  {img.caption}
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      {/* Statement with inline images at {{IMG_N}} positions */}
+                      <InlineStatementRenderer
+                        statement={currentQuestion.statement || ''}
+                        images={statementImages}
+                        questionNumber={currentQuestion.number}
+                      />
 
                       {/* Pre-concept block - before alternatives */}
                       {hasKnowledgeCapsules && !showFeedback && (
