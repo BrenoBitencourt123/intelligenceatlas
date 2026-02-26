@@ -121,14 +121,21 @@ Responda SOMENTE com um JSON array. Sem markdown, sem texto extra:
 
     // Fallback to Lovable AI if Gemini didn't produce content
     if (!llmContent && lovableKey) {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "google/gemini-2.5-flash-lite", ...llmPayload }),
-      });
-      if (!response.ok) throw new Error(`Lovable AI error: ${response.status}`);
-      const data = await response.json();
-      llmContent = data.choices?.[0]?.message?.content ?? "";
+      try {
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ model: "google/gemini-2.5-flash-lite", ...llmPayload }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          llmContent = data.choices?.[0]?.message?.content ?? "";
+        } else {
+          console.warn(`Lovable AI returned ${response.status}, skipping classification`);
+        }
+      } catch (e) {
+        console.warn("Lovable AI fetch failed:", e);
+      }
     }
 
     if (!llmContent) {
