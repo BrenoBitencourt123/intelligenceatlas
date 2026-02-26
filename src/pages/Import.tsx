@@ -306,22 +306,39 @@ function EnemDevImportSection({
         (existingQuestions || []).map((q) => `${q.number}_${q.foreign_language || ''}`)
       );
 
-      setFetchStatus('Buscando questões da API...');
-      // 2) Fetch all questions from enem.dev (paginate)
-      const allQuestions: any[] = [];
-      let offset = 0;
-      const limit = 50;
-      let hasMore = true;
+      setFetchStatus('Buscando questões da API (espanhol)...');
+      // 2) Fetch all questions from enem.dev — default call returns Q1-5 as espanhol
+      const fetchAllPages = async (langParam?: string) => {
+        const result: any[] = [];
+        let offset = 0;
+        const limit = 50;
+        let hasMore = true;
+        while (hasMore) {
+          const langQuery = langParam ? `&language=${langParam}` : '';
+          const url = `https://api.enem.dev/v1/exams/${selectedYear}/questions?limit=${limit}&offset=${offset}${langQuery}`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`Erro na API enem.dev: ${res.status}`);
+          const data = await res.json();
+          result.push(...(data.questions || []));
+          hasMore = data.metadata?.hasMore ?? false;
+          offset += limit;
+        }
+        return result;
+      };
 
-      while (hasMore) {
-        const url = `https://api.enem.dev/v1/exams/${selectedYear}/questions?limit=${limit}&offset=${offset}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Erro na API enem.dev: ${res.status}`);
-        const data = await res.json();
-        allQuestions.push(...(data.questions || []));
-        hasMore = data.metadata?.hasMore ?? false;
-        offset += limit;
-      }
+      // Fetch default (espanhol Q1-5 + all others)
+      const defaultQuestions = await fetchAllPages();
+
+      // Fetch English Q1-5 separately
+      setFetchStatus('Buscando questões de inglês...');
+      const englishQuestions = await fetchAllPages('ingles');
+
+      // Merge: keep all from default, then add only Q1-5 ingles that aren't already present
+      const defaultKeys = new Set(defaultQuestions.map((q: any) => `${q.index}_${q.language || ''}`));
+      const extraEnglish = englishQuestions.filter((q: any) =>
+        q.language === 'ingles' && q.index >= 1 && q.index <= 5 && !defaultKeys.has(`${q.index}_${q.language}`)
+      );
+      const allQuestions = [...defaultQuestions, ...extraEnglish];
 
       if (allQuestions.length === 0) {
         toast({ title: 'Nenhuma questão encontrada', description: `Não há questões para o ano ${selectedYear} na API.`, variant: 'destructive' });
