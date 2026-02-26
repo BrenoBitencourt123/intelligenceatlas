@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
-import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, AlertTriangle, RefreshCw, Loader2, ImageOff } from 'lucide-react';
+import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, AlertTriangle, RefreshCw, Loader2, ImageOff, Wand2 } from 'lucide-react';
 import { DISCIPLINAS, getDisciplinasForArea } from '@/taxonomy/taxonomy';
 import type { QuestionImage } from '@/lib/questionImages';
 import type { Json } from '@/integrations/supabase/types';
@@ -100,6 +100,10 @@ const QuestionsPanel = () => {
 
   // Reclassify
   const [reclassifying, setReclassifying] = useState(false);
+
+  // Reformat
+  const [reformatting, setReformatting] = useState(false);
+  const [reformatProgress, setReformatProgress] = useState('');
 
   // Available years from data
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -217,6 +221,44 @@ const QuestionsPanel = () => {
     }
   };
 
+  const handleReformat = async () => {
+    setReformatting(true);
+    setReformatProgress('Iniciando reformatação...');
+    let totalProcessed = 0;
+    let totalErrors = 0;
+    let hasMore = true;
+
+    try {
+      while (hasMore) {
+        const { data, error } = await supabase.functions.invoke('reformat-statements', {
+          body: { batch_size: 10 },
+        });
+        if (error) throw error;
+
+        totalProcessed += data.successful ?? 0;
+        totalErrors += (data.errors?.length ?? 0);
+        const remaining = data.remaining ?? 0;
+
+        setReformatProgress(`${totalProcessed} reformatadas, ${remaining} restantes...`);
+
+        if (remaining <= 0 || (data.successful ?? 0) === 0) {
+          hasMore = false;
+        }
+      }
+
+      toast({
+        title: 'Reformatação concluída',
+        description: `${totalProcessed} questões reformatadas. Erros: ${totalErrors}.`,
+      });
+      fetchQuestions();
+    } catch (err: any) {
+      toast({ title: 'Erro na reformatação', description: err.message, variant: 'destructive' });
+    } finally {
+      setReformatting(false);
+      setReformatProgress('');
+    }
+  };
+
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   // Disciplinas for edit dialog (based on editArea)
@@ -251,6 +293,15 @@ const QuestionsPanel = () => {
           >
             {reclassifying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <AlertTriangle className="h-4 w-4 mr-2" />}
             Reclassificar needs_review
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={reformatting}
+            onClick={handleReformat}
+          >
+            {reformatting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wand2 className="h-4 w-4 mr-2" />}
+            {reformatting ? reformatProgress : 'Reformatar enunciados (IA)'}
           </Button>
         </CardContent>
       </Card>

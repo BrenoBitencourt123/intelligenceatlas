@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.generate-pedagogy]
 verify_jwt = false
+
+[functions.reformat-statements]
+verify_jwt = false
