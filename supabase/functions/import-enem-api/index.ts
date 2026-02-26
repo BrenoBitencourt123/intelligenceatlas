@@ -60,29 +60,42 @@ Deno.serve(async (req) => {
 
     const existingNumbers = new Set((existing ?? []).map((q: any) => q.number));
 
-    // Fetch all questions from enem.dev (paginate)
-    const allQuestions: EnemQuestion[] = [];
-    let offset = 0;
-    const limit = 50;
-    let hasMore = true;
-
-    while (hasMore) {
-      const url = `https://api.enem.dev/v1/exams/${year}/questions?limit=${limit}&offset=${offset}`;
-      console.log(`Fetching: ${url}`);
-      const res = await fetch(url);
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`enem.dev API error (${res.status}): ${errText}`);
+    // Fetch all questions from enem.dev (paginate) - both languages
+    const fetchAllPages = async (langParam?: string) => {
+      const result: EnemQuestion[] = [];
+      let offset = 0;
+      const limit = 50;
+      let hasMore = true;
+      while (hasMore) {
+        const langQuery = langParam ? `&language=${langParam}` : '';
+        const url = `https://api.enem.dev/v1/exams/${year}/questions?limit=${limit}&offset=${offset}${langQuery}`;
+        console.log(`Fetching: ${url}`);
+        const res = await fetch(url);
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`enem.dev API error (${res.status}): ${errText}`);
+        }
+        const data = await res.json();
+        result.push(...(data.questions || []));
+        hasMore = data.metadata?.hasMore ?? false;
+        offset += limit;
       }
+      return result;
+    };
 
-      const data = await res.json();
-      allQuestions.push(...(data.questions || []));
-      hasMore = data.metadata?.hasMore ?? false;
-      offset += limit;
-    }
+    // Default call returns Q1-5 as espanhol + all others
+    const defaultQuestions = await fetchAllPages();
+    // Fetch English Q1-5 separately
+    const englishQuestions = await fetchAllPages('ingles');
 
-    console.log(`Fetched ${allQuestions.length} questions from enem.dev for year ${year}`);
+    // Merge: keep all from default, add only Q1-5 ingles not already present
+    const defaultKeys = new Set(defaultQuestions.map(q => `${q.index}_${q.language || ''}`));
+    const extraEnglish = englishQuestions.filter(q =>
+      q.language === 'ingles' && q.index >= 1 && q.index <= 5 && !defaultKeys.has(`${q.index}_${q.language}`)
+    );
+    const allQuestions = [...defaultQuestions, ...extraEnglish];
+
+    console.log(`Fetched ${allQuestions.length} questions from enem.dev for year ${year} (${extraEnglish.length} extra English)`);
 
     // Filter out already existing
     const newQuestions = allQuestions.filter((q) => !existingNumbers.has(q.index));
