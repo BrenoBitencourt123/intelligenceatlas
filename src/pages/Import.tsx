@@ -254,6 +254,7 @@ function EnemDevImportSection({
   const { user } = useAuth();
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [fetching, setFetching] = useState(false);
+  const [fetchStatus, setFetchStatus] = useState('');
   const [userLang, setUserLang] = useState<string | null>(null);
 
   // Fetch user's preferred foreign language from preferences
@@ -302,6 +303,7 @@ function EnemDevImportSection({
         (existingQuestions || []).map((q) => `${q.number}_${q.foreign_language || ''}`)
       );
 
+      setFetchStatus('Buscando questões da API...');
       // 2) Fetch all questions from enem.dev (paginate)
       const allQuestions: any[] = [];
       let offset = 0;
@@ -395,15 +397,54 @@ function EnemDevImportSection({
         .filter(Boolean);
 
       const skipped = filtered.length - mapped.length;
+
+      // 5) Pre-classify with AI to correct areas before preview
+      setFetchStatus(`Classificando ${mapped.length} questões com IA...`);
+      const BATCH_SIZE = 25;
+      const classifiedQuestions = [...mapped] as any[];
+
+      for (let i = 0; i < classifiedQuestions.length; i += BATCH_SIZE) {
+        const batch = classifiedQuestions.slice(i, i + BATCH_SIZE);
+        const batchPayload = batch.map((q: any) => ({
+          index: q.number,
+          statement: (q.statement || '').slice(0, 300),
+          area: q.area,
+          alternatives: (q.alternatives || []).map((a: any) => `${a.letter}) ${a.text}`).join('\n').slice(0, 200),
+        }));
+
+        try {
+          const { data, error } = await supabase.functions.invoke('pre-classify-batch', {
+            body: { questions: batchPayload },
+          });
+
+          if (!error && data?.results) {
+            for (const result of data.results) {
+              const match = classifiedQuestions.find((q: any) => q.number === result.index);
+              if (match && result.area) {
+                match.area = result.area;
+                if (result.disciplina) match.disciplina = result.disciplina;
+                // Update day based on corrected area
+                const DAY2_AREAS = ['natureza', 'matematica'];
+                match.day = DAY2_AREAS.includes(result.area) ? 2 : 1;
+              }
+            }
+          }
+        } catch (batchErr) {
+          console.warn('[import] Pre-classify batch failed, keeping original areas:', batchErr);
+        }
+
+        setFetchStatus(`Classificando... ${Math.min(i + BATCH_SIZE, classifiedQuestions.length)}/${classifiedQuestions.length}`);
+      }
+
       const jsonPayload = JSON.stringify({
         year: parseInt(selectedYear),
-        questions: mapped,
+        questions: classifiedQuestions,
       });
 
       const desc = skipped > 0
-        ? `${skipped} já importadas foram ignoradas. Revise no preview.`
-        : 'Revise no preview antes de importar.';
-      toast({ title: `${mapped.length} questões carregadas`, description: desc });
+        ? `${skipped} já importadas foram ignoradas. Áreas corrigidas por IA.`
+        : 'Áreas corrigidas por IA. Revise no preview.';
+      toast({ title: `${classifiedQuestions.length} questões carregadas`, description: desc });
       onProcessJson(jsonPayload);
     } catch (err: any) {
       console.error('Erro ao buscar do enem.dev:', err);
@@ -446,12 +487,12 @@ function EnemDevImportSection({
             {fetching ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Buscando questões...
+                {fetchStatus || 'Buscando questões...'}
               </>
             ) : (
               <>
                 <Globe className="h-4 w-4 mr-2" />
-                Buscar Questões
+                Buscar e Classificar
               </>
             )}
           </Button>
