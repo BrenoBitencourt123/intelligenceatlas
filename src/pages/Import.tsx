@@ -1,4 +1,7 @@
-﻿import { useState, useRef } from 'react';
+﻿import { useState, useRef, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, AlertCircle, X, Pencil, ImagePlus, Trash2 } from 'lucide-react';
+import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, AlertCircle, X, Pencil, ImagePlus, Trash2, Globe } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useImportExam, ImportedQuestion, DayUpload } from '@/hooks/useImportExam';
 
@@ -235,7 +238,113 @@ function UploadStage({
           </Button>
         </CardContent>
       </Card>
+
+      <EnemDevImportSection />
     </div>
+  );
+}
+
+function EnemDevImportSection() {
+  const { user } = useAuth();
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState<{ imported: number; skipped: number; message: string } | null>(null);
+
+  const availableYears = ['2009','2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023'];
+
+  const handleImport = useCallback(async () => {
+    if (!selectedYear || !user) return;
+    setImporting(true);
+    setResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('import-enem-api', {
+        body: { year: parseInt(selectedYear), user_id: user.id },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setResult({
+        imported: data.imported ?? 0,
+        skipped: data.skipped ?? 0,
+        message: data.message ?? 'Importação concluída',
+      });
+
+      toast({
+        title: 'Importação concluída',
+        description: data.message,
+      });
+    } catch (err: any) {
+      console.error('Erro ao importar do enem.dev:', err);
+      toast({
+        title: 'Erro na importação',
+        description: err?.message ?? 'Não foi possível importar as questões.',
+        variant: 'destructive',
+      });
+    } finally {
+      setImporting(false);
+    }
+  }, [selectedYear, user]);
+
+  return (
+    <Card className="border-primary/30">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Globe className="h-4 w-4 text-primary" />
+          Importar do ENEM.dev
+        </CardTitle>
+        <CardDescription className="text-xs">
+          API pública com 2700+ questões do ENEM (2009-2023). Importa direto para o banco com deduplicação automática.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex gap-2">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-32 h-9">
+              <SelectValue placeholder="Ano" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableYears.map((y) => (
+                <SelectItem key={y} value={y}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={handleImport}
+            disabled={!selectedYear || importing}
+            className="flex-1"
+          >
+            {importing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Importando...
+              </>
+            ) : (
+              <>
+                <Globe className="h-4 w-4 mr-2" />
+                Importar Questões
+              </>
+            )}
+          </Button>
+        </div>
+
+        {result && (
+          <div className="rounded-md bg-muted p-3 text-xs space-y-1">
+            <p className="font-medium">{result.message}</p>
+            <div className="flex gap-3 text-muted-foreground">
+              <span>✅ Importadas: {result.imported}</span>
+              <span>⏭️ Já existentes: {result.skipped}</span>
+            </div>
+            {result.imported > 0 && (
+              <p className="text-primary text-[11px] mt-1">
+                💡 Rode a classificação em batch na aba Questões para preencher tópicos automaticamente.
+              </p>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

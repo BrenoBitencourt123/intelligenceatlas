@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.reformat-statements]
 verify_jwt = false
+
+[functions.import-enem-api]
+verify_jwt = false
