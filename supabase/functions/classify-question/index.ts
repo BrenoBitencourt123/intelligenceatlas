@@ -304,7 +304,12 @@ Deno.serve(async (req) => {
     });
 
     // Verify admin
-    const { data: isAdmin } = await supabase.rpc("has_role", { role_name: "admin" });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) return jsonResponse({ error: "Unauthorized" }, 401);
+    const userId = claimsData.claims.sub as string;
+
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
     if (!isAdmin) return jsonResponse({ error: "Admin only" }, 403);
 
     const body = await req.json().catch(() => ({}));
