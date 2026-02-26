@@ -91,41 +91,50 @@ Responda SOMENTE com um JSON array. Sem markdown, sem texto extra:
 
     let llmContent = "";
 
+    const llmPayload = {
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.1,
+      max_tokens: 2000,
+    };
+
+    // Try Gemini first, fallback to Lovable AI if it fails
     if (apiKey) {
-      const response = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "gemini-2.5-flash-lite",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.1,
-            max_tokens: 2000,
-          }),
+      try {
+        const response = await fetch(
+          "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ model: "gemini-2.5-flash-lite", ...llmPayload }),
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          llmContent = data.choices?.[0]?.message?.content ?? "";
+        } else {
+          console.warn(`Gemini returned ${response.status}, falling back to Lovable AI`);
         }
-      );
-      if (!response.ok) throw new Error(`Gemini error: ${response.status}`);
-      const data = await response.json();
-      llmContent = data.choices?.[0]?.message?.content ?? "";
-    } else if (lovableKey) {
+      } catch (e) {
+        console.warn("Gemini fetch failed, falling back:", e);
+      }
+    }
+
+    // Fallback to Lovable AI if Gemini didn't produce content
+    if (!llmContent && lovableKey) {
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.1,
-          max_tokens: 2000,
-        }),
+        body: JSON.stringify({ model: "google/gemini-2.5-flash-lite", ...llmPayload }),
       });
       if (!response.ok) throw new Error(`Lovable AI error: ${response.status}`);
       const data = await response.json();
       llmContent = data.choices?.[0]?.message?.content ?? "";
-    } else {
-      // No API key — return original areas unchanged
+    }
+
+    if (!llmContent) {
+      // No API key or all failed — return original areas unchanged
       return jsonResponse({
-        results: questions.map((q, i) => ({
+        results: questions.map((q) => ({
           index: q.index,
           area: q.area,
           disciplina: null,
