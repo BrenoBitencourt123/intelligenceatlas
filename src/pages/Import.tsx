@@ -322,8 +322,13 @@ function EnemDevImportSection({
           foreign_language = q.language;
         }
 
+        // ENEM day 1 = linguagens + humanas, day 2 = natureza + matemática
+        const DAY2_DISCIPLINES = ['ciencias-natureza', 'matematica'];
+        const day = DAY2_DISCIPLINES.includes(q.discipline) ? 2 : 1;
+
         return {
           number: q.index,
+          day,
           area,
           statement,
           alternatives,
