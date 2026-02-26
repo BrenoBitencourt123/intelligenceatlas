@@ -1,6 +1,4 @@
 ﻿import { useState, useRef, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -239,53 +237,119 @@ function UploadStage({
         </CardContent>
       </Card>
 
-      <EnemDevImportSection />
+      <EnemDevImportSection onProcessJson={onProcessJson} loading={loading} />
     </div>
   );
 }
 
-function EnemDevImportSection() {
-  const { user } = useAuth();
+function EnemDevImportSection({
+  onProcessJson,
+  loading: parentLoading,
+}: {
+  onProcessJson: (jsonText: string) => void;
+  loading: boolean;
+}) {
   const [selectedYear, setSelectedYear] = useState<string>('');
-  const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ imported: number; skipped: number; message: string } | null>(null);
+  const [fetching, setFetching] = useState(false);
+
+  const DISCIPLINE_MAP: Record<string, string> = {
+    linguagens: 'linguagens',
+    'ciencias-humanas': 'humanas',
+    'ciencias-natureza': 'natureza',
+    matematica: 'matematica',
+  };
 
   const availableYears = ['2009','2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023'];
 
-  const handleImport = useCallback(async () => {
-    if (!selectedYear || !user) return;
-    setImporting(true);
-    setResult(null);
+  const handleFetch = useCallback(async () => {
+    if (!selectedYear) return;
+    setFetching(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('import-enem-api', {
-        body: { year: parseInt(selectedYear), user_id: user.id },
+      // Fetch all questions from enem.dev (paginate)
+      const allQuestions: any[] = [];
+      let offset = 0;
+      const limit = 50;
+      let hasMore = true;
+
+      while (hasMore) {
+        const url = `https://api.enem.dev/v1/exams/${selectedYear}/questions?limit=${limit}&offset=${offset}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Erro na API enem.dev: ${res.status}`);
+        const data = await res.json();
+        allQuestions.push(...(data.questions || []));
+        hasMore = data.metadata?.hasMore ?? false;
+        offset += limit;
+      }
+
+      if (allQuestions.length === 0) {
+        toast({ title: 'Nenhuma questão encontrada', description: `Não há questões para o ano ${selectedYear} na API.`, variant: 'destructive' });
+        return;
+      }
+
+      // Convert to our JSON format
+      const mapped = allQuestions.map((q: any) => {
+        const area = DISCIPLINE_MAP[q.discipline] || 'linguagens';
+
+        let statement = (q.context || '').trim();
+        if (q.alternativesIntroduction?.trim()) {
+          statement += `\n\n${q.alternativesIntroduction.trim()}`;
+        }
+
+        const images = (q.files || [])
+          .filter((f: string) => f && f.length > 0)
+          .map((url: string, i: number) => ({ url, order: i }));
+
+        // Add image placeholders if images exist
+        if (images.length > 0 && !statement.includes('{{IMG_')) {
+          const placeholders = images.map((_: any, i: number) => `{{IMG_${i}}}`).join('\n');
+          if (q.alternativesIntroduction?.trim()) {
+            const contextPart = (q.context || '').trim();
+            statement = `${contextPart}\n\n${placeholders}\n\n${q.alternativesIntroduction.trim()}`;
+          } else {
+            statement += `\n\n${placeholders}`;
+          }
+        }
+
+        const alternatives = (q.alternatives || []).map((alt: any) => ({
+          letter: alt.letter,
+          text: alt.text || '',
+          image_url: alt.file || undefined,
+        }));
+
+        let foreign_language: string | null = null;
+        if (q.language && q.language !== 'portugues') {
+          foreign_language = q.language;
+        }
+
+        return {
+          number: q.index,
+          area,
+          statement,
+          alternatives,
+          correct_answer: q.correctAlternative || 'A',
+          images,
+          foreign_language,
+          explanation: null,
+        };
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      setResult({
-        imported: data.imported ?? 0,
-        skipped: data.skipped ?? 0,
-        message: data.message ?? 'Importação concluída',
+      const jsonPayload = JSON.stringify({
+        year: parseInt(selectedYear),
+        questions: mapped,
       });
 
-      toast({
-        title: 'Importação concluída',
-        description: data.message,
-      });
+      toast({ title: `${mapped.length} questões carregadas`, description: 'Revise no preview antes de importar.' });
+      onProcessJson(jsonPayload);
     } catch (err: any) {
-      console.error('Erro ao importar do enem.dev:', err);
-      toast({
-        title: 'Erro na importação',
-        description: err?.message ?? 'Não foi possível importar as questões.',
-        variant: 'destructive',
-      });
+      console.error('Erro ao buscar do enem.dev:', err);
+      toast({ title: 'Erro', description: err?.message ?? 'Não foi possível buscar as questões.', variant: 'destructive' });
     } finally {
-      setImporting(false);
+      setFetching(false);
     }
-  }, [selectedYear, user]);
+  }, [selectedYear, onProcessJson]);
+
+  const busy = fetching || parentLoading;
 
   return (
     <Card className="border-primary/30">
@@ -295,7 +359,7 @@ function EnemDevImportSection() {
           Importar do ENEM.dev
         </CardTitle>
         <CardDescription className="text-xs">
-          API pública com 2700+ questões do ENEM (2009-2023). Importa direto para o banco com deduplicação automática.
+          API pública com 2700+ questões do ENEM (2009-2023). Busca as questões e abre o preview para revisão antes de salvar.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -311,38 +375,23 @@ function EnemDevImportSection() {
             </SelectContent>
           </Select>
           <Button
-            onClick={handleImport}
-            disabled={!selectedYear || importing}
+            onClick={handleFetch}
+            disabled={!selectedYear || busy}
             className="flex-1"
           >
-            {importing ? (
+            {fetching ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Importando...
+                Buscando questões...
               </>
             ) : (
               <>
                 <Globe className="h-4 w-4 mr-2" />
-                Importar Questões
+                Buscar Questões
               </>
             )}
           </Button>
         </div>
-
-        {result && (
-          <div className="rounded-md bg-muted p-3 text-xs space-y-1">
-            <p className="font-medium">{result.message}</p>
-            <div className="flex gap-3 text-muted-foreground">
-              <span>✅ Importadas: {result.imported}</span>
-              <span>⏭️ Já existentes: {result.skipped}</span>
-            </div>
-            {result.imported > 0 && (
-              <p className="text-primary text-[11px] mt-1">
-                💡 Rode a classificação em batch na aba Questões para preencher tópicos automaticamente.
-              </p>
-            )}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
