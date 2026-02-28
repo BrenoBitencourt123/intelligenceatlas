@@ -16,6 +16,8 @@ import { Upload, FileText, ArrowLeft, ArrowRight, Check, Loader2, AlertCircle, X
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useImportExam, ImportedQuestion, DayUpload } from '@/hooks/useImportExam';
+import { QuestionEditor } from '@/components/import/QuestionEditor';
+import { QuestionGrid } from '@/components/import/QuestionGrid';
 
 const AREA_LABELS: Record<string, string> = {
   linguagens: 'Linguagens',
@@ -791,217 +793,6 @@ function ScreenshotImportSection({
   );
 }
 
-function QuestionEditDialog({
-  question,
-  open,
-  onClose,
-  onSave,
-  onAddAlternativeImage,
-  onRemoveAlternativeImage,
-}: {
-  question: ImportedQuestion | null;
-  open: boolean;
-  onClose: () => void;
-  onSave: (updates: Partial<ImportedQuestion>) => void;
-  onAddAlternativeImage: (number: number, day: number, letter: string, file: File) => void;
-  onRemoveAlternativeImage: (number: number, day: number, letter: string) => void;
-}) {
-  const [statement, setStatement] = useState('');
-  const [alternatives, setAlternatives] = useState<{ letter: string; text: string; image_url?: string | null }[]>([]);
-  const [correctAnswer, setCorrectAnswer] = useState<string>('none');
-  const [area, setArea] = useState('');
-  const [tags, setTags] = useState('');
-
-  const [lastQ, setLastQ] = useState<ImportedQuestion | null>(null);
-  if (question && question !== lastQ) {
-    setLastQ(question);
-    setStatement(question.statement);
-    // Map images with caption A-E to alternative image_url
-    const ALT_LETTERS = ['A', 'B', 'C', 'D', 'E'];
-    const altImageMap = new Map<string, string>();
-    (question.images || []).forEach((img: any) => {
-      if (img.caption && ALT_LETTERS.includes(String(img.caption).trim().toUpperCase())) {
-        altImageMap.set(String(img.caption).trim().toUpperCase(), img.url);
-      }
-    });
-    setAlternatives(question.alternatives.map(a => ({
-      ...a,
-      image_url: a.image_url || altImageMap.get(a.letter) || null,
-    })));
-    setCorrectAnswer(question.annulled ? 'anulada' : (question.correct_answer || 'none'));
-    setArea(question.area);
-    setTags(question.tags.join(', '));
-  }
-
-  const handleSave = () => {
-    const isAnnulled = correctAnswer === 'anulada';
-    onSave({
-      statement,
-      alternatives,
-      correct_answer: isAnnulled ? null : (correctAnswer === 'none' ? null : correctAnswer),
-      annulled: isAnnulled,
-      area,
-      tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-    });
-    onClose();
-  };
-
-  if (!question) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Editar Questao {question.number}</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Resposta correta</Label>
-              <Select value={correctAnswer} onValueChange={setCorrectAnswer}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {['A', 'B', 'C', 'D', 'E'].map(l => (
-                    <SelectItem key={l} value={l}>{l}</SelectItem>
-                  ))}
-                  <SelectItem value="anulada">Anulada</SelectItem>
-                  <SelectItem value="none">Nenhuma</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Area</Label>
-              <Select value={area} onValueChange={setArea}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(AREA_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs">Enunciado (pode ficar vazio se tiver imagem)</Label>
-            <Textarea
-              value={statement}
-              onChange={e => setStatement(e.target.value)}
-              rows={4}
-              className="text-xs"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-xs">Alternativas</Label>
-            {alternatives.map((alt, i) => (
-              <div key={alt.letter} className="flex items-start gap-2">
-                <span className="text-xs font-bold mt-2.5 w-4 shrink-0">{alt.letter}</span>
-                <div className="flex-1 space-y-2">
-                  <Textarea
-                    value={alt.text}
-                    onChange={e => {
-                      const updated = [...alternatives];
-                      updated[i] = { ...alt, text: e.target.value };
-                      setAlternatives(updated);
-                    }}
-                    rows={2}
-                    className="text-xs"
-                  />
-                  <div className="flex items-center gap-2">
-                    <input
-                      id={`alt-image-input-${question.day}-${question.number}-${alt.letter}`}
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          onAddAlternativeImage(question.number, question.day, alt.letter, file);
-                          const updated = [...alternatives];
-                          updated[i] = { ...alt, image_url: URL.createObjectURL(file) };
-                          setAlternatives(updated);
-                        }
-                        e.currentTarget.value = '';
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs"
-                      onClick={() => {
-                        const input = document.getElementById(`alt-image-input-${question.day}-${question.number}-${alt.letter}`) as HTMLInputElement | null;
-                        input?.click();
-                      }}
-                    >
-                      <ImagePlus className="h-3.5 w-3.5 mr-1" />
-                      Anexar imagem na alternativa
-                    </Button>
-                    <div
-                      className="text-[11px] text-muted-foreground border rounded px-2 py-1"
-                      tabIndex={0}
-                      onPaste={(e) => {
-                        const files = Array.from(e.clipboardData.files || []);
-                        const imageFile = files.find((f) => f.type.startsWith('image/'));
-                        if (!imageFile) return;
-                        e.preventDefault();
-                        onAddAlternativeImage(question.number, question.day, alt.letter, imageFile);
-                        const updated = [...alternatives];
-                        updated[i] = { ...alt, image_url: URL.createObjectURL(imageFile) };
-                        setAlternatives(updated);
-                      }}
-                    >
-                      Ctrl+V imagem
-                    </div>
-                  </div>
-                  {alt.image_url && (
-                    <div className="relative w-28 rounded border overflow-hidden">
-                      <img src={alt.image_url} alt={`Alternativa ${alt.letter}`} className="w-full h-20 object-cover" loading="lazy" />
-                      <button
-                        type="button"
-                        className="absolute top-1 right-1 rounded-full bg-black/60 text-white p-0.5"
-                        onClick={() => {
-                          onRemoveAlternativeImage(question.number, question.day, alt.letter);
-                          const updated = [...alternatives];
-                          updated[i] = { ...alt, image_url: null };
-                          setAlternatives(updated);
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs">Tags (separadas por virgula)</Label>
-            <Input
-              value={tags}
-              onChange={e => setTags(e.target.value)}
-              placeholder="historia, enem"
-              className="text-xs h-9"
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" size="sm" onClick={onClose}>Cancelar</Button>
-          <Button size="sm" onClick={handleSave}>Salvar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function ManualAddDialog({
   open,
   onClose,
@@ -1154,50 +945,10 @@ function PreviewStage({
   onConfirm: () => void;
   onBack: () => void;
 }) {
-  const selected = questions.filter(q => q.selected);
-  const annulled = questions.filter(q => q.annulled);
-  const withoutAnswer = selected.filter(q => !q.correct_answer && !q.annulled);
-  const days = [...new Set(questions.map(q => q.day))].sort();
-  const [editingQuestion, setEditingQuestion] = useState<ImportedQuestion | null>(null);
-  const [editedSet, setEditedSet] = useState<Set<string>>(new Set());
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const handleSaveEdit = (updates: Partial<ImportedQuestion>) => {
-    if (!editingQuestion) return;
-    onUpdateQuestion(editingQuestion.number, editingQuestion.day, updates);
-    setEditedSet(prev => new Set(prev).add(`${editingQuestion.day}-${editingQuestion.number}`));
-  };
-
-  // Calculate missing questions
-  // ENEM: Dia 1 = questões 1-90, Dia 2 = questões 91-180
-  const missingInfo = (() => {
-    const DAY_RANGES: Record<number, { start: number; end: number }> = {
-      1: { start: 1, end: 90 },
-      2: { start: 91, end: 180 },
-    };
-    const missing: { day: number; numbers: number[] }[] = [];
-    for (const day of days) {
-      const dayQs = questions.filter(q => q.day === day);
-      const range = DAY_RANGES[day] || { start: (day - 1) * 90 + 1, end: day * 90 };
-      const existingNumbers = new Set(dayQs.map(q => q.number));
-      const missingNums: number[] = [];
-      for (let i = range.start; i <= range.end; i++) {
-        if (!existingNumbers.has(i)) missingNums.push(i);
-      }
-      if (missingNums.length > 0) missing.push({ day, numbers: missingNums });
-    }
-    // Bilingual check: questões de língua estrangeira são 1-5 no Dia 1 (Linguagens)
-    const bilingualMissing: string[] = [];
-    const day1Qs = questions.filter(q => q.day === 1);
-    for (let n = 1; n <= 5; n++) {
-      const qs = day1Qs.filter(q => q.number === n);
-      const hasIngles = qs.some(q => q.foreign_language === 'ingles');
-      const hasEspanhol = qs.some(q => q.foreign_language === 'espanhol');
-      if (qs.length > 0 && !hasIngles) bilingualMissing.push(`Q${n} Inglês`);
-      if (qs.length > 0 && !hasEspanhol) bilingualMissing.push(`Q${n} Espanhol`);
-    }
-    return { missing, bilingualMissing };
-  })();
+  const currentQuestion = questions[currentIndex];
 
   const handleAddManualQuestion = (newQ: Partial<ImportedQuestion>) => {
     const day = newQ.day || 1;
@@ -1220,53 +971,16 @@ function PreviewStage({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
+      {/* Top bar */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
         </Button>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowAddForm(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar questão
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            {selected.length} de {questions.length} selecionadas
-          </span>
-        </div>
+        <Button variant="outline" size="sm" onClick={() => setShowAddForm(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar questão
+        </Button>
       </div>
-
-      {annulled.length > 0 && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          {annulled.length} questoes anuladas (desmarcadas automaticamente)
-        </div>
-      )}
-
-      {withoutAnswer.length > 0 && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 text-sm">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          {withoutAnswer.length} questoes sem gabarito - clique para editar
-        </div>
-      )}
-
-      {(missingInfo.missing.length > 0 || missingInfo.bilingualMissing.length > 0) && (
-        <div className="p-3 rounded-lg bg-blue-500/10 text-blue-700 dark:text-blue-300 text-sm space-y-1">
-          <div className="flex items-center gap-2">
-            <Info className="h-4 w-4 shrink-0" />
-            <span className="font-medium">Questões faltando</span>
-          </div>
-          {missingInfo.missing.map(m => (
-            <p key={m.day} className="text-xs ml-6">
-              Dia {m.day}: {m.numbers.length} faltando — Q{m.numbers.slice(0, 15).join(', Q')}{m.numbers.length > 15 ? ` (+${m.numbers.length - 15})` : ''}
-            </p>
-          ))}
-          {missingInfo.bilingualMissing.length > 0 && (
-            <p className="text-xs ml-6">
-              Idioma faltando: {missingInfo.bilingualMissing.join(', ')}
-            </p>
-          )}
-        </div>
-      )}
 
       <ManualAddDialog
         open={showAddForm}
@@ -1275,215 +989,40 @@ function PreviewStage({
         existingQuestions={questions}
       />
 
-      <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-1">
-        {days.map(day => {
-          const dayQuestions = questions.filter(q => q.day === day);
-          return (
-            <div key={day}>
-              <h3 className="text-sm font-semibold text-foreground mb-2 sticky top-0 bg-background py-1 z-10">
-                Dia {day} - {dayQuestions.filter(q => q.selected).length} questoes
-              </h3>
-              <div className="space-y-2">
-                {dayQuestions.map(q => {
-                  const noAnswer = !q.correct_answer && !q.annulled;
-                  const wasEdited = editedSet.has(`${q.day}-${q.number}`);
-                  const inputId = `question-image-${q.day}-${q.number}`;
-
-                  return (
-                    <Card
-                      key={`${q.day}-${q.number}`}
-                      className={`transition-opacity cursor-pointer hover:ring-1 hover:ring-primary/40 ${!q.selected ? 'opacity-40' : ''} ${noAnswer && q.selected ? 'border-amber-400 dark:border-amber-500' : ''}`}
-                      onClick={() => setEditingQuestion(q)}
-                    >
-                      <CardContent className="p-3 space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                              <span className="font-bold text-xs">Q{q.number}</span>
-                              <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                                {AREA_LABELS[q.area] || q.area}
-                              </Badge>
-                              {q.annulled ? (
-                                <Badge variant="destructive" className="text-xs px-1.5 py-0">Anulada</Badge>
-                              ) : q.correct_answer ? (
-                                <Badge variant="outline" className="text-xs px-1.5 py-0">{q.correct_answer}</Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-xs px-1.5 py-0 text-amber-600">?</Badge>
-                              )}
-                              {q.images.length > 0 && (
-                                <Badge variant="outline" className="text-xs px-1.5 py-0">{q.images.length} imagem(ns)</Badge>
-                              )}
-                              {q.requires_image && (
-                                <Badge variant="destructive" className="text-xs px-1.5 py-0">Precisa imagem</Badge>
-                              )}
-                              {q.foreign_language && (
-                                <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                                  {q.foreign_language === 'ingles' ? '🇬🇧 Inglês' : '🇪🇸 Espanhol'}
-                                </Badge>
-                              )}
-                              {wasEdited && <Pencil className="h-3 w-3 text-muted-foreground" />}
-                            </div>
-                            <p className="text-xs text-muted-foreground line-clamp-1">
-                              {q.statement?.trim() ? q.statement : '[Sem enunciado textual]'}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="shrink-0 h-7 w-7"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onToggle(q.number, q.day);
-                            }}
-                          >
-                            {q.selected ? (
-                              <X className="h-3.5 w-3.5 text-muted-foreground" />
-                            ) : (
-                              <Check className="h-3.5 w-3.5 text-primary" />
-                            )}
-                          </Button>
-                        </div>
-
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            id={inputId}
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp"
-                            multiple
-                            className="hidden"
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files || []);
-                              onAddImages(q.number, q.day, files);
-                              e.currentTarget.value = '';
-                            }}
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const input = document.getElementById(inputId) as HTMLInputElement | null;
-                              input?.click();
-                            }}
-                          >
-                            <ImagePlus className="h-3.5 w-3.5 mr-1" />
-                            Anexar imagem
-                          </Button>
-                          <div
-                            className="text-[11px] text-muted-foreground border rounded px-2 py-1"
-                            tabIndex={0}
-                            onPaste={(e) => {
-                              const files = Array.from(e.clipboardData.files || []);
-                              const imageFiles = files.filter((f) => f.type.startsWith('image/'));
-                              if (imageFiles.length === 0) return;
-                              e.preventDefault();
-                              onAddImages(q.number, q.day, imageFiles);
-                            }}
-                          >
-                            Ctrl+V imagem
-                          </div>
-                        </div>
-                        {q.requires_image && q.image_reason && (
-                          <p className="text-[11px] text-amber-700 dark:text-amber-300">
-                            Dica IA: {q.image_reason}
-                          </p>
-                        )}
-
-                        {/* Statement images (exclude images with caption matching A-E) */}
-                        {(() => {
-                          const ALT_LETTERS = ['A', 'B', 'C', 'D', 'E'];
-                          const stmtImages = q.images.filter(
-                            (img) => !img.caption || !ALT_LETTERS.includes(String(img.caption).trim().toUpperCase())
-                          );
-                          const altImages = q.images.filter(
-                            (img) => img.caption && ALT_LETTERS.includes(String(img.caption).trim().toUpperCase())
-                          );
-                          return (
-                            <>
-                              {stmtImages.length > 0 && (
-                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2" onClick={(e) => e.stopPropagation()}>
-                                  {stmtImages.map((img, imageIndex) => (
-                                    <div key={`${img.url}-${imageIndex}`} className="relative rounded-md overflow-hidden border bg-muted/20">
-                                      <img
-                                        src={img.url}
-                                        alt={`Questao ${q.number} imagem ${imageIndex + 1}`}
-                                        className="h-16 w-full object-cover"
-                                        loading="lazy"
-                                      />
-                                      <button
-                                        type="button"
-                                        className="absolute top-1 right-1 rounded-full bg-black/60 text-white p-0.5"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          const origIndex = q.images.indexOf(img);
-                                          onRemoveImage(q.number, q.day, origIndex);
-                                        }}
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              {altImages.length > 0 && (
-                                <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
-                                  <p className="text-[11px] text-muted-foreground font-medium">Imagens das alternativas:</p>
-                                  <div className="grid grid-cols-5 gap-1.5">
-                                    {altImages.map((img, idx) => (
-                                      <div key={`${img.url}-${idx}`} className="relative rounded-md overflow-hidden border bg-muted/20">
-                                        <span className="absolute top-0.5 left-0.5 bg-black/60 text-white text-[9px] font-bold px-1 rounded">
-                                          {String(img.caption).trim().toUpperCase()}
-                                        </span>
-                                        <img
-                                          src={img.url}
-                                          alt={`Alt ${img.caption}`}
-                                          className="h-14 w-full object-cover"
-                                          loading="lazy"
-                                        />
-                                        <button
-                                          type="button"
-                                          className="absolute top-0.5 right-0.5 rounded-full bg-black/60 text-white p-0.5"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            const origIndex = q.images.indexOf(img);
-                                            onRemoveImage(q.number, q.day, origIndex);
-                                          }}
-                                        >
-                                          <Trash2 className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+      {/* Two-column layout */}
+      <div className="flex flex-col lg:flex-row gap-4" style={{ minHeight: '70vh' }}>
+        {/* Left: QuestionEditor */}
+        <div className="flex-1 border border-border rounded-lg overflow-hidden bg-background min-h-[400px]">
+          {currentQuestion ? (
+            <QuestionEditor
+              question={currentQuestion}
+              questionIndex={currentIndex}
+              totalQuestions={questions.length}
+              onUpdate={(updates) => onUpdateQuestion(currentQuestion.number, currentQuestion.day, updates)}
+              onAddImages={(files) => onAddImages(currentQuestion.number, currentQuestion.day, files)}
+              onRemoveImage={(imgIdx) => onRemoveImage(currentQuestion.number, currentQuestion.day, imgIdx)}
+              onAddAlternativeImage={(letter, file) => onAddAlternativeImage(currentQuestion.number, currentQuestion.day, letter, file)}
+              onRemoveAlternativeImage={(letter) => onRemoveAlternativeImage(currentQuestion.number, currentQuestion.day, letter)}
+              onPrev={() => setCurrentIndex(i => Math.max(0, i - 1))}
+              onNext={() => setCurrentIndex(i => Math.min(questions.length - 1, i + 1))}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+              Nenhuma questão para exibir
             </div>
-          );
-        })}
+          )}
+        </div>
+
+        {/* Right: QuestionGrid */}
+        <div className="w-full lg:w-64 border border-border rounded-lg overflow-hidden bg-background">
+          <QuestionGrid
+            questions={questions}
+            currentIndex={currentIndex}
+            onSelectIndex={setCurrentIndex}
+            onConfirm={onConfirm}
+          />
+        </div>
       </div>
-
-      <Button className="w-full" size="lg" onClick={onConfirm} disabled={selected.length === 0}>
-        <ArrowRight className="h-4 w-4 mr-2" />
-        Revisar e Importar ({selected.length})
-      </Button>
-
-      <QuestionEditDialog
-        question={editingQuestion}
-        open={!!editingQuestion}
-        onClose={() => setEditingQuestion(null)}
-        onSave={handleSaveEdit}
-        onAddAlternativeImage={onAddAlternativeImage}
-        onRemoveAlternativeImage={onRemoveAlternativeImage}
-      />
     </div>
   );
 }
@@ -1606,7 +1145,7 @@ export default function Import({ embedded = false }: { embedded?: boolean }) {
   } = useImportExam();
 
   const content = (
-    <div className={embedded ? '' : 'container max-w-2xl mx-auto px-4 py-8'}>
+    <div className={embedded ? '' : 'container max-w-6xl mx-auto px-4 py-8'}>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Importar Prova ENEM</h1>
