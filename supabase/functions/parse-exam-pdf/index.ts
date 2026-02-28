@@ -137,8 +137,9 @@ async function callAIVision(
             { role: "user", content: userContent },
           ],
           temperature: 0.1,
-          max_tokens: Math.min(maxTokens, 32000),
+          max_tokens: Math.min(maxTokens, 16000),
           response_format: { type: "json_object" },
+          thinking: { thinking_budget: 0 },
         }),
         signal: controller.signal,
       });
@@ -196,8 +197,9 @@ async function callAIText(
             { role: "user", content: userPrompt },
           ],
           temperature: 0.1,
-          max_tokens: Math.min(maxTokens, 32000),
+          max_tokens: Math.min(maxTokens, 16000),
           response_format: { type: "json_object" },
+          thinking: { thinking_budget: 0 },
         }),
         signal: controller.signal,
       });
