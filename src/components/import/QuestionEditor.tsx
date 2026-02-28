@@ -90,20 +90,22 @@ export function QuestionEditor({
         const img = question.images[imgIndex];
         if (img) {
           return (
-            <div key={i} className="relative inline-block my-2 mx-1 group">
-              <img
-                src={img.url}
-                alt={`Imagem ${imgIndex}`}
-                className="max-h-40 rounded-md border border-border object-contain"
-                loading="lazy"
-              />
-              <button
-                type="button"
-                className="absolute -top-1 -right-1 rounded-full bg-destructive text-destructive-foreground p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => onRemoveImage(imgIndex)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
+            <div key={i} className="flex justify-center my-2">
+              <div className="relative group">
+                <img
+                  src={img.url}
+                  alt={`Imagem ${imgIndex}`}
+                  className="max-h-40 rounded-md border border-border object-contain"
+                  loading="lazy"
+                />
+                <button
+                  type="button"
+                  className="absolute -top-1 -right-1 rounded-full bg-destructive text-destructive-foreground p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => onRemoveImage(imgIndex)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           );
         }
