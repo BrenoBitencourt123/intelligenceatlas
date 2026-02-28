@@ -302,7 +302,7 @@ export function QuestionEditor({
                 {/* Alternative image */}
                 <div className="flex items-center gap-2 ml-7">
                   {alt.image_url ? (
-                    <div className="relative group flex justify-center w-full">
+                    <div className="relative group">
                       <img src={alt.image_url} alt={`Alt ${alt.letter}`} className="max-h-32 rounded border border-border object-contain" loading="lazy" />
                       <button
                         type="button"
