@@ -272,7 +272,10 @@ export function QuestionEditor({
           {question.alternatives.map((alt, i) => {
             const isCorrect = question.correct_answer === alt.letter;
             return (
-              <div key={alt.letter} className={`rounded-lg border p-3 space-y-2 transition-colors ${isCorrect ? 'border-green-500 bg-green-500/5' : 'border-border'}`}>
+              <div
+                key={alt.letter}
+                className={`rounded-lg border p-3 space-y-2 transition-colors ${isCorrect ? 'border-green-500 bg-green-500/5' : 'border-border'}`}
+              >
                 <div className="flex items-start gap-2">
                   <span className={`text-sm font-bold mt-1 w-5 shrink-0 ${isCorrect ? 'text-green-600' : 'text-muted-foreground'}`}>
                     {alt.letter})
@@ -284,16 +287,23 @@ export function QuestionEditor({
                       updated[i] = { ...alt, text: e.target.value };
                       onUpdate({ alternatives: updated });
                     }}
+                    onPaste={(e) => {
+                      const files = Array.from(e.clipboardData.files).filter(f => f.type.startsWith('image/'));
+                      if (files.length > 0) {
+                        e.preventDefault();
+                        onAddAlternativeImage(alt.letter, files[0]);
+                      }
+                    }}
                     rows={2}
                     className="text-sm flex-1"
-                    placeholder={`Texto da alternativa ${alt.letter}`}
+                    placeholder={`Texto da alternativa ${alt.letter}. Cole uma imagem com Ctrl+V.`}
                   />
                 </div>
                 {/* Alternative image */}
                 <div className="flex items-center gap-2 ml-7">
                   {alt.image_url ? (
-                    <div className="relative group">
-                      <img src={alt.image_url} alt={`Alt ${alt.letter}`} className="h-16 rounded border border-border object-cover" loading="lazy" />
+                    <div className="relative group flex justify-center w-full">
+                      <img src={alt.image_url} alt={`Alt ${alt.letter}`} className="max-h-32 rounded border border-border object-contain" loading="lazy" />
                       <button
                         type="button"
                         className="absolute -top-1 -right-1 rounded-full bg-destructive text-destructive-foreground p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
