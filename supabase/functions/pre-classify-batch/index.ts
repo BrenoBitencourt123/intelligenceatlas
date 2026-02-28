@@ -105,7 +105,7 @@ Responda SOMENTE com um JSON array. Sem markdown, sem texto extra:
           {
             method: "POST",
             headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ model: "gemini-2.5-flash-lite", ...llmPayload }),
+            body: JSON.stringify({ model: "gemini-2.5-flash-lite", ...llmPayload, thinking: { thinking_budget: 0 } }),
           }
         );
         if (response.ok) {
