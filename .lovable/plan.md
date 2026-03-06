@@ -1,54 +1,59 @@
 
 
-## Diagnóstico
+## Plano: Editor Visual de Questoes estilo Simulado
 
-### 1. Imagens não aparecendo
+O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
 
-O problema está no formato dos dados no campo `images`. As questões importadas manualmente armazenaram as imagens como **array de strings** (`["https://...url.png"]`), mas o código espera **array de objetos** (`[{"url": "https://...", "order": 0}]`).
+### Arquitetura
 
-A função `normalizeQuestionImages` no frontend tenta acessar `value.url` em cada item — quando o item é uma string pura, isso retorna `undefined` e a imagem é descartada silenciosamente.
-
-**Solução:** Executar uma migração SQL para corrigir os dados existentes, convertendo strings soltas em objetos com `url`/`order`. Também atualizar `normalizeQuestionImages` para ser resiliente a ambos os formatos (string ou objeto) como fallback defensivo.
-
-### 2. Reclassificar questões
-
-Já existe a edge function `reclassify-questions` que chama `classify-question` para cada questão. Ela aceita filtros como `year`, `needs_review`, `unclassified`, ou uma lista de `ids`.
-
-**Solução:** Adicionar um botão "Reclassificar" no painel admin (aba Questões) que chama essa function com os filtros desejados (ex: ano 2020). Isso vai reprocessar a taxonomia (topic, subtopic, disciplina, cognitive_level, etc.) via Gemini.
-
----
-
-## Plano de Implementação
-
-### Etapa 1 — Corrigir dados de imagens no banco
-Migração SQL para converter entries onde `images` contém strings puras em objetos `{url, order}`:
-
-```sql
-UPDATE questions 
-SET images = (
-  SELECT jsonb_agg(
-    CASE 
-      WHEN jsonb_typeof(elem) = 'string' 
-      THEN jsonb_build_object('url', elem, 'order', idx, 'caption', null)
-      ELSE elem
-    END
-  )
-  FROM jsonb_array_elements(images::jsonb) WITH ORDINALITY AS t(elem, idx)
-)
-WHERE images::text != '[]' 
-  AND EXISTS (
-    SELECT 1 FROM jsonb_array_elements(images::jsonb) e 
-    WHERE jsonb_typeof(e) = 'string'
-  );
+```text
+PreviewStage (refatorado)
+├── QuestionEditor (painel esquerdo — scrollavel)
+│   ├── Header: "Q.1 de 90" + badges (area, idioma)
+│   ├── Statement editor (textarea com suporte a {{IMG_N}})
+│   │   └── Inline image slots (drag/drop, paste, upload)
+│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
+│   ├── Metadados: area, resposta correta, lingua estrangeira
+│   └── Navegacao: < Anterior | Proxima >
+│
+└── Sidebar (painel direito — fixo)
+    ├── Status summary (OK / Com erro / Vazias)
+    ├── Grid de numeros (1-90 ou 91-180)
+    │   ├── Verde: questao OK (tem enunciado + gabarito)
+    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
+    │   ├── Vermelho: questao vazia / critica
+    │   ├── Borda: questao atual selecionada
+    │   └── Cinza: questao nao importada
+    └── Botao "Revisar e Importar"
 ```
 
-### Etapa 2 — Tornar normalizeQuestionImages defensivo
-Atualizar a função em `useStudySession.ts` para aceitar tanto strings quanto objetos no array de imagens, evitando reincidência futura.
+### Tarefas de implementacao
 
-### Etapa 3 — Adicionar botão de reclassificação no Admin
-Na aba "Questões" do painel admin, adicionar um botão que permite reclassificar questões por ano, chamando a edge function `reclassify-questions` existente. Exibirá progresso e resultado (processadas/erros).
+1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
+   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
+   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
+   - 5 alternativas editaveis (texto + slot de imagem cada)
+   - Selects para area, resposta correta, lingua estrangeira
+   - Navegacao Anterior/Proxima
 
----
+2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
+   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
+   - Contadores no topo: "X completas, Y com erro, Z vazias"
+   - Click no numero navega para a questao
 
-**Formatos de imagem:** PNG e WebP são ambos suportados pelo componente — o formato não é a causa do problema.
+3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
+   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
+   - Direita: QuestionGrid + botao de importar
+   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
+   - Mobile: grid em cima, editor embaixo (responsivo)
+
+4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
+
+### Detalhes tecnicos
+
+- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
+- O estado de "questao atual" sera controlado por um index no PreviewStage
+- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
+- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
+- Nenhuma mudanca no banco de dados ou edge functions necessaria
 

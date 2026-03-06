@@ -104,6 +104,10 @@ function normalizeQuestionImages(images: unknown, imageUrl: string | null): Ques
   if (Array.isArray(images)) {
     const parsed = images
       .map((img, index) => {
+        // Handle plain string entries (legacy format)
+        if (typeof img === "string" && img.trim()) {
+          return { url: img.trim(), order: index } as QuestionImage;
+        }
         if (!img || typeof img !== "object") return null;
         const value = img as Record<string, unknown>;
         if (typeof value.url !== "string" || !value.url.trim()) return null;

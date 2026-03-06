@@ -203,15 +203,20 @@ const QuestionsPanel = () => {
     }
   };
 
-  const handleReclassify = async (mode: 'unclassified' | 'needs_review') => {
+  const handleReclassify = async (mode: 'unclassified' | 'needs_review' | 'year') => {
     setReclassifying(true);
     try {
-      const body = mode === 'unclassified' ? { unclassified: true } : { needs_review: true };
+      const body: Record<string, unknown> =
+        mode === 'unclassified'
+          ? { unclassified: true }
+          : mode === 'needs_review'
+            ? { needs_review: true }
+            : { year: parseInt(filterYear) };
       const { data, error } = await supabase.functions.invoke('reclassify-questions', { body });
       if (error) throw error;
       toast({
         title: 'Reclassificação concluída',
-        description: `${data?.processed ?? 0} questões processadas. Erros: ${data?.errors?.length ?? 0}.`,
+        description: `${data?.processed ?? 0} de ${data?.total ?? '?'} questões processadas. Erros: ${data?.errors?.length ?? 0}.`,
       });
       fetchQuestions();
     } catch (err: any) {
@@ -293,6 +298,16 @@ const QuestionsPanel = () => {
           >
             {reclassifying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <AlertTriangle className="h-4 w-4 mr-2" />}
             Reclassificar needs_review
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={reclassifying || filterYear === 'all'}
+            onClick={() => handleReclassify('year')}
+            title={filterYear === 'all' ? 'Selecione um ano no filtro primeiro' : `Reclassificar todas de ${filterYear}`}
+          >
+            {reclassifying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+            Reclassificar ano {filterYear !== 'all' ? filterYear : '…'}
           </Button>
           <Button
             variant="outline"
