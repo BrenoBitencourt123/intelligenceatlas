@@ -205,18 +205,37 @@ const QuestionsPanel = () => {
 
   const handleReclassify = async (mode: 'unclassified' | 'needs_review' | 'year') => {
     setReclassifying(true);
+    let totalProcessed = 0;
+    let totalErrors = 0;
+    let offset = 0;
+    let hasMore = true;
+
     try {
-      const body: Record<string, unknown> =
-        mode === 'unclassified'
-          ? { unclassified: true }
-          : mode === 'needs_review'
-            ? { needs_review: true }
-            : { year: parseInt(filterYear) };
-      const { data, error } = await supabase.functions.invoke('reclassify-questions', { body });
-      if (error) throw error;
+      while (hasMore) {
+        const body: Record<string, unknown> =
+          mode === 'unclassified'
+            ? { unclassified: true, offset }
+            : mode === 'needs_review'
+              ? { needs_review: true, offset }
+              : { year: parseInt(filterYear), offset };
+
+        const { data, error } = await supabase.functions.invoke('reclassify-questions', { body });
+        if (error) throw error;
+
+        totalProcessed += data?.processed ?? 0;
+        totalErrors += data?.errors?.length ?? 0;
+        const remaining = data?.remaining ?? 0;
+
+        if (remaining <= 0 || (data?.processed ?? 0) === 0) {
+          hasMore = false;
+        } else {
+          offset += data?.total ?? 0;
+        }
+      }
+
       toast({
         title: 'Reclassificação concluída',
-        description: `${data?.processed ?? 0} de ${data?.total ?? '?'} questões processadas. Erros: ${data?.errors?.length ?? 0}.`,
+        description: `${totalProcessed} questões processadas. Erros: ${totalErrors}.`,
       });
       fetchQuestions();
     } catch (err: any) {
