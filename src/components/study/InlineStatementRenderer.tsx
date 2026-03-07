@@ -16,7 +16,8 @@ interface InlineStatementRendererProps {
 
 /**
  * Renders a question statement with inline images placed at {{IMG_0}}, {{IMG_1}}, etc.
- * If no placeholders are found, falls back to showing text then all images below.
+ * Supports both zero-based and one-based placeholders for compatibility.
+ * If placeholders are not resolvable, falls back to showing text then all images below.
  */
 export function InlineStatementRenderer({
   statement,
@@ -26,10 +27,20 @@ export function InlineStatementRenderer({
 }: InlineStatementRendererProps) {
   const sortedImages = [...images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
+  const resolveImageByPlaceholder = (rawIndex: number) => {
+    return sortedImages[rawIndex] ?? (rawIndex > 0 ? sortedImages[rawIndex - 1] : undefined);
+  };
+
   // Check if statement contains any {{IMG_N}} placeholders
   const hasPlaceholders = /\{\{IMG_\d+\}\}/.test(statement);
+  const hasResolvablePlaceholder = hasPlaceholders
+    ? [...statement.matchAll(/\{\{IMG_(\d+)\}\}/g)].some((match) => {
+        const rawIndex = parseInt(match[1], 10);
+        return Number.isFinite(rawIndex) && Boolean(resolveImageByPlaceholder(rawIndex));
+      })
+    : false;
 
-  if (!hasPlaceholders) {
+  if (!hasPlaceholders || !hasResolvablePlaceholder) {
     // Fallback: render statement text, then all images below
     return (
       <div className={className}>
@@ -59,8 +70,8 @@ export function InlineStatementRenderer({
       {parts.map((part, idx) => {
         const match = part.match(/^\{\{IMG_(\d+)\}\}$/);
         if (match) {
-          const imgIndex = parseInt(match[1], 10);
-          const img = sortedImages[imgIndex];
+          const rawIndex = parseInt(match[1], 10);
+          const img = resolveImageByPlaceholder(rawIndex);
           if (!img) return null;
           return (
             <div key={`img-${idx}`} className="flex justify-center py-2">
