@@ -747,7 +747,7 @@ const Objectives = () => {
                         size="icon"
                         onClick={() =>
                           startSession(
-                            schedule.area,
+                            effectiveArea,
                             hasFullSessionAccess ? undefined : freeQuestionLimit,
                             false,
                             true
