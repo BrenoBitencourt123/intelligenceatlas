@@ -63,7 +63,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Posso cancelar a qualquer momento?",
-    a: "Sim, sem multa ou fidelidade. Mas ao cancelar, você perde o preço de fundador caso queira voltar depois.",
+    a: "Sim, sem multa ou fidelidade, você pode cancelar a qualquer momento.",
   },
   {
     q: "O Atlas já está funcionando?",
