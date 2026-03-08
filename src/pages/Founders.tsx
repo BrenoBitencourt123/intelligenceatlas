@@ -55,7 +55,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "O desconto é realmente vitalício?",
-    a: "Sim! Enquanto sua assinatura estiver ativa, você mantém o preço de fundador. O valor nunca aumenta para fundadores.",
+    a: "Sim! Sua assinatura sempre terá o desconto de fundador. O valor nunca aumenta para fundadores.",
   },
   {
     q: "Quantas vagas restam?",
