@@ -558,7 +558,7 @@ export function useStudySession() {
                 .maybeSingle();
 
               const newAttempts = (ex?.attempts ?? 0) + 1;
-              const newCorrect = (ex?.correct ?? 0) + (isCorrect ? 1 : 0);
+              const newCorrect = (ex?.correct ?? 0) + (isCorrect ? correctWeight : 0);
               // Bayesian smoothing: score = (correct + 1) / (attempts + 2)
               const masteryScore = (newCorrect + 1) / (newAttempts + 2);
               const newAvgTime = ex?.avg_time_sec
