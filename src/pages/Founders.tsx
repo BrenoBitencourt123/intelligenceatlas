@@ -83,7 +83,7 @@ export default function Founders() {
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             O Atlas analisa seu desempenho nas questões do ENEM e mostra exatamente o que estudar para alcançar{" "}
-            <span className="font-semibold text-foreground">700+ ou 900+ pontos</span>.
+            <span className="font-semibold text-foreground">900+ pontos</span>.
           </motion.p>
 
           {/* Discount */}
