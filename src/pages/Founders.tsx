@@ -295,7 +295,7 @@ export default function Founders() {
                         value={`faq-${i}`}
                         className="rounded-xl border bg-card px-5"
                       >
-                        <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-4">
+                        <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-4 text-left">
                           {item.q}
                         </AccordionTrigger>
                         <AccordionContent className="text-sm text-muted-foreground pb-4">
