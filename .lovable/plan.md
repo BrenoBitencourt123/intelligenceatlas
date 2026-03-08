@@ -1,59 +1,67 @@
 
 
-## Plano: Editor Visual de Questoes estilo Simulado
+## Plano: Landing Page de Captação + Cupom Fundadores 50%
 
-O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
+### Parte 1 — Cupom "Membros Fundadores" no Stripe
 
-### Arquitetura
+Criar um cupom no Stripe via ferramenta com:
+- **50% off**, duração **forever** (aplica em todas as cobranças futuras)
+- **Max redemptions: 20** (limite hard no Stripe — após 20 usos, o cupom para de funcionar automaticamente)
+- Nome: "Membro Fundador - 50%"
 
-```text
-PreviewStage (refatorado)
-├── QuestionEditor (painel esquerdo — scrollavel)
-│   ├── Header: "Q.1 de 90" + badges (area, idioma)
-│   ├── Statement editor (textarea com suporte a {{IMG_N}})
-│   │   └── Inline image slots (drag/drop, paste, upload)
-│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
-│   ├── Metadados: area, resposta correta, lingua estrangeira
-│   └── Navegacao: < Anterior | Proxima >
-│
-└── Sidebar (painel direito — fixo)
-    ├── Status summary (OK / Com erro / Vazias)
-    ├── Grid de numeros (1-90 ou 91-180)
-    │   ├── Verde: questao OK (tem enunciado + gabarito)
-    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
-    │   ├── Vermelho: questao vazia / critica
-    │   ├── Borda: questao atual selecionada
-    │   └── Cinza: questao nao importada
-    └── Botao "Revisar e Importar"
-```
+O usuário verá na tela de checkout o preço original (R$49,90) riscado e o valor com desconto (R$24,95), gerando o ancorament visual desejado. Isso já funciona nativamente com o `EmbeddedCheckoutModal` existente que aceita `couponId`.
 
-### Tarefas de implementacao
+### Parte 2 — Landing Page (`/fundadores`)
 
-1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
-   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
-   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
-   - 5 alternativas editaveis (texto + slot de imagem cada)
-   - Selects para area, resposta correta, lingua estrangeira
-   - Navegacao Anterior/Proxima
+Criar uma nova rota **pública** (sem `ProtectedRoute`) com uma página de alta conversão.
 
-2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
-   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
-   - Contadores no topo: "X completas, Y com erro, Z vazias"
-   - Click no numero navega para a questao
+**Estrutura da página:**
 
-3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
-   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
-   - Direita: QuestionGrid + botao de importar
-   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
-   - Mobile: grid em cima, editor embaixo (responsivo)
+1. **Hero Section**
+   - Headline forte e direto (ex: "Seja um dos 20 Membros Fundadores")
+   - Subtítulo com a proposta de valor + desconto vitalício de 50%
+   - Contador de vagas restantes (pode ser estático inicialmente, ou dinâmico via Stripe)
+   - Botão CTA principal → scroll para o formulário
 
-4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
+2. **Espaço para Vídeo**
+   - Placeholder/embed area para o vídeo que será gravado depois
+   - Proporção 16:9 com fallback visual elegante
 
-### Detalhes tecnicos
+3. **Benefícios rápidos**
+   - 3-4 blocos visuais com ícones mostrando o que o membro recebe
+   - Questões ilimitadas, redações com IA, flashcards inteligentes, 50% para sempre
 
-- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
-- O estado de "questao atual" sera controlado por um index no PreviewStage
-- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
-- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
-- Nenhuma mudanca no banco de dados ou edge functions necessaria
+4. **Formulário de Captação**
+   - Campos: Nome, Email, WhatsApp
+   - Salva os leads na tabela `vip_leads` no banco de dados
+   - Após envio: tela de confirmação com link/instrução para entrar no grupo WhatsApp
+
+5. **Footer mínimo**
+   - Logo + link para o app principal
+
+**Estilo visual:** Consistente com a identidade Atlas — fundo claro, tipografia grande e bold, muito espaço negativo, botões CTA em preto com destaque. Elementos visuais atrativos como badges de "50% OFF VITALÍCIO", contadores de vagas, e micro-animações CSS nos CTAs.
+
+### Parte 3 — Banco de Dados
+
+Nova tabela `vip_leads`:
+- `id` (uuid, PK)
+- `name` (text)
+- `email` (text)
+- `whatsapp` (text)
+- `created_at` (timestamptz)
+- RLS: insert público (sem auth), select apenas admin
+
+### Parte 4 — Integração no App
+
+- Nova rota `/fundadores` pública no `App.tsx`
+- Página standalone (sem `MainLayout` / `BottomNav`)
+
+### Arquivos
+
+| Ação | Arquivo |
+|------|---------|
+| Criar | `src/pages/Founders.tsx` — Landing page completa |
+| Editar | `src/App.tsx` — adicionar rota pública `/fundadores` |
+| Criar | Migração SQL — tabela `vip_leads` |
+| Criar | Cupom Stripe — 50% forever, max 20 redemptions |
 
