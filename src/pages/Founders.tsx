@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { motion, useScroll, useMotionValueEvent, type Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Check,
