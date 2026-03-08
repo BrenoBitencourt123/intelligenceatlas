@@ -69,7 +69,7 @@ export default function FounderSignup() {
       <div className="max-w-2xl mx-auto w-full px-6">
         <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-[hsl(142,71%,45%)] rounded-full"
+            className="h-full bg-[hsl(25,95%,53%)] rounded-full"
             initial={{ width: "50%" }}
             animate={{ width: step === 1 ? "50%" : "100%" }}
             transition={{ duration: 0.4, ease: "easeOut" }}
@@ -91,7 +91,7 @@ export default function FounderSignup() {
                 className="space-y-6"
               >
                 <div className="space-y-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[hsl(142,71%,93%)] text-[hsl(142,71%,30%)]">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[hsl(25,95%,53%/0.1)] text-[hsl(25,95%,40%)]">
                     <Sparkles className="w-3.5 h-3.5" />
                     50% vitalício
                   </div>
@@ -142,7 +142,7 @@ export default function FounderSignup() {
                   <Button
                     type="submit"
                     size="lg"
-                    className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(142,71%,45%)] border-0"
+                    className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(25,95%,53%)] border-0"
                     disabled={loading}
                   >
                     {loading ? "Enviando..." : "Continuar"}
@@ -163,8 +163,8 @@ export default function FounderSignup() {
                 className="space-y-6 text-center"
               >
                 <div className="relative mx-auto w-20 h-20">
-                  <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-[hsl(142,71%,45%)]" />
-                  <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-[hsl(142,71%,45%)]">
+                  <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-[hsl(25,95%,53%)]" />
+                  <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-[hsl(25,95%,53%)]">
                     <Check className="w-9 h-9 text-white" />
                   </div>
                 </div>
@@ -182,7 +182,7 @@ export default function FounderSignup() {
 
                 <Button
                   size="lg"
-                  className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(142,71%,45%)] border-0"
+                  className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(25,95%,53%)] border-0"
                   onClick={() =>
                     window.open("https://chat.whatsapp.com/SEU_LINK_AQUI", "_blank")
                   }
