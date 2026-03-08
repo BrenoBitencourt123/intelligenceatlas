@@ -93,7 +93,7 @@ export default function Founders() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
           >
-            🔥 R$24,95/mês para sempre — membros fundadores
+            🔥 50%OFF para sempre aos membros fundadores!
           </motion.p>
 
           {/* Video placeholder */}
