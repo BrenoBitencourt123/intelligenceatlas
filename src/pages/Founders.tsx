@@ -194,21 +194,6 @@ export default function Founders() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-          
-
           {/* Headline */}
           <motion.h1
             className="text-center text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold tracking-tight leading-[1.15] text-foreground"
