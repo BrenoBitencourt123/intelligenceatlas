@@ -200,15 +200,7 @@ export default function Founders() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.05 }}>
-            
-            Restam{" "}
-            <span
-              className="relative inline-block px-2 py-0.5 rounded-md"
-              style={{ color: AMBER, background: AMBER_BG }}>
-              
-              {vagasRestantes} vagas
-            </span>{" "}
-            para os primeiros membros fundadores do Atlas
+            O jeito mais inteligente de estudar para o ENEM.
           </motion.h1>
 
           {/* Sub-headline with floating badge */}
