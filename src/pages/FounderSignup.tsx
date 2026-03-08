@@ -92,7 +92,7 @@ export default function FounderSignup() {
               
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[hsl(25,95%,53%/0.1)] text-[hsl(25,95%,40%)]">
-                    50% vitalício
+                    50%OFF vitalício
                   </div>
                   <h1 className="text-2xl font-bold text-foreground">
                     Garanta sua vaga de fundador
