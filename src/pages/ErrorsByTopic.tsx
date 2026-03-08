@@ -191,44 +191,39 @@ export default function ErrorsByTopic() {
 
   return (
     <MainLayout>
-      <div className="container max-w-3xl mx-auto px-4 py-8 space-y-5">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">Mapa de Tópicos</h1>
-            <p className="text-muted-foreground text-sm">Prioridades, domínio e revisões por competência</p>
+      <div className="container max-w-2xl mx-auto px-4 py-8 space-y-6 pb-24">
+        {/* Header */}
+        <div>
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-foreground">Mapa de Tópicos</h1>
+            {totalOverdue > 0 && (
+              <Badge variant="destructive" className="text-xs gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {totalOverdue} vencidas
+              </Badge>
+            )}
           </div>
-          {totalOverdue > 0 && (
-            <Badge variant="destructive" className="gap-1">
-              <AlertCircle className="h-3.5 w-3.5" />
-              {totalOverdue} vencidas
-            </Badge>
-          )}
+          <p className="text-sm text-muted-foreground mt-0.5">Prioridades, domínio e revisões por competência</p>
         </div>
 
-        {/* Top 5 weaknesses & strengths summary */}
+        {/* Summary cards */}
         {!loading && rows.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Card>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                  <h3 className="font-semibold text-sm">Top 5 fraquezas</h3>
-                </div>
-                <div className="space-y-2">
+              <CardContent className="p-4 space-y-2.5">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Top 5 fraquezas</h3>
+                <div className="space-y-1.5">
                   {[...rows]
                     .sort((a, b) => b.priority_score - a.priority_score)
                     .slice(0, 5)
                     .map((row) => (
-                      <div key={row.id} className="flex items-center justify-between text-xs rounded-lg border p-2">
-                        <span className="text-foreground truncate flex-1 mr-2">
-                          {AREA_CONFIG[row.area]?.label || row.area} - {row.topic}
+                      <div key={row.id} className="flex items-center justify-between py-1.5 text-xs">
+                        <span className="text-foreground truncate flex-1 mr-3">
+                          {row.topic}
                         </span>
-                        <Badge variant="destructive" className="text-xs shrink-0">
+                        <span className="text-muted-foreground tabular-nums shrink-0">
                           {row.priority_score.toFixed(2)}
-                        </Badge>
+                        </span>
                       </div>
                     ))}
                 </div>
@@ -236,29 +231,26 @@ export default function ErrorsByTopic() {
             </Card>
 
             <Card>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <h3 className="font-semibold text-sm">Top 5 forças</h3>
-                </div>
-                <div className="space-y-2">
+              <CardContent className="p-4 space-y-2.5">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Top 5 forças</h3>
+                <div className="space-y-1.5">
                   {[...rows]
                     .filter(r => r.attempts > 0)
                     .sort((a, b) => {
                       if (b.level !== a.level) return b.level - a.level;
-                      const accA = a.correct / a.attempts;
-                      const accB = b.correct / b.attempts;
-                      return accB - accA;
+                      return (b.correct / b.attempts) - (a.correct / a.attempts);
                     })
                     .slice(0, 5)
                     .map((row) => {
                       const acc = Math.round((row.correct / row.attempts) * 100);
                       return (
-                        <div key={row.id} className="flex items-center justify-between text-xs rounded-lg border p-2">
-                          <span className="text-foreground truncate flex-1 mr-2">
-                            {AREA_CONFIG[row.area]?.label || row.area} - {row.topic}
+                        <div key={row.id} className="flex items-center justify-between py-1.5 text-xs">
+                          <span className="text-foreground truncate flex-1 mr-3">
+                            {row.topic}
                           </span>
-                          <span className="text-muted-foreground shrink-0">N{row.level} · {acc}%</span>
+                          <span className="text-muted-foreground tabular-nums shrink-0">
+                            N{row.level} · {acc}%
+                          </span>
                         </div>
                       );
                     })}
@@ -268,11 +260,11 @@ export default function ErrorsByTopic() {
           </div>
         )}
 
+        {/* Area cards */}
         {loading ? (
           <div className="space-y-3">
-            <Skeleton className="h-40 w-full rounded-xl" />
-            <Skeleton className="h-40 w-full rounded-xl" />
-            <Skeleton className="h-40 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
           </div>
         ) : grouped.length === 0 ? (
           <Card>
@@ -286,9 +278,11 @@ export default function ErrorsByTopic() {
             </CardContent>
           </Card>
         ) : (
-          grouped.map(([area, list]) => (
-            <AreaCard key={area} area={area} list={list} />
-          ))
+          <div className="space-y-3">
+            {grouped.map(([area, list]) => (
+              <AreaCard key={area} area={area} list={list} />
+            ))}
+          </div>
         )}
       </div>
     </MainLayout>
