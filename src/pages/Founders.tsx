@@ -1,21 +1,9 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import {
-  Check,
-  ArrowRight,
-  Sparkles,
-  BarChart3,
-} from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 /* ─── Slots hook (real from Stripe) ─── */
 function useFounderSlots() {
@@ -42,188 +30,14 @@ const CHECKS = [
   "Correção estruturada de redação",
 ];
 
-/* ─── Success State ─── */
-function SuccessState() {
-  return (
-    <div className="min-h-screen flex items-center justify-center px-6 bg-background">
-      <div className="max-w-md w-full text-center space-y-6 animate-fade-in">
-        <div className="relative mx-auto w-20 h-20">
-          <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-[hsl(142,71%,45%)]" />
-          <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-[hsl(142,71%,45%)]">
-            <Check className="w-9 h-9 text-white" />
-          </div>
-        </div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Inscrição confirmada! 🎉
-        </h1>
-        <p className="text-lg leading-relaxed text-muted-foreground">
-          Agora entre no nosso grupo exclusivo no WhatsApp para receber seu cupom
-          de <span className="font-bold text-foreground">50% vitalício</span> e
-          todas as novidades em primeira mão.
-        </p>
-        <Button
-          size="lg"
-          className="w-full text-lg h-14 font-semibold rounded-xl text-white hover:opacity-90 bg-[hsl(142,71%,45%)]"
-          onClick={() =>
-            window.open("https://chat.whatsapp.com/SEU_LINK_AQUI", "_blank")
-          }
-        >
-          Entrar no grupo VIP
-          <ArrowRight className="ml-2 w-5 h-5" />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Lead Modal ─── */
-function LeadModal({
-  open,
-  onOpenChange,
-  loading,
-  onSubmit,
-  name,
-  setName,
-  email,
-  setEmail,
-  whatsapp,
-  setWhatsapp,
-  remaining,
-  slotsLoading,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  loading: boolean;
-  onSubmit: (e: React.FormEvent) => void;
-  name: string;
-  setName: (v: string) => void;
-  email: string;
-  setEmail: (v: string) => void;
-  whatsapp: string;
-  setWhatsapp: (v: string) => void;
-  remaining: number | null;
-  slotsLoading: boolean;
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-0">
-        <div className="h-1.5 w-full bg-[hsl(142,71%,45%)]" />
-
-        <div className="p-6 sm:p-8">
-          <DialogHeader className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold mx-auto mb-3 bg-[hsl(142,71%,93%)] text-[hsl(142,71%,30%)]">
-              <Sparkles className="w-4 h-4" />
-              50% vitalício
-            </div>
-            <DialogTitle className="text-2xl font-bold text-foreground">
-              Garanta sua vaga
-            </DialogTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Preencha abaixo para entrar no grupo VIP e receber seu cupom exclusivo.
-            </p>
-            {!slotsLoading && remaining !== null && (
-              <p className="mt-2 text-sm font-bold text-[hsl(142,71%,30%)]">
-                🔥 Restam apenas {remaining} vagas
-              </p>
-            )}
-          </DialogHeader>
-
-          <form onSubmit={onSubmit} className="space-y-4">
-            <Input
-              placeholder="Seu nome"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={100}
-              required
-              className="h-12 rounded-xl"
-            />
-            <Input
-              type="email"
-              placeholder="Seu melhor e-mail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              maxLength={255}
-              required
-              className="h-12 rounded-xl"
-            />
-            <Input
-              type="tel"
-              placeholder="WhatsApp (com DDD)"
-              value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
-              maxLength={15}
-              required
-              className="h-12 rounded-xl"
-            />
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full text-lg h-14 font-bold rounded-xl text-white shadow-lg transition-all hover:shadow-xl hover:opacity-90 bg-[hsl(142,71%,45%)]"
-              disabled={loading}
-            >
-              {loading ? "Enviando..." : "Entrar no grupo VIP →"}
-            </Button>
-            <p className="text-xs text-center text-muted-foreground">
-              Ao se inscrever, você receberá o cupom de 50% no grupo do WhatsApp.
-            </p>
-          </form>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/* ─── Page ─── */
 export default function Founders() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
   const { remaining, loading: slotsLoading } = useFounderSlots();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !email.trim() || !whatsapp.trim()) {
-      toast.error("Preencha todos os campos");
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      toast.error("Email inválido");
-      return;
-    }
-
-    const phoneClean = whatsapp.replace(/\D/g, "");
-    if (phoneClean.length < 10 || phoneClean.length > 13) {
-      toast.error("WhatsApp inválido");
-      return;
-    }
-
-    setLoading(true);
-    const { error } = await supabase
-      .from("vip_leads" as any)
-      .insert([
-        { name: name.trim(), email: email.trim(), whatsapp: phoneClean },
-      ] as any);
-
-    setLoading(false);
-    if (error) {
-      toast.error("Erro ao enviar. Tente novamente.");
-      return;
-    }
-    setModalOpen(false);
-    setSubmitted(true);
-  };
-
-  if (submitted) return <SuccessState />;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-5 max-w-6xl mx-auto w-full">
+      <header className="flex items-center justify-between px-6 py-5 max-w-3xl mx-auto w-full">
         <span className="font-bold text-lg tracking-tight text-foreground">
           Atlas
         </span>
@@ -231,7 +45,7 @@ export default function Founders() {
           variant="outline"
           size="sm"
           className="rounded-full font-medium"
-          onClick={() => window.open("/login", "_self")}
+          onClick={() => navigate("/login")}
         >
           Entrar
         </Button>
@@ -312,11 +126,16 @@ export default function Founders() {
             <Button
               size="lg"
               className="h-14 px-10 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(142,71%,45%)] border-0"
-              onClick={() => setModalOpen(true)}
+              onClick={() => navigate("/fundadores/cadastro")}
             >
               Começar agora
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
+            {!slotsLoading && remaining !== null && (
+              <p className="text-sm text-muted-foreground mt-3">
+                🔥 Restam apenas <span className="font-bold text-foreground">{remaining} vagas</span>
+              </p>
+            )}
           </motion.div>
 
           {/* Checkmarks */}
@@ -350,21 +169,6 @@ export default function Founders() {
           Intelligence Atlas © {new Date().getFullYear()}
         </p>
       </footer>
-
-      <LeadModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        loading={loading}
-        onSubmit={handleSubmit}
-        name={name}
-        setName={setName}
-        email={email}
-        setEmail={setEmail}
-        whatsapp={whatsapp}
-        setWhatsapp={setWhatsapp}
-        remaining={remaining}
-        slotsLoading={slotsLoading}
-      />
     </div>
   );
 }

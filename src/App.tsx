@@ -20,6 +20,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 import Founders from "./pages/Founders";
+import FounderSignup from "./pages/FounderSignup";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +116,7 @@ const App = () => (
               }
             />
             <Route path="/fundadores" element={<Founders />} />
+            <Route path="/fundadores/cadastro" element={<FounderSignup />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
