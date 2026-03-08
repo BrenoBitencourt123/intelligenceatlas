@@ -328,8 +328,6 @@ export default function Founders() {
                   </Accordion>
                 </section>
               </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </main>
 
