@@ -75,6 +75,19 @@ const FAQ_ITEMS = [
 export default function Founders() {
   const navigate = useNavigate();
 
+  /* Dynamic slots from Stripe */
+  const [vagasRestantes, setVagasRestantes] = useState(VAGAS_TOTAL);
+  const [slotsLoaded, setSlotsLoaded] = useState(false);
+
+  useEffect(() => {
+    supabase.functions.invoke("founders-slots").then(({ data, error }) => {
+      if (!error && data?.remaining != null) {
+        setVagasRestantes(data.remaining);
+      }
+      setSlotsLoaded(true);
+    });
+  }, []);
+
   /* Video simulation */
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -105,7 +118,7 @@ export default function Founders() {
     };
   }, []);
 
-  const vagasPreenchidas = VAGAS_TOTAL - VAGAS_RESTANTES;
+  const vagasPreenchidas = VAGAS_TOTAL - vagasRestantes;
   const progressPct = (vagasPreenchidas / VAGAS_TOTAL) * 100;
 
   return (
