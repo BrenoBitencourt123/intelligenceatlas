@@ -151,7 +151,7 @@ export default function Founders() {
           >
             Restam{" "}
             <span
-              className="relative inline-block px-2 py-0.5 rounded-md"
+              className="relative inline-block px-3 py-1 rounded-lg font-black text-4xl sm:text-5xl lg:text-6xl scale-105"
               style={{ color: AMBER, background: AMBER_BG }}
             >
               {vagasRestantes} vagas
