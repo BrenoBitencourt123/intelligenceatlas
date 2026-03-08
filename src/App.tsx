@@ -20,6 +20,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 import Founders from "./pages/Founders";
+import FounderSignup from "./pages/FounderSignup";
 
 const queryClient = new QueryClient();
 
