@@ -288,7 +288,7 @@ function BenefitsSection() {
 /* ─── Founder Perks Section ─── */
 function FounderPerksSection() {
   return (
-    <section className="px-6 pb-20 max-w-3xl mx-auto">
+    <section className="px-6 pb-6 max-w-3xl mx-auto">
       <div
         className="p-8 sm:p-10 rounded-2xl relative overflow-hidden border"
         style={{ backgroundColor: C.bgCard, borderColor: C.border }}
