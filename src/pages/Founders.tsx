@@ -155,6 +155,27 @@ export default function Founders() {
               style={{ color: AMBER, background: AMBER_BG }}>
               
               {vagasRestantes} vagas
+
+              {/* Balão 50% OFF com animação pulse/scale */}
+              <motion.span
+                className="absolute -top-10 -right-16 sm:-right-20 z-10 pointer-events-none"
+                initial={{ scale: 0 }}
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
+                <span
+                  className="inline-block px-2.5 py-1 rounded-full text-xs font-extrabold text-white shadow-lg whitespace-nowrap"
+                  style={{ background: AMBER }}>
+                  50% OFF
+                </span>
+                {/* Seta apontando para baixo */}
+                <span
+                  className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-0 h-0"
+                  style={{
+                    borderLeft: "6px solid transparent",
+                    borderRight: "6px solid transparent",
+                    borderTop: `6px solid ${AMBER}`,
+                  }} />
+              </motion.span>
             </span>{" "}
             para os primeiros membros fundadores do Atlas
           </motion.h1>
