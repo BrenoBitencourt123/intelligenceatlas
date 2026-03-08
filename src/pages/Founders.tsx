@@ -152,9 +152,8 @@ export default function Founders() {
             Restam{" "}
             <span
               className="relative inline-block"
-              style={{ color: AMBER }}>
-              {/* Marker-style underline */}
-              <span className="absolute left-0 right-0 bottom-0 h-[30%] -z-[1] rounded-sm" style={{ background: AMBER_BG }} />
+              style={{ color: AMBER, backgroundImage: `linear-gradient(${AMBER_BG}, ${AMBER_BG})`, backgroundPosition: "0 85%", backgroundSize: "100% 30%", backgroundRepeat: "no-repeat" }}>
+
 
               {/* Balão 50% OFF centralizado acima, levemente diagonal */}
               <span
