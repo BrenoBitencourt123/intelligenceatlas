@@ -163,8 +163,8 @@ export default function FounderSignup() {
                 className="space-y-6 text-center"
               >
                 <div className="relative mx-auto w-20 h-20">
-                  <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-[hsl(142,71%,45%)]" />
-                  <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-[hsl(142,71%,45%)]">
+                  <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-[hsl(25,95%,53%)]" />
+                  <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-[hsl(25,95%,53%)]">
                     <Check className="w-9 h-9 text-white" />
                   </div>
                 </div>
