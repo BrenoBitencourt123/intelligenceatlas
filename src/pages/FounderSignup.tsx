@@ -69,7 +69,7 @@ export default function FounderSignup() {
       <div className="max-w-2xl mx-auto w-full px-6">
         <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-[hsl(142,71%,45%)] rounded-full"
+            className="h-full bg-[hsl(25,95%,53%)] rounded-full"
             initial={{ width: "50%" }}
             animate={{ width: step === 1 ? "50%" : "100%" }}
             transition={{ duration: 0.4, ease: "easeOut" }}
