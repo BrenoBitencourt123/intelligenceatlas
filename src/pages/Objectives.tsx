@@ -695,7 +695,9 @@ const Objectives = () => {
               {schedule.isLoading ? (
                 <Skeleton className="h-6 w-48 rounded" />
               ) : (
-                <h2 className="text-lg font-semibold">Área do dia: {schedule.label}</h2>
+                <h2 className="text-lg font-semibold">
+                  {areaOverride ? `Revisão: ${AREA_LABELS[areaOverride] ?? areaOverride}` : `Área do dia: ${schedule.label}`}
+                </h2>
               )}
               <p className="text-sm text-muted-foreground">
                 {hasFullSessionAccess
