@@ -13,10 +13,8 @@ import {
 
 /* ─── Config ─── */
 const VAGAS_TOTAL = 20;
-
 const VIDEO_DURATION = 60;
 const REVEAL_AT_PERCENT = 0.75;
-
 const AMBER = "hsl(25, 95%, 53%)";
 const AMBER_BG = "hsl(25, 95%, 53% / 0.1)";
 
@@ -59,7 +57,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Quantas vagas restam?",
-    a: "", // dynamic, overridden in component
+    a: "",
   },
   {
     q: "Posso cancelar a qualquer momento?",
@@ -75,7 +73,6 @@ const FAQ_ITEMS = [
 export default function Founders() {
   const navigate = useNavigate();
 
-  /* Dynamic slots from Stripe */
   const [vagasRestantes, setVagasRestantes] = useState(VAGAS_TOTAL);
   const [slotsLoaded, setSlotsLoaded] = useState(false);
 
@@ -88,7 +85,6 @@ export default function Founders() {
     });
   }, []);
 
-  /* Video simulation */
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -110,8 +106,6 @@ export default function Founders() {
     }, 200);
   };
 
-  const handleRevealManual = () => setRevealed(true);
-
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -119,7 +113,6 @@ export default function Founders() {
   }, []);
 
   const vagasPreenchidas = VAGAS_TOTAL - vagasRestantes;
-  const progressPct = (vagasPreenchidas / VAGAS_TOTAL) * 100;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -191,7 +184,6 @@ export default function Founders() {
             <span className="font-semibold text-foreground">50% de desconto vitalício</span>.
           </motion.p>
 
-
           {/* Video placeholder */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -203,7 +195,6 @@ export default function Founders() {
               onClick={handlePlay}
             >
               <div className="absolute inset-0 bg-foreground/[0.02] group-hover:bg-foreground/[0.04] transition-colors" />
-
               <AnimatePresence>
                 {!isPlaying && progress === 0 && (
                   <motion.div
@@ -225,7 +216,6 @@ export default function Founders() {
                   </motion.div>
                 )}
               </AnimatePresence>
-
               {isPlaying && (
                 <div className="relative z-10 text-center space-y-2">
                   <div
@@ -235,7 +225,6 @@ export default function Founders() {
                   <p className="text-xs text-muted-foreground">Reproduzindo vídeo...</p>
                 </div>
               )}
-
               {(isPlaying || progress > 0) && (
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-secondary">
                   <motion.div
@@ -248,7 +237,7 @@ export default function Founders() {
             </div>
           </motion.div>
 
-          {/* CTA below video — always visible */}
+          {/* CTA below video */}
           <motion.div
             className="flex justify-center"
             initial={{ opacity: 0, y: 10 }}
@@ -266,70 +255,148 @@ export default function Founders() {
             </Button>
           </motion.div>
 
-          {/* ─── Content (always visible) ─── */}
+          {/* ─── Inline micro-badges row ─── */}
+          <motion.div
+            className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.35 }}
+          >
+            <span className="flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" style={{ color: AMBER }} />
+              Questões reais do ENEM
+            </span>
+            <span className="hidden sm:inline text-border">•</span>
+            <span className="flex items-center gap-1.5">
+              <PenLine className="w-3.5 h-3.5" style={{ color: AMBER }} />
+              Plano de estudo inteligente
+            </span>
+            <span className="hidden sm:inline text-border">•</span>
+            <span className="flex items-center gap-1.5">
+              <Brain className="w-3.5 h-3.5" style={{ color: AMBER }} />
+              Análise de desempenho
+            </span>
+          </motion.div>
+
+          {/* ─── Sections with separator badges ─── */}
           <motion.div
             className="space-y-16 pt-4"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
           >
-                {/* Features */}
-                <section className="space-y-6">
-                  <h2 className="text-xl sm:text-2xl font-bold text-foreground text-center">
-                    Tudo que você precisa para o ENEM
-                  </h2>
-                  <div className="grid sm:grid-cols-3 gap-4">
-                    {FEATURES.map((f, i) => (
-                      <motion.div
-                        key={f.title}
-                        className="rounded-2xl border bg-card p-5 space-y-3"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: i * 0.1 }}
-                      >
-                        <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center"
-                          style={{ background: AMBER_BG }}
-                        >
-                          <f.icon className="w-5 h-5" style={{ color: AMBER }} />
-                        </div>
-                        <h3 className="font-semibold text-foreground text-sm">{f.title}</h3>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                </section>
+            {/* Features */}
+            <section className="space-y-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground text-center">
+                Tudo que você precisa para o ENEM
+              </h2>
+              <div className="grid sm:grid-cols-3 gap-4">
+                {FEATURES.map((f, i) => (
+                  <motion.div
+                    key={f.title}
+                    className="rounded-2xl border bg-card p-5 space-y-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: i * 0.1 }}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ background: AMBER_BG }}
+                    >
+                      <f.icon className="w-5 h-5" style={{ color: AMBER }} />
+                    </div>
+                    <h3 className="font-semibold text-foreground text-sm">{f.title}</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
 
+            {/* ─── Separator badge: urgency ─── */}
+            <div className="flex justify-center">
+              <span
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border shadow-sm animate-pulse"
+                style={{ borderColor: AMBER, color: AMBER, background: AMBER_BG }}
+              >
+                🔥 VAGAS ACABANDO — apenas {vagasRestantes} restantes
+              </span>
+            </div>
 
+            {/* Benefits checklist */}
+            <section className="space-y-5 max-w-md mx-auto">
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground text-center">
+                O que você recebe
+              </h2>
+              <ul className="space-y-3">
+                {BENEFITS.map((b) => (
+                  <li key={b} className="flex items-center gap-3 text-sm text-foreground">
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: AMBER }}>
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                    {b}
+                  </li>
+                ))}
+              </ul>
+            </section>
 
-                {/* FAQ */}
-                <section className="space-y-6 max-w-2xl mx-auto">
-                  <h2 className="text-xl sm:text-2xl font-bold text-foreground text-center">
-                    Perguntas frequentes
-                  </h2>
-                  <Accordion type="single" collapsible className="space-y-2">
-                    {FAQ_ITEMS.map((item, i) => {
-                      const answer = i === 2
-                        ? `Atualmente restam ${vagasRestantes} de ${VAGAS_TOTAL} vagas. Quando acabarem, o preço será o valor cheio de R$49,90/mês.`
-                        : item.a;
-                      return (
-                      <AccordionItem
-                        key={i}
-                        value={`faq-${i}`}
-                        className="rounded-xl border bg-card px-5"
-                      >
-                        <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-4 text-left">
-                          {item.q}
-                        </AccordionTrigger>
-                        <AccordionContent className="text-sm text-muted-foreground pb-4">
-                          {answer}
-                        </AccordionContent>
-                      </AccordionItem>
-                      );
-                    })}
-                  </Accordion>
-                </section>
-              </motion.div>
+            {/* ─── Separator badge: guarantee ─── */}
+            <div className="flex justify-center">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border border-border bg-secondary/50 text-muted-foreground">
+                <Check className="w-4 h-4 text-emerald-500" />
+                Cancele quando quiser — sem multa
+              </span>
+            </div>
+
+            {/* FAQ */}
+            <section className="space-y-6 max-w-2xl mx-auto">
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground text-center">
+                Perguntas frequentes
+              </h2>
+              <Accordion type="single" collapsible className="space-y-2">
+                {FAQ_ITEMS.map((item, i) => {
+                  const answer = i === 2
+                    ? `Atualmente restam ${vagasRestantes} de ${VAGAS_TOTAL} vagas. Quando acabarem, o preço será o valor cheio de R$49,90/mês.`
+                    : item.a;
+                  return (
+                    <AccordionItem
+                      key={i}
+                      value={`faq-${i}`}
+                      className="rounded-xl border bg-card px-5"
+                    >
+                      <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-4 text-left">
+                        {item.q}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground pb-4">
+                        {answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            </section>
+
+            {/* ─── Final CTA with badge ─── */}
+            <section className="text-center space-y-4 pb-4">
+              <span
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border"
+                style={{ borderColor: AMBER, color: AMBER, background: AMBER_BG }}
+              >
+                <Flame className="w-3.5 h-3.5" />
+                50% OFF — oferta de fundador
+              </span>
+              <div>
+                <Button
+                  size="lg"
+                  className="h-14 px-8 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] border-0"
+                  style={{ background: AMBER }}
+                  onClick={() => navigate("/fundadores/cadastro")}
+                >
+                  Garantir minha vaga
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </div>
+            </section>
+          </motion.div>
         </div>
       </main>
 
