@@ -324,71 +324,24 @@ export default function Founders() {
             </motion.div>
           </div>
 
-          {/* Right — dashboard placeholder */}
+          {/* Right — video placeholder */}
           <motion.div
             className="relative"
             initial={{ opacity: 0, y: 30, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.7, delay: 0.2 }}
           >
-            {/* Subtle glow behind card */}
-            <div className="absolute -inset-4 bg-[hsl(142,71%,45%)]/5 rounded-3xl blur-2xl pointer-events-none" />
-
-            <div className="relative aspect-[4/3] rounded-2xl border bg-card shadow-card overflow-hidden">
-              {/* Mock dashboard UI */}
-              <div className="p-5 sm:p-6 h-full flex flex-col">
-                {/* Top bar */}
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-[hsl(142,71%,45%)]/10 flex items-center justify-center">
-                      <BarChart3 className="w-4 h-4 text-[hsl(142,71%,45%)]" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-foreground">Seu desempenho</div>
-                      <div className="text-[10px] text-muted-foreground">Última semana</div>
-                    </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground bg-secondary px-2.5 py-1 rounded-full">Hoje</div>
+            <div className="relative aspect-video rounded-2xl border bg-card shadow-card overflow-hidden flex items-center justify-center cursor-pointer group">
+              <div className="absolute inset-0 bg-foreground/[0.02] group-hover:bg-foreground/[0.04] transition-colors" />
+              <div className="text-center space-y-3 relative z-10">
+                <div className="w-16 h-16 rounded-full bg-[hsl(142,71%,45%)] flex items-center justify-center mx-auto shadow-lg group-hover:scale-105 transition-transform">
+                  <svg className="w-7 h-7 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
                 </div>
-
-                {/* Fake chart bars */}
-                <div className="flex-1 flex items-end gap-2 pb-2">
-                  {[40, 65, 50, 80, 70, 90, 75].map((h, i) => (
-                    <motion.div
-                      key={i}
-                      className="flex-1 rounded-t-md"
-                      style={{
-                        backgroundColor: i === 5 ? "hsl(142,71%,45%)" : "hsl(142,71%,45%,0.15)",
-                      }}
-                      initial={{ height: 0 }}
-                      animate={{ height: `${h}%` }}
-                      transition={{ duration: 0.6, delay: 0.5 + i * 0.07, ease: "easeOut" }}
-                    />
-                  ))}
-                </div>
-
-                {/* Day labels */}
-                <div className="flex gap-2 mt-1">
-                  {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map((d, i) => (
-                    <div key={d} className={`flex-1 text-center text-[9px] ${i === 5 ? "font-bold text-foreground" : "text-muted-foreground"}`}>
-                      {d}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Bottom stats row */}
-                <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t">
-                  {[
-                    { label: "Questões", value: "127" },
-                    { label: "Acertos", value: "78%" },
-                    { label: "Sequência", value: "5 dias" },
-                  ].map((stat) => (
-                    <div key={stat.label} className="text-center">
-                      <div className="text-sm font-bold text-foreground">{stat.value}</div>
-                      <div className="text-[10px] text-muted-foreground">{stat.label}</div>
-                    </div>
-                  ))}
-                </div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Veja como o Atlas funciona
+                </p>
               </div>
             </div>
           </motion.div>
