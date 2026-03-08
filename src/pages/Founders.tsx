@@ -151,8 +151,8 @@ export default function Founders() {
             
             Restam{" "}
             <span
-              className="relative inline-block px-2 py-0.5 rounded-md"
-              style={{ color: AMBER, background: AMBER_BG }}>
+              className="relative inline-block"
+              style={{ color: AMBER, textDecoration: "underline", textDecorationColor: AMBER, textUnderlineOffset: "4px", textDecorationThickness: "3px" }}>
 
               {/* Balão 50% OFF centralizado acima, levemente diagonal */}
               <span
@@ -261,22 +261,20 @@ export default function Founders() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}>
             
-            <Button
-              size="lg"
-              className="relative h-14 px-10 text-lg font-bold rounded-full text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] border-0 overflow-visible"
-              style={{ background: AMBER }}
-              onClick={() => navigate("/fundadores/cadastro")}>
-              
-              {/* Pulse/glow ring */}
-              <span
-                className="absolute inset-0 rounded-full animate-ping opacity-20"
-                style={{ background: AMBER }} />
-              
-              <span className="relative z-10 flex items-center">
-                Garantir minha vaga
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </span>
-            </Button>
+            <motion.div
+              animate={{ scale: [1, 1.08, 1] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
+              <Button
+                size="lg"
+                className="h-14 px-10 text-lg font-bold rounded-full text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] border-0"
+                style={{ background: AMBER }}
+                onClick={() => navigate("/fundadores/cadastro")}>
+                <span className="flex items-center">
+                  Garantir minha vaga
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </span>
+              </Button>
+            </motion.div>
             <p className="text-sm font-medium text-muted-foreground">
               Entre no Grupo VIP
             </p>
