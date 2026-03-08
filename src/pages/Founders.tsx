@@ -18,7 +18,7 @@ const VIDEO_DURATION = 60;
 const REVEAL_AT_PERCENT = 0.75;
 
 const AMBER = "hsl(25, 95%, 53%)";
-const AMBER_BG = "hsl(25, 95%, 53% / 0.1)";
+const AMBER_BG = "hsl(25, 95%, 53% / 0.35)";
 
 /* ─── Data ─── */
 const FEATURES = [
