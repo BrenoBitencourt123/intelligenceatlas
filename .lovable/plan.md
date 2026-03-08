@@ -1,33 +1,59 @@
 
 
-## Plano: Redesign visual da tela de Questões Objetivas
+## Plano: Editor Visual de Questoes estilo Simulado
 
-A tela será refinada em todas as suas "views" (idle, active, result) seguindo a estética monocromática premium do projeto.
+O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
 
-### Mudanças principais
+### Arquitetura
 
-**1. Tela Idle (Dashboard inicial)**
-- Remover os 3 cards de blocos coloridos (Aquecimento/Aprendizado/Consolidação) — informação redundante que polui visualmente. Mover essa info para dentro da sessão ativa.
-- Card principal de sessão: bordas mais sutis, sem `border-2`. Layout mais limpo com tipografia hierárquica.
-- Stats do dia: redesenhar como uma barra horizontal compacta ao invés de 2 cards separados (ex: "12 questões · 78% acerto" em uma única linha).
-- Flashcards: integrar como uma linha discreta abaixo do CTA principal, não como card separado.
-- Resultado visual: menos cards empilhados, mais espaço negativo.
+```text
+PreviewStage (refatorado)
+├── QuestionEditor (painel esquerdo — scrollavel)
+│   ├── Header: "Q.1 de 90" + badges (area, idioma)
+│   ├── Statement editor (textarea com suporte a {{IMG_N}})
+│   │   └── Inline image slots (drag/drop, paste, upload)
+│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
+│   ├── Metadados: area, resposta correta, lingua estrangeira
+│   └── Navegacao: < Anterior | Proxima >
+│
+└── Sidebar (painel direito — fixo)
+    ├── Status summary (OK / Com erro / Vazias)
+    ├── Grid de numeros (1-90 ou 91-180)
+    │   ├── Verde: questao OK (tem enunciado + gabarito)
+    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
+    │   ├── Vermelho: questao vazia / critica
+    │   ├── Borda: questao atual selecionada
+    │   └── Cinza: questao nao importada
+    └── Botao "Revisar e Importar"
+```
 
-**2. Tela Active (Questão ativa)**
-- Remover `BLOCK_COLORS` coloridos (azul/âmbar/verde) — usar tons monocromáticos consistentes com o design system.
-- Stepper: simplificar para pontos/traços minimalistas ao invés de círculos coloridos numerados.
-- Card da questão: remover borda extra, usar sombra sutil. Alternativas com hover mais elegante.
-- Letra da alternativa: círculo mais refinado, tipografia menor.
-- Botões de ação ("Não sei" / "Próxima"): estilo mais limpo, sem ícones desnecessários.
+### Tarefas de implementacao
 
-**3. Tela de Resultado**
-- Score central: tipografia bold grande, sem card com borda dupla.
-- Blocos de resultado: barras horizontais monocromáticas ao invés de cards coloridos.
-- Layout mais centrado e com breathing room.
+1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
+   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
+   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
+   - 5 alternativas editaveis (texto + slot de imagem cada)
+   - Selects para area, resposta correta, lingua estrangeira
+   - Navegacao Anterior/Proxima
 
-**4. Transição entre blocos**
-- Remover backgrounds coloridos (`BLOCK_BG`). Usar design monocromático com check sutil.
+2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
+   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
+   - Contadores no topo: "X completas, Y com erro, Z vazias"
+   - Click no numero navega para a questao
 
-### Arquivo modificado
-- `src/pages/Objectives.tsx` — redesign completo do layout e estilos, mantendo toda a lógica intacta.
+3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
+   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
+   - Direita: QuestionGrid + botao de importar
+   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
+   - Mobile: grid em cima, editor embaixo (responsivo)
+
+4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
+
+### Detalhes tecnicos
+
+- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
+- O estado de "questao atual" sera controlado por um index no PreviewStage
+- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
+- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
+- Nenhuma mudanca no banco de dados ou edge functions necessaria
 
