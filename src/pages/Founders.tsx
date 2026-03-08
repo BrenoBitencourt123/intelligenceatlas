@@ -371,12 +371,11 @@ export default function Founders() {
               </ul>
             </section>
 
-            {/* ─── Separator badge: guarantee ─── */}
-            <div className="flex justify-center">
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border border-border bg-secondary/50 text-muted-foreground">
-                <Check className="w-4 h-4 text-emerald-500" />
-                Cancele quando quiser — sem multa
-              </span>
+            {/* ─── Floating badge: guarantee ─── */}
+            <div className="flex justify-start pl-4 sm:pl-12">
+              <FloatingBadge rotate={-3}>
+                ✅ Cancele quando quiser — sem multa
+              </FloatingBadge>
             </div>
 
             {/* FAQ */}
