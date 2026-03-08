@@ -152,13 +152,12 @@ export default function Founders() {
             Restam{" "}
             <span
               className="relative inline-block"
-              style={{ color: AMBER }}>
-              {/* Marker-style underline */}
-              <span className="absolute left-0 right-0 bottom-0 h-[30%] -z-[1] rounded-sm" style={{ background: AMBER_BG }} />
+              style={{ color: AMBER, backgroundImage: `linear-gradient(${AMBER_BG}, ${AMBER_BG})`, backgroundPosition: "0 85%", backgroundSize: "100% 30%", backgroundRepeat: "no-repeat" }}>
+
 
               {/* Balão 50% OFF centralizado acima, levemente diagonal */}
               <span
-                className="absolute left-1/2 -translate-x-1/2 -top-14 z-10 pointer-events-none"
+                className="absolute left-1/2 -translate-x-1/2 -top-10 sm:-top-14 z-10 pointer-events-none"
                 style={{ rotate: "6deg" }}>
                 <motion.span
                   className="relative inline-block will-change-transform"
