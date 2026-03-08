@@ -25,6 +25,13 @@ const BLOCK_COLORS = [
   'bg-green-500/10 text-green-700 dark:text-green-300',
 ];
 
+const AREA_LABELS: Record<string, string> = {
+  matematica: 'Matemática',
+  linguagens: 'Linguagens',
+  natureza: 'Ciências da Natureza',
+  humanas: 'Ciências Humanas',
+};
+
 const Objectives = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
