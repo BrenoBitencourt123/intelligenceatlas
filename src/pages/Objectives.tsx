@@ -395,9 +395,19 @@ const Objectives = () => {
                             } else if (currentAnswer?.selected === alt.letter && !currentAnswer.correct) {
                               extraClass = 'border-red-500 bg-red-500/10 cursor-default';
                             }
+                          } else if (pendingGuessAnswer === alt.letter) {
+                            extraClass = 'border-primary bg-primary/10 ring-2 ring-primary/30';
                           } else if (currentAnswer?.selected === alt.letter) {
                             extraClass = 'border-primary bg-primary/10';
                           }
+
+                          const handleAltClick = async () => {
+                            if (showFeedback || pendingGuessAnswer) return;
+                            const result = await answerQuestion(alt.letter, hasAutoFlashcards);
+                            if (result.suspectedGuess) {
+                              setPendingGuessAnswer(alt.letter);
+                            }
+                          };
 
                           return (
                             <button
