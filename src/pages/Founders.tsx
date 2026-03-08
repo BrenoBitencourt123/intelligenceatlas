@@ -142,6 +142,27 @@ export default function Founders() {
       <main className="flex-1 px-5 py-12 sm:py-16">
         <div className="max-w-3xl mx-auto w-full space-y-6">
 
+          {/* Badges */}
+          <motion.div
+            className="flex flex-wrap items-center justify-center gap-2"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border" style={{ borderColor: AMBER, color: AMBER, background: AMBER_BG }}>
+              <Flame className="w-3.5 h-3.5" />
+              50% OFF vitalício
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-border text-muted-foreground bg-secondary/50">
+              <Check className="w-3.5 h-3.5" />
+              Cancele quando quiser
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-border text-muted-foreground bg-secondary/50">
+              <Brain className="w-3.5 h-3.5" />
+              Estudo com IA
+            </span>
+          </motion.div>
+
           {/* Headline */}
           <motion.h1
             className="text-center text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold tracking-tight leading-[1.15] text-foreground"
