@@ -110,47 +110,21 @@ export default function Founders() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* ─── Animated Urgency Header ─── */}
-      <header className="relative overflow-hidden border-b">
-        {/* Scrolling ticker background */}
-        <div className="absolute inset-0 flex items-center overflow-hidden pointer-events-none opacity-[0.04]">
-          <motion.div
-            className="flex whitespace-nowrap gap-12 text-xs font-bold uppercase tracking-widest"
-            animate={{ x: ["0%", "-50%"] }}
-            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            style={{ color: AMBER }}
-          >
-            {Array.from({ length: 16 }).map((_, i) => (
-              <span key={i} className="flex items-center gap-2">
-                🔥 APENAS {VAGAS_RESTANTES} VAGAS RESTANTES
-              </span>
-            ))}
-          </motion.div>
-        </div>
-
-        <div className="relative z-10 flex items-center justify-between px-5 py-3 max-w-3xl mx-auto w-full">
-          <span className="font-bold text-lg tracking-tight text-foreground">Atlas</span>
-          <div className="flex items-center gap-3">
-            <motion.div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
-              style={{ background: AMBER_BG, color: AMBER }}
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <Flame className="w-3.5 h-3.5" />
-              {VAGAS_RESTANTES} vagas
-            </motion.div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full font-medium"
-              onClick={() => navigate("/login")}
-            >
-              Entrar
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* ─── Animated Urgency Ticker ─── */}
+      <div className="relative overflow-hidden border-b py-3" style={{ background: AMBER_BG }}>
+        <motion.div
+          className="flex whitespace-nowrap gap-12 text-sm font-bold uppercase tracking-wide"
+          animate={{ x: ["0%", "-50%"] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          style={{ color: AMBER }}
+        >
+          {Array.from({ length: 16 }).map((_, i) => (
+            <span key={i} className="flex items-center gap-2">
+              🔥 APENAS {VAGAS_RESTANTES} VAGAS RESTANTES
+            </span>
+          ))}
+        </motion.div>
+      </div>
 
       {/* ─── Hero ─── */}
       <main className="flex-1 px-5 py-10 sm:py-16">
