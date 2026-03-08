@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check, ArrowRight, BookOpen, PenLine, Brain, Flame, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Accordion,
   AccordionContent,
@@ -12,7 +13,6 @@ import {
 
 /* ─── Config ─── */
 const VAGAS_TOTAL = 20;
-const VAGAS_RESTANTES = 20; // ← editar manualmente. Trocar por query Stripe depois.
 
 const VIDEO_DURATION = 60;
 const REVEAL_AT_PERCENT = 0.75;
