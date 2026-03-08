@@ -408,13 +408,9 @@ export default function Founders() {
 
             {/* ─── Final CTA with badge ─── */}
             <section className="text-center space-y-4 pb-4">
-              <span
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border"
-                style={{ borderColor: AMBER, color: AMBER, background: AMBER_BG }}>
-                
-                <Flame className="w-3.5 h-3.5" />
-                50% OFF — oferta de fundador
-              </span>
+              <FloatingBadge rotate={2}>
+                🔥 50% OFF — oferta de fundador
+              </FloatingBadge>
               <div>
                 <Button
                   size="lg"
