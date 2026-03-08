@@ -258,7 +258,7 @@ function BenefitsSection() {
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: C.green }}>
-              <Sparkles className="w-5 h-5 text-white" />
+              <BookOpen className="w-5 h-5 text-white" />
             </div>
             <h3 className="text-xl font-bold" style={{ color: C.text }}>
               Tudo que você precisa para o ENEM
@@ -494,8 +494,8 @@ export default function Founders() {
 
       <HeroSection remaining={remaining} loading={slotsLoading} />
       <VideoSection onCTAClick={() => setModalOpen(true)} />
-      <BenefitsSection />
       <FounderPerksSection />
+      <BenefitsSection />
 
       {/* Footer */}
       <footer className="py-8 text-center border-t" style={{ borderColor: C.border }}>
