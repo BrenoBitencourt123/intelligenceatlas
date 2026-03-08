@@ -128,7 +128,7 @@ export default function Founders() {
           </motion.div>
         </div>
 
-        <div className="relative flex items-center justify-between px-5 py-3 max-w-3xl mx-auto w-full">
+        <div className="relative z-10 flex items-center justify-between px-5 py-3 max-w-3xl mx-auto w-full">
           <span className="font-bold text-lg tracking-tight text-foreground">Atlas</span>
           <div className="flex items-center gap-3">
             <motion.div
