@@ -112,13 +112,8 @@ export default function Founders() {
     <div className="min-h-screen flex flex-col bg-background">
       {/* ─── Animated Urgency Ticker ─── */}
       <div className="relative overflow-hidden border-b py-4" style={{ background: AMBER }}>
-        <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center px-4 sm:px-6" style={{ background: "hsl(25, 95%, 42%)" }}>
-          <span className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-white whitespace-nowrap">
-            Vagas Restantes
-          </span>
-        </div>
         <motion.div
-          className="flex whitespace-nowrap gap-12 text-base font-bold uppercase tracking-wide text-white pl-40 sm:pl-48"
+          className="flex whitespace-nowrap gap-12 text-base font-bold uppercase tracking-wide text-white"
           animate={{ x: ["0%", "-50%"] }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         >
