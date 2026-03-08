@@ -57,9 +57,11 @@ const Objectives = () => {
     exitSessionView,
     startPreviewQuestion,
     answerQuestion,
+    confirmAnswer,
     nextQuestion,
     resetSession,
   } = useStudySession();
+  const [pendingGuessAnswer, setPendingGuessAnswer] = useState<string | null>(null);
   const { available: pdfAvailable, openPdf, loading: pdfLoading } = useExamPdf(currentQuestion?.year);
   const { pedagogy, loading: pedagogyLoading } = useQuestionPedagogy(
     currentQuestion ? {
