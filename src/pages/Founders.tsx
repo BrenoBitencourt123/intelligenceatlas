@@ -219,9 +219,13 @@ function HeroSection({
 function VideoSection({ onCTAClick }: { onCTAClick: () => void }) {
   return (
     <section className="px-6 pb-20 max-w-3xl mx-auto">
-      <div
+      <motion.div
         className="aspect-video rounded-2xl flex items-center justify-center cursor-pointer transition-all hover:shadow-xl group border"
         style={{ backgroundColor: C.bgCard, borderColor: C.border }}
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.6 }}
       >
         <div className="text-center space-y-3">
           <div
@@ -232,7 +236,7 @@ function VideoSection({ onCTAClick }: { onCTAClick: () => void }) {
           </div>
           <p className="text-sm font-medium" style={{ color: C.textMuted }}>Vídeo em breve</p>
         </div>
-      </div>
+      </motion.div>
 
       <div className="text-center mt-8 space-y-3">
         <Button
