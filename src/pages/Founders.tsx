@@ -17,6 +17,36 @@ const VIDEO_DURATION = 60;
 const REVEAL_AT_PERCENT = 0.75;
 const AMBER = "hsl(25, 95%, 53%)";
 const AMBER_BG = "hsl(25, 95%, 53% / 0.1)";
+const GREEN = "hsl(142, 71%, 45%)";
+const GREEN_DARK = "hsl(142, 76%, 36%)";
+
+/* ─── Floating Badge Component ─── */
+const FloatingBadge = ({ 
+  children, 
+  rotate = 0, 
+  className = "",
+  style = {}
+}: { 
+  children: React.ReactNode; 
+  rotate?: number; 
+  className?: string;
+  style?: React.CSSProperties;
+}) => (
+  <motion.span
+    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold text-white shadow-lg whitespace-nowrap ${className}`}
+    style={{ 
+      background: `linear-gradient(135deg, ${GREEN}, ${GREEN_DARK})`,
+      transform: `rotate(${rotate}deg)`,
+      boxShadow: `0 4px 14px ${GREEN}40`,
+      ...style
+    }}
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 0.4, type: "spring", stiffness: 200 }}
+  >
+    {children}
+  </motion.span>
+);
 
 /* ─── Data ─── */
 const FEATURES = [
@@ -135,26 +165,22 @@ export default function Founders() {
       <main className="flex-1 px-5 py-12 sm:py-16">
         <div className="max-w-3xl mx-auto w-full space-y-6">
 
-          {/* Badges */}
-          
+          {/* Floating badges - scattered */}
+          <div className="relative">
+            {/* Top-right badge */}
+            <div className="flex justify-end pr-2 sm:pr-8 -mb-2">
+              <FloatingBadge rotate={3}>
+                🎯 DESCONTO DE <span className="text-base font-extrabold ml-1">50% OFF</span>
+              </FloatingBadge>
+            </div>
+          </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-          
+          {/* Left-leaning badge */}
+          <div className="flex justify-start pl-2 sm:pl-4 -mb-3">
+            <FloatingBadge rotate={-2}>
+              ✨ Vagas limitadas para membros fundadores
+            </FloatingBadge>
+          </div>
 
           {/* Headline */}
           <motion.h1
@@ -163,37 +189,46 @@ export default function Founders() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.05 }}>
             
-            Restam{" "}
-            <span
-              className="relative inline-block px-2 py-0.5 rounded-md"
-              style={{ color: AMBER, background: AMBER_BG }}>
-              
-              {vagasRestantes} vagas
-            </span>{" "}
-            para os primeiros membros fundadores do Atlas
+            O jeito mais inteligente de estudar para o ENEM.
           </motion.h1>
 
-          {/* Sub-headline */}
-          <motion.p
-            className="text-center text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed"
+
+
+          {/* Headline */}
+          <motion.h1
+            className="text-center text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold tracking-tight leading-[1.15] text-foreground"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.05 }}>
+            O jeito mais inteligente de estudar para o ENEM.
+          </motion.h1>
+
+          {/* Sub-headline with floating badge */}
+          <motion.div
+            className="relative"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}>
-            
-            Estude para o ENEM de forma inteligente com IA — e garante{" "}
-            <span className="font-semibold text-foreground">50% de desconto vitalício</span>.
-          </motion.p>
+            <p className="text-center text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+              <FloatingBadge rotate={-3} className="mr-1 -mt-1 align-middle text-[11px]">
+                ✅ VITALÍCIO
+              </FloatingBadge>
+              {" "}A IA analisa seu desempenho nas próprias questões do ENEM e mostra exatamente o que estudar para alcançar{" "}
+              <span className="font-semibold text-foreground">900+ pontos</span>.
+            </p>
+            <p className="text-center text-sm text-muted-foreground mt-3">
+              Os primeiros membros fundadores recebem <span className="font-semibold text-foreground">50% de desconto vitalício</span>.
+            </p>
+          </motion.div>
 
           {/* Video placeholder */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}>
-            
             <div
               className="relative aspect-video rounded-2xl border bg-card shadow-sm overflow-hidden flex items-center justify-center cursor-pointer group"
               onClick={handlePlay}>
-              
               <div className="absolute inset-0 bg-foreground/[0.02] group-hover:bg-foreground/[0.04] transition-colors" />
               <AnimatePresence>
                 {!isPlaying && progress === 0 &&
@@ -255,28 +290,20 @@ export default function Founders() {
             </Button>
           </motion.div>
 
-          {/* ─── Inline micro-badges row ─── */}
-          <motion.div
-            className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.35 }}>
-            
-            <span className="flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5" style={{ color: AMBER }} />
-              Questões reais do ENEM
-            </span>
-            <span className="hidden sm:inline text-border">•</span>
-            <span className="flex items-center gap-1.5">
-              <PenLine className="w-3.5 h-3.5" style={{ color: AMBER }} />
-              Plano de estudo inteligente
-            </span>
-            <span className="hidden sm:inline text-border">•</span>
-            <span className="flex items-center gap-1.5">
-              <Brain className="w-3.5 h-3.5" style={{ color: AMBER }} />
-              Análise de desempenho
-            </span>
-          </motion.div>
+          {/* ─── Scattered micro-badges ─── */}
+          <div className="relative py-2">
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <FloatingBadge rotate={-2} className="text-[11px]">
+                📚 Questões reais do ENEM
+              </FloatingBadge>
+              <FloatingBadge rotate={2} className="text-[11px]">
+                📝 Plano de estudo inteligente
+              </FloatingBadge>
+              <FloatingBadge rotate={-1} className="text-[11px]">
+                📊 Análise de desempenho
+              </FloatingBadge>
+            </div>
+          </div>
 
           {/* ─── Sections with separator badges ─── */}
           <motion.div
@@ -312,14 +339,11 @@ export default function Founders() {
               </div>
             </section>
 
-            {/* ─── Separator badge: urgency ─── */}
-            <div className="flex justify-center">
-              <span
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border shadow-sm animate-pulse"
-                style={{ borderColor: AMBER, color: AMBER, background: AMBER_BG }}>
-                
-                🔥 VAGAS ACABANDO — apenas {vagasRestantes} restantes
-              </span>
+            {/* ─── Floating badge: urgency ─── */}
+            <div className="flex justify-end pr-4 sm:pr-12">
+              <FloatingBadge rotate={4}>
+                🔥 VAGAS ACABANDO
+              </FloatingBadge>
             </div>
 
             {/* Benefits checklist */}
@@ -339,12 +363,11 @@ export default function Founders() {
               </ul>
             </section>
 
-            {/* ─── Separator badge: guarantee ─── */}
-            <div className="flex justify-center">
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border border-border bg-secondary/50 text-muted-foreground">
-                <Check className="w-4 h-4 text-emerald-500" />
-                Cancele quando quiser — sem multa
-              </span>
+            {/* ─── Floating badge: guarantee ─── */}
+            <div className="flex justify-start pl-4 sm:pl-12">
+              <FloatingBadge rotate={-3}>
+                ✅ Cancele quando quiser — sem multa
+              </FloatingBadge>
             </div>
 
             {/* FAQ */}
@@ -377,13 +400,9 @@ export default function Founders() {
 
             {/* ─── Final CTA with badge ─── */}
             <section className="text-center space-y-4 pb-4">
-              <span
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border"
-                style={{ borderColor: AMBER, color: AMBER, background: AMBER_BG }}>
-                
-                <Flame className="w-3.5 h-3.5" />
-                50% OFF — oferta de fundador
-              </span>
+              <FloatingBadge rotate={2}>
+                🔥 50% OFF — oferta de fundador
+              </FloatingBadge>
               <div>
                 <Button
                   size="lg"
