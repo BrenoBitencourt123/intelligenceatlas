@@ -228,7 +228,15 @@ export default function Founders() {
               Os primeiros membros fundadores recebem <span className="font-semibold text-foreground">50% de desconto vitalício</span>.
             </p>
           </motion.div>
-              
+
+          {/* Video placeholder */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}>
+            <div
+              className="relative aspect-video rounded-2xl border bg-card shadow-sm overflow-hidden flex items-center justify-center cursor-pointer group"
+              onClick={handlePlay}>
               <div className="absolute inset-0 bg-foreground/[0.02] group-hover:bg-foreground/[0.04] transition-colors" />
               <AnimatePresence>
                 {!isPlaying && progress === 0 &&
