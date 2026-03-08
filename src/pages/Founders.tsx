@@ -60,26 +60,9 @@ function useFounderSlots() {
 
 /* ─── Data ─── */
 const BENEFITS = [
-  {
-    icon: Target,
-    title: "Estudo adaptativo",
-    desc: "Questões reais do ENEM selecionadas por IA de acordo com suas fraquezas",
-  },
-  {
-    icon: BookOpen,
-    title: "Redações com IA",
-    desc: "Correção detalhada por competência com feedback instantâneo",
-  },
-  {
-    icon: Brain,
-    title: "Flashcards inteligentes",
-    desc: "Revisão espaçada que se adapta ao seu ritmo de aprendizado",
-  },
-  {
-    icon: Star,
-    title: "50% para sempre",
-    desc: "Pague metade — hoje e em todas as renovações futuras. Sem pegadinha.",
-  },
+  { icon: Target, text: "Estudo adaptativo com questões reais do ENEM" },
+  { icon: BookOpen, text: "Redações corrigidas por IA por competência" },
+  { icon: Brain, text: "Flashcards inteligentes com revisão espaçada" },
 ];
 
 const FOUNDER_PERKS = [
