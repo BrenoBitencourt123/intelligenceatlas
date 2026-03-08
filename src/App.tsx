@@ -19,6 +19,7 @@ import ErrorsByTopic from "./pages/ErrorsByTopic";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
+import Founders from "./pages/Founders";
 
 const queryClient = new QueryClient();
 
