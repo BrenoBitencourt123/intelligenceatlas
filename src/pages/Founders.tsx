@@ -211,26 +211,23 @@ export default function Founders() {
             para os primeiros membros fundadores do Atlas
           </motion.h1>
 
-          {/* Sub-headline */}
-          <motion.p
-            className="text-center text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed"
+          {/* Sub-headline with floating badge */}
+          <motion.div
+            className="relative"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}>
-            
-            Estude para o ENEM de forma inteligente com IA — e garante{" "}
-            <span className="font-semibold text-foreground">50% de desconto vitalício</span>.
-          </motion.p>
-
-          {/* Video placeholder */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}>
-            
-            <div
-              className="relative aspect-video rounded-2xl border bg-card shadow-sm overflow-hidden flex items-center justify-center cursor-pointer group"
-              onClick={handlePlay}>
+            <p className="text-center text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+              <FloatingBadge rotate={-3} className="mr-1 -mt-1 align-middle text-[11px]">
+                ✅ VITALÍCIO
+              </FloatingBadge>
+              {" "}A IA analisa seu desempenho nas próprias questões do ENEM e mostra exatamente o que estudar para alcançar{" "}
+              <span className="font-semibold text-foreground">900+ pontos</span>.
+            </p>
+            <p className="text-center text-sm text-muted-foreground mt-3">
+              Os primeiros membros fundadores recebem <span className="font-semibold text-foreground">50% de desconto vitalício</span>.
+            </p>
+          </motion.div>
               
               <div className="absolute inset-0 bg-foreground/[0.02] group-hover:bg-foreground/[0.04] transition-colors" />
               <AnimatePresence>
