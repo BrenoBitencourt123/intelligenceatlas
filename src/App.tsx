@@ -114,6 +114,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/fundadores" element={<Founders />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
