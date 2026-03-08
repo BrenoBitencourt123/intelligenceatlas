@@ -347,14 +347,11 @@ export default function Founders() {
               </div>
             </section>
 
-            {/* ─── Separator badge: urgency ─── */}
-            <div className="flex justify-center">
-              <span
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border shadow-sm animate-pulse"
-                style={{ borderColor: AMBER, color: AMBER, background: AMBER_BG }}>
-                
-                🔥 VAGAS ACABANDO — apenas {vagasRestantes} restantes
-              </span>
+            {/* ─── Floating badge: urgency ─── */}
+            <div className="flex justify-end pr-4 sm:pr-12">
+              <FloatingBadge rotate={4}>
+                🔥 VAGAS ACABANDO
+              </FloatingBadge>
             </div>
 
             {/* Benefits checklist */}
