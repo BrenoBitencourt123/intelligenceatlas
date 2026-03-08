@@ -321,7 +321,7 @@ export default function Founders() {
                   <Accordion type="single" collapsible className="space-y-2">
                     {FAQ_ITEMS.map((item, i) => {
                   const answer = i === 2 ?
-                  `Atualmente restam ${vagasRestantes} de ${VAGAS_TOTAL} vagas. Quando acabarem, o preço será o valor cheio de R$49,90/mês.` :
+                  `Atualmente restam ${vagasRestantes} de ${VAGAS_TOTAL} vagas. Quando acabarem, o preço será o valor cheio de R$49,90/mês sem desconto.` :
                   item.a;
                   return (
                     <AccordionItem
