@@ -152,7 +152,9 @@ export default function Founders() {
             Restam{" "}
             <span
               className="relative inline-block"
-              style={{ color: AMBER, textDecoration: "underline", textDecorationColor: AMBER, textUnderlineOffset: "4px", textDecorationThickness: "3px" }}>
+              style={{ color: AMBER }}>
+              {/* Marker-style underline */}
+              <span className="absolute left-0 right-0 bottom-0 h-[30%] -z-[1] rounded-sm" style={{ background: AMBER_BG }} />
 
               {/* Balão 50% OFF centralizado acima, levemente diagonal */}
               <span
