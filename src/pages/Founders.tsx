@@ -154,7 +154,7 @@ export default function Founders() {
               className="relative inline-block px-2 py-0.5 rounded-md"
               style={{ color: AMBER, background: AMBER_BG }}
             >
-              {VAGAS_RESTANTES} vagas
+              {vagasRestantes} vagas
             </span>{" "}
             para os primeiros membros fundadores do Atlas
           </motion.h1>
