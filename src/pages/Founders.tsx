@@ -279,25 +279,6 @@ export default function Founders() {
                   </div>
                 </section>
 
-                {/* CTA */}
-                <motion.div
-                  className="flex justify-center"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                  <Button
-                    size="lg"
-                    className="h-14 px-8 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] border-0"
-                    style={{ background: AMBER }}
-                    onClick={() => navigate("/fundadores/cadastro")}
-                  >
-                    Garantir minha vaga
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                </motion.div>
-
-
 
 
                 {/* FAQ */}
