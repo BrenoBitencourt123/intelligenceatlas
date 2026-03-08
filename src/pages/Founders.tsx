@@ -183,18 +183,24 @@ function HeroSection({
           <SlotsCounter remaining={remaining} loading={loading} />
         </motion.div>
 
-        <h1
+        <motion.h1
           className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] mb-5"
           style={{ color: C.text }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
         >
           Pague metade.
           <br />
           Para sempre<span style={{ color: C.green }}>.</span>
-        </h1>
+        </motion.h1>
 
-        <p
+        <motion.p
           className="text-base sm:text-lg max-w-xl mx-auto leading-relaxed"
           style={{ color: C.textMuted }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
         >
           Seja um dos{" "}
           <span className="font-bold" style={{ color: C.text }}>20 membros fundadores</span>{" "}
@@ -203,7 +209,7 @@ function HeroSection({
             50% de desconto vitalício
           </span>{" "}
           na plataforma de estudos inteligente para o ENEM.
-        </p>
+        </motion.p>
       </div>
     </section>
   );
