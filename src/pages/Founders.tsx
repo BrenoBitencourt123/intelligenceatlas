@@ -18,7 +18,7 @@ const VIDEO_DURATION = 60;
 const REVEAL_AT_PERCENT = 0.75;
 
 const AMBER = "hsl(25, 95%, 53%)";
-const AMBER_BG = "hsl(25, 95%, 53% / 0.1)";
+const AMBER_BG = "hsl(25, 95%, 53% / 0.35)";
 
 /* ─── Data ─── */
 const FEATURES = [
@@ -157,7 +157,7 @@ export default function Founders() {
 
               {/* Balão 50% OFF centralizado acima, levemente diagonal */}
               <span
-                className="absolute left-1/2 -translate-x-1/2 -top-10 sm:-top-14 z-10 pointer-events-none"
+                className="absolute left-1/2 -translate-x-1/2 -top-12 z-10 pointer-events-none"
                 style={{ rotate: "6deg" }}>
                 <motion.span
                   className="relative inline-block will-change-transform"
@@ -165,7 +165,7 @@ export default function Founders() {
                   animate={{ scale: [1, 1.12, 1] }}
                   transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
                   <span
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[0.7rem] font-extrabold tracking-wider text-white shadow-xl whitespace-nowrap uppercase"
+                    className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full text-xs font-extrabold tracking-wider text-white shadow-xl whitespace-nowrap uppercase"
                     style={{
                       background: `linear-gradient(135deg, ${AMBER}, hsl(15, 90%, 48%))`,
                       boxShadow: `0 4px 14px hsl(25 95% 53% / 0.4)`,
