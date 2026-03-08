@@ -302,7 +302,7 @@ function BenefitsSection() {
             <h3 className="font-bold text-lg mb-1.5" style={{ color: C.text }}>{b.title}</h3>
             <p className="text-sm leading-relaxed" style={{ color: C.textMuted }}>{b.desc}</p>
           </div>
-        ))}
+          </motion.div>
       </div>
     </section>
   );
