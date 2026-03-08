@@ -92,7 +92,6 @@ export default function FounderSignup() {
               
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[hsl(25,95%,53%/0.1)] text-[hsl(25,95%,40%)]">
-                    <Percent className="w-3.5 h-3.5" />
                     50% vitalício
                   </div>
                   <h1 className="text-2xl font-bold text-foreground">
