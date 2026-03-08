@@ -3,12 +3,12 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertCircle, CheckCircle2, Clock, TrendingUp, BookOpen, Brain, Target, Calendar, ChevronDown, ChevronUp, TrendingDown, Shield } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, BookOpen, Brain, Target, Calendar, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 
 interface TopicRow {
   id: string;
@@ -25,17 +25,17 @@ interface TopicRow {
   next_review_at: string | null;
 }
 
-const AREA_CONFIG: Record<string, { label: string; icon: typeof BookOpen; color: string }> = {
-  matematica: { label: 'Matemática', icon: Target, color: 'text-foreground' },
-  linguagens: { label: 'Linguagens', icon: BookOpen, color: 'text-foreground' },
-  natureza: { label: 'Ciências da Natureza', icon: Brain, color: 'text-foreground' },
-  humanas: { label: 'Ciências Humanas', icon: Calendar, color: 'text-foreground' },
+const AREA_CONFIG: Record<string, { label: string; icon: typeof BookOpen }> = {
+  matematica: { label: 'Matemática', icon: Target },
+  linguagens: { label: 'Linguagens', icon: BookOpen },
+  natureza: { label: 'Ciências da Natureza', icon: Brain },
+  humanas: { label: 'Ciências Humanas', icon: Calendar },
 };
 
-function getMasteryLevel(accuracy: number, level: number): { label: string; color: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } {
-  if (level >= 3 && accuracy >= 75) return { label: 'Dominado', color: 'text-green-600', variant: 'outline' };
-  if (level >= 2 && accuracy >= 55) return { label: 'Em progresso', color: 'text-amber-600', variant: 'secondary' };
-  return { label: 'Prioridade', color: 'text-destructive', variant: 'destructive' };
+function getMasteryLevel(accuracy: number, level: number): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } {
+  if (level >= 3 && accuracy >= 75) return { label: 'Dominado', variant: 'outline' };
+  if (level >= 2 && accuracy >= 55) return { label: 'Em progresso', variant: 'secondary' };
+  return { label: 'Prioridade', variant: 'destructive' };
 }
 
 function isOverdue(nextReviewAt: string | null): boolean {
@@ -43,18 +43,116 @@ function isOverdue(nextReviewAt: string | null): boolean {
   return new Date(nextReviewAt).getTime() <= Date.now();
 }
 
-function daysUntilReview(nextReviewAt: string | null): string {
-  if (!nextReviewAt) return '-';
-  const diff = Math.ceil((new Date(nextReviewAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  if (diff <= 0) return 'Hoje';
-  if (diff === 1) return 'Amanhã';
-  return `em ${diff} dias`;
+function daysBetweenNow(date: string | null): number {
+  if (!date) return 365;
+  return Math.max(0, Math.round((Date.now() - new Date(date).getTime()) / (1000 * 60 * 60 * 24)));
 }
 
+/* ── Insights Sheet ── */
+function InsightsSheet({ open, onOpenChange, rows }: { open: boolean; onOpenChange: (v: boolean) => void; rows: TopicRow[] }) {
+  const weaknesses = useMemo(() =>
+    [...rows].sort((a, b) => b.priority_score - a.priority_score).slice(0, 5),
+    [rows]
+  );
+
+  const strengths = useMemo(() =>
+    [...rows]
+      .filter(r => r.attempts > 0)
+      .sort((a, b) => {
+        if (b.level !== a.level) return b.level - a.level;
+        return (b.correct / b.attempts) - (a.correct / a.attempts);
+      })
+      .slice(0, 5),
+    [rows]
+  );
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl">
+        <SheetHeader className="text-left pb-4">
+          <SheetTitle className="text-lg">Análise de Desempenho</SheetTitle>
+          <SheetDescription>
+            Seus pontos fortes e fracos, calculados pelo algoritmo adaptativo.
+          </SheetDescription>
+        </SheetHeader>
+
+        {/* How it works */}
+        <div className="rounded-lg bg-muted/50 p-4 mb-6">
+          <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-2">Como funciona</h4>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            O <strong>score de prioridade</strong> combina 4 fatores: taxa de erro (50%), nível de domínio (30%), 
+            revisões vencidas no SRS (15%) e tempo sem praticar (5%). Quanto maior o score, mais atenção o tópico precisa.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+            O <strong>nível (N0–N3)</strong> sobe com acertos consecutivos e desce com erros. 
+            Cada nível define o intervalo até a próxima revisão: N0–N1 = 2 dias, N2 = 5 dias, N3 = 21 dias.
+          </p>
+        </div>
+
+        {/* Weaknesses */}
+        <div className="mb-6">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Top 5 fraquezas</h4>
+          <div className="space-y-2">
+            {weaknesses.map((row) => {
+              const accuracy = row.attempts > 0 ? Math.round((row.correct / row.attempts) * 100) : 0;
+              const overdue = isOverdue(row.next_review_at);
+              const staleDays = daysBetweenNow(row.last_attempt_at);
+
+              return (
+                <div key={row.id} className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">{row.topic}</span>
+                    <span className="text-sm font-bold tabular-nums text-foreground">{row.priority_score.toFixed(2)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span>Acerto: <strong className="text-foreground">{accuracy}%</strong> ({row.correct}/{row.attempts})</span>
+                    <span>Nível: <strong className="text-foreground">N{row.level}</strong></span>
+                    <span>Erros: <strong className="text-foreground">{row.wrong}</strong></span>
+                    <span>Sem praticar: <strong className="text-foreground">{staleDays}d</strong></span>
+                  </div>
+                  {overdue && (
+                    <div className="flex items-center gap-1 text-xs text-destructive font-medium">
+                      <Clock className="h-3 w-3" /> Revisão vencida
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Strengths */}
+        <div className="pb-6">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Top 5 forças</h4>
+          <div className="space-y-2">
+            {strengths.map((row) => {
+              const accuracy = row.attempts > 0 ? Math.round((row.correct / row.attempts) * 100) : 0;
+
+              return (
+                <div key={row.id} className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">{row.topic}</span>
+                    <span className="text-sm font-medium tabular-nums text-muted-foreground">N{row.level} · {accuracy}%</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span>Acertos: <strong className="text-foreground">{row.correct}/{row.attempts}</strong></span>
+                    <span>Nível: <strong className="text-foreground">N{row.level}</strong></span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/* ── Area Card ── */
 function AreaCard({ area, list }: { area: string; list: TopicRow[] }) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(true);
-  const cfg = AREA_CONFIG[area] || { label: area, icon: Target, color: 'text-foreground' };
+  const cfg = AREA_CONFIG[area] || { label: area, icon: Target };
   const Icon = cfg.icon;
 
   const totalAttempts = list.reduce((s, r) => s + r.attempts, 0);
@@ -77,7 +175,7 @@ function AreaCard({ area, list }: { area: string; list: TopicRow[] }) {
           className="w-full px-4 py-4 flex items-center gap-3 text-left"
           onClick={() => setExpanded(e => !e)}
         >
-          <Icon className={`h-4 w-4 ${cfg.color} shrink-0`} />
+          <Icon className="h-4 w-4 text-foreground shrink-0" />
           <div className="flex-1 min-w-0">
             <h2 className="text-sm font-semibold text-foreground">{cfg.label}</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -149,11 +247,13 @@ function AreaCard({ area, list }: { area: string; list: TopicRow[] }) {
   );
 }
 
+/* ── Page ── */
 export default function ErrorsByTopic() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [rows, setRows] = useState<TopicRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [insightsOpen, setInsightsOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -179,7 +279,6 @@ export default function ErrorsByTopic() {
       list.push(row);
       map.set(row.area, list);
     }
-    // Sort areas: those with overdue first
     return [...map.entries()].sort(([, a], [, b]) => {
       const aOver = a.filter(r => isOverdue(r.next_review_at)).length;
       const bOver = b.filter(r => isOverdue(r.next_review_at)).length;
@@ -193,72 +292,35 @@ export default function ErrorsByTopic() {
     <MainLayout>
       <div className="container max-w-2xl mx-auto px-4 py-8 space-y-6 pb-24">
         {/* Header */}
-        <div>
-          <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between">
+          <div>
             <h1 className="text-xl font-bold text-foreground">Mapa de Tópicos</h1>
-            {totalOverdue > 0 && (
-              <Badge variant="destructive" className="text-xs gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {totalOverdue} vencidas
-              </Badge>
-            )}
+            <p className="text-sm text-muted-foreground mt-0.5">Domínio e revisões por competência</p>
           </div>
-          <p className="text-sm text-muted-foreground mt-0.5">Prioridades, domínio e revisões por competência</p>
+          {totalOverdue > 0 && (
+            <Badge variant="destructive" className="text-xs gap-1">
+              <AlertCircle className="h-3 w-3" />
+              {totalOverdue} vencidas
+            </Badge>
+          )}
         </div>
 
-        {/* Summary cards */}
+        {/* Insights button */}
         {!loading && rows.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Card>
-              <CardContent className="p-4 space-y-2.5">
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Top 5 fraquezas</h3>
-                <div className="space-y-1.5">
-                  {[...rows]
-                    .sort((a, b) => b.priority_score - a.priority_score)
-                    .slice(0, 5)
-                    .map((row) => (
-                      <div key={row.id} className="flex items-center justify-between py-1.5 text-xs">
-                        <span className="text-foreground truncate flex-1 mr-3">
-                          {row.topic}
-                        </span>
-                        <span className="text-muted-foreground tabular-nums shrink-0">
-                          {row.priority_score.toFixed(2)}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 space-y-2.5">
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Top 5 forças</h3>
-                <div className="space-y-1.5">
-                  {[...rows]
-                    .filter(r => r.attempts > 0)
-                    .sort((a, b) => {
-                      if (b.level !== a.level) return b.level - a.level;
-                      return (b.correct / b.attempts) - (a.correct / a.attempts);
-                    })
-                    .slice(0, 5)
-                    .map((row) => {
-                      const acc = Math.round((row.correct / row.attempts) * 100);
-                      return (
-                        <div key={row.id} className="flex items-center justify-between py-1.5 text-xs">
-                          <span className="text-foreground truncate flex-1 mr-3">
-                            {row.topic}
-                          </span>
-                          <span className="text-muted-foreground tabular-nums shrink-0">
-                            N{row.level} · {acc}%
-                          </span>
-                        </div>
-                      );
-                    })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Button
+            variant="outline"
+            className="w-full justify-between h-11"
+            onClick={() => setInsightsOpen(true)}
+          >
+            <span className="flex items-center gap-2 text-sm">
+              <BarChart3 className="h-4 w-4" />
+              Fraquezas e forças
+            </span>
+            <span className="text-xs text-muted-foreground">Ver análise →</span>
+          </Button>
         )}
+
+        <InsightsSheet open={insightsOpen} onOpenChange={setInsightsOpen} rows={rows} />
 
         {/* Area cards */}
         {loading ? (
