@@ -298,28 +298,20 @@ export default function Founders() {
             </Button>
           </motion.div>
 
-          {/* ─── Inline micro-badges row ─── */}
-          <motion.div
-            className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.35 }}>
-            
-            <span className="flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5" style={{ color: AMBER }} />
-              Questões reais do ENEM
-            </span>
-            <span className="hidden sm:inline text-border">•</span>
-            <span className="flex items-center gap-1.5">
-              <PenLine className="w-3.5 h-3.5" style={{ color: AMBER }} />
-              Plano de estudo inteligente
-            </span>
-            <span className="hidden sm:inline text-border">•</span>
-            <span className="flex items-center gap-1.5">
-              <Brain className="w-3.5 h-3.5" style={{ color: AMBER }} />
-              Análise de desempenho
-            </span>
-          </motion.div>
+          {/* ─── Scattered micro-badges ─── */}
+          <div className="relative py-2">
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <FloatingBadge rotate={-2} className="text-[11px]">
+                📚 Questões reais do ENEM
+              </FloatingBadge>
+              <FloatingBadge rotate={2} className="text-[11px]">
+                📝 Plano de estudo inteligente
+              </FloatingBadge>
+              <FloatingBadge rotate={-1} className="text-[11px]">
+                📊 Análise de desempenho
+              </FloatingBadge>
+            </div>
+          </div>
 
           {/* ─── Sections with separator badges ─── */}
           <motion.div
