@@ -158,9 +158,9 @@ export default function Founders() {
               <motion.span
                 className="absolute left-1/2 -translate-x-1/2 -top-11 z-10 pointer-events-none"
                 style={{ rotate: "-6deg" }}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: [1, 1.12, 1], opacity: 1 }}
-                transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}>
+                initial={{ scale: 1, opacity: 1 }}
+                animate={{ scale: [1, 1.12, 1] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
                 <span
                   className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[0.7rem] font-extrabold tracking-wider text-white shadow-xl whitespace-nowrap uppercase"
                   style={{
