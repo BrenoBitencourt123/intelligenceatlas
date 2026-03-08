@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide scrollbars globally but keep scrolling */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
 /* Atlas Design System - Premium Minimal (Notion/Linear + Apple Fitness) */
 
 @layer base {
