@@ -278,7 +278,6 @@ function BenefitsSection() {
             transition={{ duration: 0.5, delay: i * 0.1 }}
           >
           <div
-            key={b.title}
             className="group p-7 rounded-2xl border transition-all hover:-translate-y-0.5"
             style={{
               backgroundColor: C.bgCard,
@@ -303,6 +302,7 @@ function BenefitsSection() {
             <p className="text-sm leading-relaxed" style={{ color: C.textMuted }}>{b.desc}</p>
           </div>
           </motion.div>
+        ))}
       </div>
     </section>
   );
