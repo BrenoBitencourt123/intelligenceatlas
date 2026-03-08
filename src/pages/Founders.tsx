@@ -17,6 +17,36 @@ const VIDEO_DURATION = 60;
 const REVEAL_AT_PERCENT = 0.75;
 const AMBER = "hsl(25, 95%, 53%)";
 const AMBER_BG = "hsl(25, 95%, 53% / 0.1)";
+const GREEN = "hsl(142, 71%, 45%)";
+const GREEN_DARK = "hsl(142, 76%, 36%)";
+
+/* ─── Floating Badge Component ─── */
+const FloatingBadge = ({ 
+  children, 
+  rotate = 0, 
+  className = "",
+  style = {}
+}: { 
+  children: React.ReactNode; 
+  rotate?: number; 
+  className?: string;
+  style?: React.CSSProperties;
+}) => (
+  <motion.span
+    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold text-white shadow-lg whitespace-nowrap ${className}`}
+    style={{ 
+      background: `linear-gradient(135deg, ${GREEN}, ${GREEN_DARK})`,
+      transform: `rotate(${rotate}deg)`,
+      boxShadow: `0 4px 14px ${GREEN}40`,
+      ...style
+    }}
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 0.4, type: "spring", stiffness: 200 }}
+  >
+    {children}
+  </motion.span>
+);
 
 /* ─── Data ─── */
 const FEATURES = [
