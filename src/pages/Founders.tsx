@@ -251,8 +251,8 @@ export default function Founders() {
             </Button>
             <p className="text-sm text-muted-foreground">
               <span className="font-semibold" style={{ color: AMBER }}>50% OFF</span>{" "}
-              vitalício · <span className="line-through">R$29,90</span>{" "}
-              <span className="font-bold text-foreground">R$14,95/mês</span>
+              vitalício · <span className="line-through">R$49,90</span>{" "}
+              <span className="font-bold text-foreground">R$24,95/mês</span>
             </p>
           </motion.div>
 
