@@ -110,25 +110,45 @@ export default function Founders() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* ─── Header ─── */}
-      <header className="flex items-center justify-between px-5 py-4 max-w-3xl mx-auto w-full">
-        <span className="font-bold text-lg tracking-tight text-foreground">Atlas</span>
-        <div className="flex items-center gap-3">
-          <div
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold animate-pulse"
-            style={{ background: AMBER_BG, color: AMBER }}
+      {/* ─── Animated Urgency Header ─── */}
+      <header className="relative overflow-hidden border-b">
+        {/* Scrolling ticker background */}
+        <div className="absolute inset-0 flex items-center overflow-hidden pointer-events-none opacity-[0.07]">
+          <motion.div
+            className="flex whitespace-nowrap gap-8 text-sm font-bold"
+            animate={{ x: ["0%", "-50%"] }}
+            transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+            style={{ color: AMBER }}
           >
-            <Flame className="w-3.5 h-3.5" />
-            {VAGAS_RESTANTES} vagas
+            {Array.from({ length: 12 }).map((_, i) => (
+              <span key={i} className="flex items-center gap-2">
+                <Flame className="w-4 h-4" /> APENAS {VAGAS_RESTANTES} VAGAS RESTANTES
+              </span>
+            ))}
+          </motion.div>
+        </div>
+
+        <div className="relative flex items-center justify-between px-5 py-3 max-w-3xl mx-auto w-full">
+          <span className="font-bold text-lg tracking-tight text-foreground">Atlas</span>
+          <div className="flex items-center gap-3">
+            <motion.div
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
+              style={{ background: AMBER_BG, color: AMBER }}
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Flame className="w-3.5 h-3.5" />
+              {VAGAS_RESTANTES} vagas
+            </motion.div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full font-medium"
+              onClick={() => navigate("/login")}
+            >
+              Entrar
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-full font-medium"
-            onClick={() => navigate("/login")}
-          >
-            Entrar
-          </Button>
         </div>
       </header>
 
