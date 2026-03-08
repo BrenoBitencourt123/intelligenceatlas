@@ -193,7 +193,7 @@ function AreaCard({ area, list }: { area: string; list: TopicRow[] }) {
               size="sm"
               variant="outline"
               className="text-xs h-7 px-2.5"
-              onClick={e => { e.stopPropagation(); navigate('/objetivas'); }}
+              onClick={e => { e.stopPropagation(); navigate(`/objetivas?area=${area}`); }}
             >
               Estudar
             </Button>

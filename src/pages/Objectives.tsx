@@ -25,11 +25,20 @@ const BLOCK_COLORS = [
   'bg-green-500/10 text-green-700 dark:text-green-300',
 ];
 
+const AREA_LABELS: Record<string, string> = {
+  matematica: 'Matemática',
+  linguagens: 'Linguagens',
+  natureza: 'Ciências da Natureza',
+  humanas: 'Ciências Humanas',
+};
+
 const Objectives = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const previewQuestionId = searchParams.get('previewQuestionId');
+  const areaOverride = searchParams.get('area');
   const schedule = useStudySchedule();
+  const effectiveArea = areaOverride || schedule.area;
   const stats = useStudyStats();
   const {
     hasFullSessionAccess,
@@ -693,7 +702,9 @@ const Objectives = () => {
               {schedule.isLoading ? (
                 <Skeleton className="h-6 w-48 rounded" />
               ) : (
-                <h2 className="text-lg font-semibold">Área do dia: {schedule.label}</h2>
+                <h2 className="text-lg font-semibold">
+                  {areaOverride ? `Revisão: ${AREA_LABELS[areaOverride] ?? areaOverride}` : `Área do dia: ${schedule.label}`}
+                </h2>
               )}
               <p className="text-sm text-muted-foreground">
                 {hasFullSessionAccess
@@ -702,7 +713,7 @@ const Objectives = () => {
               </p>
 
               {/* Free area locked paywall */}
-              {isFree && isAreaLocked(schedule.area) ? (
+              {isFree && isAreaLocked(effectiveArea) ? (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 p-4 space-y-3 text-center">
                    <Crown className="h-6 w-6 text-amber-500 mx-auto" />
                   <div>
@@ -743,7 +754,7 @@ const Objectives = () => {
                         size="icon"
                         onClick={() =>
                           startSession(
-                            schedule.area,
+                            effectiveArea,
                             hasFullSessionAccess ? undefined : freeQuestionLimit,
                             false,
                             true
@@ -759,7 +770,7 @@ const Objectives = () => {
                     <Button
                       className="w-full gap-2"
                       disabled={schedule.isLoading}
-                      onClick={() => startSession(schedule.area, hasFullSessionAccess ? undefined : freeQuestionLimit)}
+                      onClick={() => startSession(effectiveArea, hasFullSessionAccess ? undefined : freeQuestionLimit)}
                     >
                       Iniciar Sessão
                       <ArrowRight className="h-4 w-4" />
