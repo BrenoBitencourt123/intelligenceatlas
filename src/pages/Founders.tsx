@@ -145,9 +145,9 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="min-h-screen flex items-center justify-center px-5 pt-14"
+        className="min-h-screen flex items-center justify-center px-4 sm:px-5 pt-14"
       >
-        <div className="max-w-2xl mx-auto text-center space-y-8">
+        <div className="max-w-2xl mx-auto text-center space-y-6 sm:space-y-8">
           {/* Eyebrow */}
           <motion.p
             className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground"
@@ -168,13 +168,13 @@ export default function Founders() {
             custom={1}
           >
             Seja um dos 20
-            <br />
-            <span className="text-muted-foreground">Membros Fundadores</span>
+            <br className="hidden sm:block" />
+            {" "}Membros Fundadores
           </motion.h1>
 
           {/* Oferta em destaque */}
           <motion.p
-            className="text-2xl sm:text-3xl font-bold"
+            className="text-xl sm:text-2xl lg:text-3xl font-bold"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
