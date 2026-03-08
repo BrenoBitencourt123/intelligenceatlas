@@ -706,7 +706,7 @@ const Objectives = () => {
               </p>
 
               {/* Free area locked paywall */}
-              {isFree && isAreaLocked(schedule.area) ? (
+              {isFree && isAreaLocked(effectiveArea) ? (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 p-4 space-y-3 text-center">
                    <Crown className="h-6 w-6 text-amber-500 mx-auto" />
                   <div>
