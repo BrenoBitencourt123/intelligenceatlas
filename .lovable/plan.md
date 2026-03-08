@@ -1,38 +1,59 @@
 
 
-# Landing Page — Redesign Completo (Fundadores)
+## Plano: Editor Visual de Questoes estilo Simulado
 
-Redesign da página `/fundadores` seguindo o layout das imagens de referência, com foco nas 20 vagas limitadas e reveal progressivo.
+O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
 
-## Estrutura
+### Arquitetura
 
-### 1. Hero (sempre visível)
-- **Header**: Logo Atlas (ícone + nome) à esquerda, badge "🔥 20 vagas restantes" à direita (estilo amber/orange pill)
-- **Badge animado**: "Apenas 20 vagas para membros fundadores" centralizado com ícone de fogo, fundo amber claro
-- **Headline**: "Restam **20 vagas** para os primeiros membros fundadores do Atlas" — número em laranja/amber, centralizado, fonte grande
-- **Sub-headline**: "Estude para o ENEM de forma inteligente com IA — e garanta **50% de desconto vitalício**"
-- **Barra de urgência**: "Vagas preenchidas" à esquerda, "X/20 restantes" à direita em amber, com progress bar
-- **Vídeo placeholder**: mantém mecânica atual (play → timer → reveal)
+```text
+PreviewStage (refatorado)
+├── QuestionEditor (painel esquerdo — scrollavel)
+│   ├── Header: "Q.1 de 90" + badges (area, idioma)
+│   ├── Statement editor (textarea com suporte a {{IMG_N}})
+│   │   └── Inline image slots (drag/drop, paste, upload)
+│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
+│   ├── Metadados: area, resposta correta, lingua estrangeira
+│   └── Navegacao: < Anterior | Proxima >
+│
+└── Sidebar (painel direito — fixo)
+    ├── Status summary (OK / Com erro / Vazias)
+    ├── Grid de numeros (1-90 ou 91-180)
+    │   ├── Verde: questao OK (tem enunciado + gabarito)
+    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
+    │   ├── Vermelho: questao vazia / critica
+    │   ├── Borda: questao atual selecionada
+    │   └── Cinza: questao nao importada
+    └── Botao "Revisar e Importar"
+```
 
-### 2. Seções Reveladas (após ~75% do vídeo OU botão "Saiba mais sobre o Atlas")
-- **3 Feature cards**: Questões Objetivas, Redação com IA, Flashcards SRS — ícones + descrição curta
-- **Seção de oferta fundador**: Card com borda amber, contador "X/20 vagas", preço R$49,90 → R$24,95/mês, lista de benefícios
-- **CTA**: "Garantir minha vaga →" botão amber/laranja → navega para `/fundadores/cadastro`
-- **Link secundário**: "Saiba mais sobre o Atlas ↓" (scroll ou reveal trigger alternativo)
-- **FAQ**: Accordion com perguntas frequentes
+### Tarefas de implementacao
 
-### 3. Footer
-- Copyright Intelligence Atlas
+1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
+   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
+   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
+   - 5 alternativas editaveis (texto + slot de imagem cada)
+   - Selects para area, resposta correta, lingua estrangeira
+   - Navegacao Anterior/Proxima
 
-## Alterações técnicas
+2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
+   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
+   - Contadores no topo: "X completas, Y com erro, Z vazias"
+   - Click no numero navega para a questao
 
-- **Constante estática**: `const VAGAS_RESTANTES = 20` — substitui chamada ao edge function `founders-slots` por agora (fácil trocar depois)
-- **Cores**: Trocar verde `hsl(142,71%,45%)` para amber/laranja `hsl(25,95%,53%)` seguindo as imagens de referência
-- **Componentes**: Tudo em `src/pages/Founders.tsx` por enquanto (página única, componentes inline). Podemos extrair para `src/components/landing/` depois se necessário
-- **Reveal**: Mantém mecânica atual (timer de vídeo a 75%) + adiciona botão "Saiba mais" como trigger alternativo
-- **Responsivo**: Mobile-first com Tailwind, layout centralizado `max-w-3xl`
-- **Sem imagens externas**: Screenshots do app não serão embedadas (usar placeholders ou cards descritivos)
+3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
+   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
+   - Direita: QuestionGrid + botao de importar
+   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
+   - Mobile: grid em cima, editor embaixo (responsivo)
 
-## Arquivo editado
-- `src/pages/Founders.tsx` — reescrita completa
+4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
+
+### Detalhes tecnicos
+
+- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
+- O estado de "questao atual" sera controlado por um index no PreviewStage
+- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
+- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
+- Nenhuma mudanca no banco de dados ou edge functions necessaria
 
