@@ -1,45 +1,59 @@
 
 
-## Plano: Redesign Premium da Página Home
+## Plano: Editor Visual de Questoes estilo Simulado
 
-A home atual tem muitos cards empilhados com bordas visíveis e cores variadas. O redesign vai criar uma experiência mais sofisticada, com hierarquia visual clara e estética monocromática premium.
+O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
 
-### Mudanças em `src/pages/Today.tsx`
+### Arquitetura
 
-**1. Header — Saudação personalizada**
-- Substituir "Hoje - Segunda-feira" por uma saudação contextual: "Bom dia" / "Boa tarde" / "Boa noite" com tipografia grande e bold
-- Dia da semana e área do dia como subtítulo discreto em muted-foreground
-- Remover redundância com `schedule.label`
+```text
+PreviewStage (refatorado)
+├── QuestionEditor (painel esquerdo — scrollavel)
+│   ├── Header: "Q.1 de 90" + badges (area, idioma)
+│   ├── Statement editor (textarea com suporte a {{IMG_N}})
+│   │   └── Inline image slots (drag/drop, paste, upload)
+│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
+│   ├── Metadados: area, resposta correta, lingua estrangeira
+│   └── Navegacao: < Anterior | Proxima >
+│
+└── Sidebar (painel direito — fixo)
+    ├── Status summary (OK / Com erro / Vazias)
+    ├── Grid de numeros (1-90 ou 91-180)
+    │   ├── Verde: questao OK (tem enunciado + gabarito)
+    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
+    │   ├── Vermelho: questao vazia / critica
+    │   ├── Borda: questao atual selecionada
+    │   └── Cinza: questao nao importada
+    └── Botao "Revisar e Importar"
+```
 
-**2. Stats — Barra horizontal inline**
-- Substituir os 3 cards separados (Streak, Questões, Acerto) por uma única linha horizontal sem card wrapper
-- Formato: `🔥 3 dias · 12 questões · 78%` — separados por `·`, tipografia discreta
-- Sem bordas, sem cards, sem ícones grandes — apenas dados em linha
+### Tarefas de implementacao
 
-**3. Card principal de estudo (Objetivas)**
-- Remover `border-2 border-primary/20` — usar apenas sombra sutil
-- Layout mais limpo: área do dia como label discreto, nome da área em tipografia grande
-- Botão full-width com estilo clean
-- Welcome card (primeira sessão) simplificado sem borda colorida
+1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
+   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
+   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
+   - 5 alternativas editaveis (texto + slot de imagem cada)
+   - Selects para area, resposta correta, lingua estrangeira
+   - Navegacao Anterior/Proxima
 
-**4. Card de Redação**
-- Integrar tema do dia de forma mais elegante — tipografia com aspas estilizadas
-- Progress bar mais fina e discreta
-- Remover ícone `PenLine` do header — usar apenas tipografia
+2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
+   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
+   - Contadores no topo: "X completas, Y com erro, Z vazias"
+   - Click no numero navega para a questao
 
-**5. Flashcards**
-- Transformar de card separado em uma linha simples dentro do fluxo, sem card wrapper
-- Formato: texto + botão inline, como um item de lista discreto
+3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
+   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
+   - Direita: QuestionGrid + botao de importar
+   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
+   - Mobile: grid em cima, editor embaixo (responsivo)
 
-**6. Card de diagnóstico**
-- Simplificar para uma barra com progress inline, sem card pesado
+4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
 
-**7. Geral**
-- Mais espaço negativo (padding/gap maiores)
-- Bordas removidas ou `border-border/50` (mais sutis)
-- Tipografia hierárquica: h1 grande, subtextos em muted
-- Cards com `shadow-sm` ao invés de bordas duplas
+### Detalhes tecnicos
 
-### Arquivo modificado
-- `src/pages/Today.tsx` — redesign completo do layout e estilos, mantendo toda a lógica intacta
+- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
+- O estado de "questao atual" sera controlado por um index no PreviewStage
+- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
+- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
+- Nenhuma mudanca no banco de dados ou edge functions necessaria
 
