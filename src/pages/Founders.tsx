@@ -156,8 +156,8 @@ export default function Founders() {
 
               {/* Balão 50% OFF centralizado acima, levemente diagonal */}
               <span
-                className="absolute left-1/2 -translate-x-1/2 -top-11 z-10 pointer-events-none"
-                style={{ rotate: "-6deg" }}>
+                className="absolute left-1/2 -translate-x-1/2 -top-14 z-10 pointer-events-none"
+                style={{ rotate: "6deg" }}>
                 <motion.span
                   className="relative inline-block will-change-transform"
                   initial={false}
