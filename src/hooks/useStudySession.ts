@@ -921,8 +921,25 @@ export function useStudySession() {
   );
 
   const answerQuestion = useCallback(
-    async (selectedLetter: string | null, autoFlashcard = true) => {
-      if (!currentQuestion || showFeedback) return;
+    async (selectedLetter: string | null, autoFlashcard = true): Promise<{ submitted: boolean; suspectedGuess: boolean }> => {
+      if (!currentQuestion || showFeedback) return { submitted: false, suspectedGuess: false };
+
+      const isCorrect = selectedLetter === currentQuestion.correct_answer;
+      const timeSpentSec = Math.max(1, Math.round((Date.now() - questionStartedAt) / 1000));
+
+      // Check for suspected guess (only for actual answer selections, not "don't know")
+      if (selectedLetter !== null && isLikelyGuess(currentQuestion.statement, currentQuestion.alternatives, timeSpentSec)) {
+        return { submitted: false, suspectedGuess: true };
+      }
+
+      return submitAnswer(selectedLetter, autoFlashcard, false);
+    },
+    [currentQuestion, questionStartedAt, showFeedback],
+  );
+
+  const submitAnswer = useCallback(
+    async (selectedLetter: string | null, autoFlashcard: boolean, wasGuess: boolean): Promise<{ submitted: boolean; suspectedGuess: boolean }> => {
+      if (!currentQuestion || showFeedback) return { submitted: false, suspectedGuess: false };
 
       const isCorrect = selectedLetter === currentQuestion.correct_answer;
       const timeSpentSec = Math.max(1, Math.round((Date.now() - questionStartedAt) / 1000));
@@ -963,6 +980,7 @@ export function useStudySession() {
           selectedLetter,
           isCorrect,
           timeSpentSec,
+          wasGuess,
         }).then(() => {});
       }
 
@@ -970,6 +988,8 @@ export function useStudySession() {
       if (!isCorrect && autoFlashcard) {
         await generateFlashcard(currentQuestion, selectedLetter === null ? "dont_know" : "wrong");
       }
+
+      return { submitted: true, suspectedGuess: false };
     },
     [
       answers,
@@ -984,6 +1004,13 @@ export function useStudySession() {
       syncTopicProfile,
       user,
     ],
+  );
+
+  const confirmAnswer = useCallback(
+    async (selectedLetter: string, autoFlashcard: boolean, wasGuess: boolean) => {
+      return submitAnswer(selectedLetter, autoFlashcard, wasGuess);
+    },
+    [submitAnswer],
   );
 
   const nextQuestion = useCallback(async () => {
