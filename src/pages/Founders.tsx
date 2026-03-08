@@ -237,101 +237,58 @@ export default function Founders() {
         </Button>
       </header>
 
-      {/* Hero — two columns on desktop */}
-      <main className="flex-1 flex items-center px-6 py-12 sm:py-20">
-        <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      {/* Hero — single column, centered */}
+      <main className="flex-1 flex items-center justify-center px-6 py-12 sm:py-20">
+        <div className="max-w-2xl w-full space-y-8 text-center">
 
-          {/* Left — copy */}
-          <div className="space-y-6 max-w-xl">
-            {/* Eyebrow */}
-            <motion.p
-              className="text-sm font-semibold tracking-wide uppercase text-muted-foreground"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              Treine com as próprias provas do ENEM
-            </motion.p>
-
-            {/* Headline */}
-            <motion.h1
-              className="text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold tracking-tight leading-[1.12] text-foreground"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.05 }}
-            >
-              O jeito mais inteligente de estudar para o ENEM.
-            </motion.h1>
-
-            {/* Description */}
-            <motion.p
-              className="text-base sm:text-lg leading-relaxed text-muted-foreground"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              O Atlas analisa seu desempenho nas questões do ENEM e mostra exatamente o que estudar para alcançar{" "}
-              <span className="font-semibold text-foreground">700+ ou 900+ pontos</span>.
-            </motion.p>
-
-            {/* Discount — inline, elegant */}
-            <motion.p
-              className="text-base sm:text-lg font-semibold text-[hsl(142,71%,45%)]"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.15 }}
-            >
-              🔥 R$24,95/mês para sempre — membros fundadores
-            </motion.p>
-
-            {/* CTA */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <Button
-                size="lg"
-                className="h-14 px-10 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(142,71%,45%)] border-0"
-                onClick={() => setModalOpen(true)}
-              >
-                Começar agora
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </motion.div>
-
-            {/* Checkmarks */}
-            <motion.div
-              className="space-y-2.5 pt-2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              {CHECKS.map((text, i) => (
-                <motion.div
-                  key={text}
-                  className="flex items-center gap-2.5"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.35 + i * 0.08 }}
-                >
-                  <div className="w-5 h-5 rounded-full bg-[hsl(142,71%,45%)] flex items-center justify-center flex-shrink-0">
-                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                  </div>
-                  <span className="text-sm text-muted-foreground">{text}</span>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-
-          {/* Right — video placeholder */}
-          <motion.div
-            className="relative"
-            initial={{ opacity: 0, y: 30, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
+          {/* Eyebrow */}
+          <motion.p
+            className="text-sm font-semibold tracking-wide uppercase text-muted-foreground"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
           >
-            <div className="relative aspect-video rounded-2xl border bg-card shadow-card overflow-hidden flex items-center justify-center cursor-pointer group">
+            Treine com as próprias provas do ENEM
+          </motion.p>
+
+          {/* Headline */}
+          <motion.h1
+            className="text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold tracking-tight leading-[1.12] text-foreground"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.05 }}
+          >
+            O jeito mais inteligente de estudar para o ENEM.
+          </motion.h1>
+
+          {/* Description */}
+          <motion.p
+            className="text-base sm:text-lg leading-relaxed text-muted-foreground max-w-xl mx-auto"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            O Atlas analisa seu desempenho nas questões do ENEM e mostra exatamente o que estudar para alcançar{" "}
+            <span className="font-semibold text-foreground">700+ ou 900+ pontos</span>.
+          </motion.p>
+
+          {/* Discount — inline, elegant */}
+          <motion.p
+            className="text-base sm:text-lg font-semibold text-[hsl(142,71%,45%)]"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+          >
+            🔥 R$24,95/mês para sempre — membros fundadores
+          </motion.p>
+
+          {/* Video placeholder */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <div className="relative aspect-video rounded-2xl border bg-card shadow-card overflow-hidden flex items-center justify-center cursor-pointer group max-w-xl mx-auto">
               <div className="absolute inset-0 bg-foreground/[0.02] group-hover:bg-foreground/[0.04] transition-colors" />
               <div className="text-center space-y-3 relative z-10">
                 <div className="w-16 h-16 rounded-full bg-[hsl(142,71%,45%)] flex items-center justify-center mx-auto shadow-lg group-hover:scale-105 transition-transform">
@@ -344,6 +301,45 @@ export default function Founders() {
                 </p>
               </div>
             </div>
+          </motion.div>
+
+          {/* CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <Button
+              size="lg"
+              className="h-14 px-10 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(142,71%,45%)] border-0"
+              onClick={() => setModalOpen(true)}
+            >
+              Começar agora
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </motion.div>
+
+          {/* Checkmarks */}
+          <motion.div
+            className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            {CHECKS.map((text, i) => (
+              <motion.div
+                key={text}
+                className="flex items-center gap-2"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.45 + i * 0.08 }}
+              >
+                <div className="w-5 h-5 rounded-full bg-[hsl(142,71%,45%)] flex items-center justify-center flex-shrink-0">
+                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                </div>
+                <span className="text-sm text-muted-foreground">{text}</span>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </main>
