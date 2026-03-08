@@ -29,7 +29,9 @@ const Objectives = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const previewQuestionId = searchParams.get('previewQuestionId');
+  const areaOverride = searchParams.get('area');
   const schedule = useStudySchedule();
+  const effectiveArea = areaOverride || schedule.area;
   const stats = useStudyStats();
   const {
     hasFullSessionAccess,
