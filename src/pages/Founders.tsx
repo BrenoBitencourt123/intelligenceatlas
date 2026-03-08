@@ -59,7 +59,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Quantas vagas restam?",
-    a: `Atualmente restam ${VAGAS_RESTANTES} de ${VAGAS_TOTAL} vagas. Quando acabarem, o preço será o valor cheio de R$49,90/mês.`,
+    a: "", // dynamic, overridden in component
   },
   {
     q: "Posso cancelar a qualquer momento?",
