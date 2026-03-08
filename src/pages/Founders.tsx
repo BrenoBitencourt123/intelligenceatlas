@@ -155,29 +155,32 @@ export default function Founders() {
               style={{ color: AMBER, background: AMBER_BG }}>
 
               {/* Balão 50% OFF centralizado acima, levemente diagonal */}
-              <motion.span
+              <span
                 className="absolute left-1/2 -translate-x-1/2 -top-11 z-10 pointer-events-none"
-                style={{ rotate: "-6deg" }}
-                initial={{ scale: 1, opacity: 1 }}
-                animate={{ scale: [1, 1.12, 1] }}
-                transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
-                <span
-                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[0.7rem] font-extrabold tracking-wider text-white shadow-xl whitespace-nowrap uppercase"
-                  style={{
-                    background: `linear-gradient(135deg, ${AMBER}, hsl(15, 90%, 48%))`,
-                    boxShadow: `0 4px 14px hsl(25 95% 53% / 0.4)`,
-                  }}>
-                  🔥 50%OFF
-                </span>
-                {/* Seta apontando para baixo */}
-                <span
-                  className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-0 h-0"
-                  style={{
-                    borderLeft: "6px solid transparent",
-                    borderRight: "6px solid transparent",
-                    borderTop: `6px solid hsl(15, 90%, 48%)`,
-                  }} />
-              </motion.span>
+                style={{ rotate: "-6deg" }}>
+                <motion.span
+                  className="relative inline-block will-change-transform"
+                  initial={false}
+                  animate={{ scale: [1, 1.12, 1] }}
+                  transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
+                  <span
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[0.7rem] font-extrabold tracking-wider text-white shadow-xl whitespace-nowrap uppercase"
+                    style={{
+                      background: `linear-gradient(135deg, ${AMBER}, hsl(15, 90%, 48%))`,
+                      boxShadow: `0 4px 14px hsl(25 95% 53% / 0.4)`,
+                    }}>
+                    🔥 50%OFF
+                  </span>
+                  {/* Seta apontando para baixo */}
+                  <span
+                    className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-0 h-0"
+                    style={{
+                      borderLeft: "6px solid transparent",
+                      borderRight: "6px solid transparent",
+                      borderTop: `6px solid hsl(15, 90%, 48%)`,
+                    }} />
+                </motion.span>
+              </span>
 
               {vagasRestantes} vagas
             </span>{" "}
