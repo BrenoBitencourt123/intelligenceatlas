@@ -238,6 +238,66 @@ export default function ErrorsByTopic() {
           )}
         </div>
 
+        {/* Top 5 weaknesses & strengths summary */}
+        {!loading && rows.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-destructive" />
+                  <h3 className="font-semibold text-sm">Top 5 fraquezas</h3>
+                </div>
+                <div className="space-y-2">
+                  {[...rows]
+                    .sort((a, b) => b.priority_score - a.priority_score)
+                    .slice(0, 5)
+                    .map((row) => (
+                      <div key={row.id} className="flex items-center justify-between text-xs rounded-lg border p-2">
+                        <span className="text-foreground truncate flex-1 mr-2">
+                          {AREA_CONFIG[row.area]?.label || row.area} - {row.topic}
+                        </span>
+                        <Badge variant="destructive" className="text-xs shrink-0">
+                          {row.priority_score.toFixed(2)}
+                        </Badge>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <h3 className="font-semibold text-sm">Top 5 forças</h3>
+                </div>
+                <div className="space-y-2">
+                  {[...rows]
+                    .filter(r => r.attempts > 0)
+                    .sort((a, b) => {
+                      if (b.level !== a.level) return b.level - a.level;
+                      const accA = a.correct / a.attempts;
+                      const accB = b.correct / b.attempts;
+                      return accB - accA;
+                    })
+                    .slice(0, 5)
+                    .map((row) => {
+                      const acc = Math.round((row.correct / row.attempts) * 100);
+                      return (
+                        <div key={row.id} className="flex items-center justify-between text-xs rounded-lg border p-2">
+                          <span className="text-foreground truncate flex-1 mr-2">
+                            {AREA_CONFIG[row.area]?.label || row.area} - {row.topic}
+                          </span>
+                          <span className="text-muted-foreground shrink-0">N{row.level} · {acc}%</span>
+                        </div>
+                      );
+                    })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {loading ? (
           <div className="space-y-3">
             <Skeleton className="h-40 w-full rounded-xl" />
