@@ -169,7 +169,7 @@ export default function Founders() {
           >
             Seja um dos 20
             <br className="hidden sm:block" />
-            {" "}Membros Fundadores
+            <span className="whitespace-nowrap"> Membros Fundadores</span>
           </motion.h1>
 
           {/* Oferta em destaque */}
