@@ -413,8 +413,8 @@ const Objectives = () => {
                             <button
                               key={alt.letter}
                               className={`w-full text-left p-3 rounded-lg border transition-colors flex items-start gap-3 ${extraClass}`}
-                              onClick={() => !showFeedback && answerQuestion(alt.letter, hasAutoFlashcards)}
-                              disabled={showFeedback}
+                              onClick={handleAltClick}
+                              disabled={showFeedback || !!pendingGuessAnswer}
                             >
                               <span className="font-bold text-sm shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center">
                                 {alt.letter}
