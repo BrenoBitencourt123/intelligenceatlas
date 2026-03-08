@@ -431,11 +431,15 @@ export function useStudySession() {
   );
 
   const syncTopicProfile = useCallback(
-    async (params: { question: Question; selectedLetter: string | null; isCorrect: boolean; timeSpentSec: number }) => {
+    async (params: { question: Question; selectedLetter: string | null; isCorrect: boolean; timeSpentSec: number; wasGuess?: boolean }) => {
       if (!user) return;
-      const { question, selectedLetter, isCorrect, timeSpentSec } = params;
+      const { question, selectedLetter, isCorrect, timeSpentSec, wasGuess = false } = params;
       const answer = selectedLetter ?? "dont_know";
       const nowIso = new Date().toISOString();
+
+      // Guess multipliers: attenuate the impact on the algorithm
+      const correctWeight = wasGuess ? 0.3 : 1;
+      const wrongWeight = wasGuess ? 0.5 : 1;
 
       const { error: historyError } = await supabase.from("user_question_history").insert({
         user_id: user.id,
