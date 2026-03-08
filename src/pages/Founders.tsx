@@ -167,7 +167,7 @@ export default function Founders() {
               style={{ background: AMBER_BG, color: AMBER }}
             >
               <Flame className="w-4 h-4" />
-              Apenas {VAGAS_TOTAL} vagas para membros fundadores
+              Apenas {VAGAS_RESTANTES} vagas para membros fundadores
             </div>
           </motion.div>
 
