@@ -111,12 +111,11 @@ export default function Founders() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* ─── Animated Urgency Ticker ─── */}
-      <div className="relative overflow-hidden border-b py-3" style={{ background: AMBER_BG }}>
+      <div className="relative overflow-hidden border-b py-3" style={{ background: AMBER }}>
         <motion.div
-          className="flex whitespace-nowrap gap-12 text-sm font-bold uppercase tracking-wide"
+          className="flex whitespace-nowrap gap-12 text-sm font-bold uppercase tracking-wide text-white"
           animate={{ x: ["0%", "-50%"] }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          style={{ color: AMBER }}
         >
           {Array.from({ length: 16 }).map((_, i) => (
             <span key={i} className="flex items-center gap-2">
