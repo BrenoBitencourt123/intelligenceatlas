@@ -209,41 +209,6 @@ export default function Founders() {
             </div>
           </motion.div>
 
-          {/* CTA below video */}
-          <motion.div
-            className="flex justify-center"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <Button
-              size="lg"
-              className="h-14 px-8 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] border-0"
-              style={{ background: AMBER }}
-              onClick={() => navigate("/fundadores/cadastro")}
-            >
-              Garantir minha vaga
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </motion.div>
-
-          {/* Manual reveal trigger */}
-          {!revealed && (
-            <motion.div
-              className="flex justify-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <button
-                onClick={handleRevealManual}
-                className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Saiba mais sobre o Atlas
-                <ChevronDown className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
 
           {/* ─── Revealed Content ─── */}
           <AnimatePresence>
