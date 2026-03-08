@@ -165,9 +165,32 @@ export default function Founders() {
       <main className="flex-1 px-5 py-12 sm:py-16">
         <div className="max-w-3xl mx-auto w-full space-y-6">
 
-          {/* Badges */}
-          
+          {/* Floating badges - scattered */}
+          <div className="relative">
+            {/* Top-right badge */}
+            <div className="flex justify-end pr-2 sm:pr-8 -mb-2">
+              <FloatingBadge rotate={3}>
+                🎯 DESCONTO DE <span className="text-base font-extrabold ml-1">50% OFF</span>
+              </FloatingBadge>
+            </div>
+          </div>
 
+          {/* Left-leaning badge */}
+          <div className="flex justify-start pl-2 sm:pl-4 -mb-3">
+            <FloatingBadge rotate={-2}>
+              ✨ Vagas limitadas para membros fundadores
+            </FloatingBadge>
+          </div>
+
+          {/* Headline */}
+          <motion.h1
+            className="text-center text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold tracking-tight leading-[1.15] text-foreground"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.05 }}>
+            
+            O jeito mais inteligente de estudar para o ENEM.
+          </motion.h1>
 
 
 
