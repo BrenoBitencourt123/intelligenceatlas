@@ -91,7 +91,7 @@ export default function FounderSignup() {
                 className="space-y-6"
               >
                 <div className="space-y-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[hsl(142,71%,93%)] text-[hsl(142,71%,30%)]">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[hsl(25,95%,53%/0.1)] text-[hsl(25,95%,40%)]">
                     <Sparkles className="w-3.5 h-3.5" />
                     50% vitalício
                   </div>
