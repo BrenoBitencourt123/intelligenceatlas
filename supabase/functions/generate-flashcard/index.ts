@@ -29,23 +29,28 @@ serve(async (req) => {
 
     const prompt = `Você é um especialista em criar flashcards de estudo para o ENEM.
 
-OBJETIVO: Use a questão abaixo apenas como REFERÊNCIA para identificar o conceito central que ela testa. Depois, crie um flashcard que ensina esse conceito — NÃO que reproduz a questão.
+OBJETIVO: Identifique o CONCEITO-CHAVE, FÓRMULA ou REGRA que o aluno precisa dominar para resolver questões desse tipo. Crie um flashcard que ENSINA esse conceito de forma independente.
 
 REGRAS OBRIGATÓRIAS:
-1. Identifique o conceito, fórmula ou habilidade que a questão exige (ex: proporção direta, bioma cerrado, Modernismo brasileiro).
-2. A FRENTE é uma pergunta direta sobre esse conceito. Exemplos: "Qual é a fórmula de proporção direta?", "O que caracteriza o Cerrado?", "O que define o Modernismo de 1922?".
-3. O VERSO traz a resposta objetiva: fórmula, definição, lista de características ou regra prática (máximo 4 linhas).
-4. Termine o verso com "🎯 ENEM: [dica de como identificar esse conceito na prova]".
-5. NUNCA copie o enunciado. NUNCA mencione "na questão" ou "neste caso". O flashcard deve servir para QUALQUER questão do mesmo tema.
+1. NUNCA mencione o enunciado, a questão, imagens, gráficos, tabelas, setas, figuras ou qualquer elemento visual. O flashcard deve ser 100% autossuficiente.
+2. NUNCA use frases como "na questão", "no texto", "na figura", "as setas indicam", "observe o formato". O aluno NÃO terá acesso à questão original.
+3. Identifique o conceito fundamental: pode ser uma fórmula (ex: Bhaskara), uma definição (ex: o que é mitose), uma regra gramatical, um princípio físico, um período histórico, etc.
+4. A FRENTE deve ser uma pergunta direta sobre o conceito. Exemplos:
+   - "Qual é a fórmula de Bhaskara e quando usá-la?"
+   - "O que caracteriza o bioma Cerrado?"
+   - "Qual a diferença entre mitose e meiose?"
+   - "O que foi a Revolução de 1930?"
+5. O VERSO deve conter a resposta objetiva: fórmula, definição, lista de características ou regra prática (máximo 4 linhas).
+6. Termine o verso com "🎯 ENEM: [dica de como esse conceito aparece na prova]".
 
 Área: ${area}
-Questão (somente para referência):
-${statement}
+Conceito extraído da questão (use apenas como referência para identificar o tema):
 Resposta correta: ${correctAnswer}${correctAlt ? ` — ${correctAlt.text}` : ''}
 ${explanation ? `Explicação: ${explanation}` : ''}
+Tópico implícito no enunciado: ${statement.substring(0, 200)}
 
 Responda EXATAMENTE neste formato JSON:
-{"front": "pergunta sobre o conceito", "back": "resposta objetiva\\n\\n🎯 ENEM: dica prática"}`;
+{"front": "pergunta sobre o conceito-chave", "back": "resposta objetiva\\n\\n🎯 ENEM: dica prática"}`;
 
     const apiKey = Deno.env.get('GEMINI_API_KEY');
     if (!apiKey) {
