@@ -153,19 +153,21 @@ export default function Founders() {
             <span
               className="relative inline-block px-2 py-0.5 rounded-md"
               style={{ color: AMBER, background: AMBER_BG }}>
-              
-              {vagasRestantes} vagas
 
-              {/* Balão 50% OFF com animação pulse/scale */}
+              {/* Balão 50% OFF centralizado acima, levemente diagonal */}
               <motion.span
-                className="absolute -top-10 -right-16 sm:-right-20 z-10 pointer-events-none"
-                initial={{ scale: 0 }}
-                animate={{ scale: [1, 1.15, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
+                className="absolute left-1/2 -translate-x-1/2 -top-11 z-10 pointer-events-none"
+                style={{ rotate: "-6deg" }}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: [1, 1.12, 1], opacity: 1 }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}>
                 <span
-                  className="inline-block px-2.5 py-1 rounded-full text-xs font-extrabold text-white shadow-lg whitespace-nowrap"
-                  style={{ background: AMBER }}>
-                  50% OFF
+                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[0.7rem] font-extrabold tracking-wider text-white shadow-xl whitespace-nowrap uppercase"
+                  style={{
+                    background: `linear-gradient(135deg, ${AMBER}, hsl(15, 90%, 48%))`,
+                    boxShadow: `0 4px 14px hsl(25 95% 53% / 0.4)`,
+                  }}>
+                  🔥 50%OFF
                 </span>
                 {/* Seta apontando para baixo */}
                 <span
@@ -173,9 +175,11 @@ export default function Founders() {
                   style={{
                     borderLeft: "6px solid transparent",
                     borderRight: "6px solid transparent",
-                    borderTop: `6px solid ${AMBER}`,
+                    borderTop: `6px solid hsl(15, 90%, 48%)`,
                   }} />
               </motion.span>
+
+              {vagasRestantes} vagas
             </span>{" "}
             para os primeiros membros fundadores do Atlas
           </motion.h1>
