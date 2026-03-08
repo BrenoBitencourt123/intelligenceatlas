@@ -174,9 +174,14 @@ function HeroSection({
       />
 
       <div className="relative z-10">
-        <div className="mb-8">
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
           <SlotsCounter remaining={remaining} loading={loading} />
-        </div>
+        </motion.div>
 
         <h1
           className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] mb-5"
