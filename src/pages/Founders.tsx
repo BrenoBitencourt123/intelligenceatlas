@@ -292,11 +292,11 @@ export default function Founders() {
             >
               <Button
                 size="lg"
-                className="h-13 px-8 text-base font-bold rounded-xl text-white shadow-md hover:shadow-lg transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(142,71%,45%)] border-0"
+                className="h-14 px-10 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(142,71%,45%)] border-0"
                 onClick={() => setModalOpen(true)}
               >
                 Começar agora
-                <ArrowRight className="ml-2 w-4 h-4" />
+                <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </motion.div>
 
