@@ -101,7 +101,7 @@ function AreaCard({ area, list }: { area: string; list: TopicRow[] }) {
             <Button
               size="sm"
               variant="outline"
-              className="text-xs hidden sm:flex"
+              className="text-xs"
               onClick={e => { e.stopPropagation(); navigate('/objetivas'); }}
             >
               Estudar
