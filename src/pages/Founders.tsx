@@ -113,16 +113,16 @@ export default function Founders() {
       {/* ─── Animated Urgency Header ─── */}
       <header className="relative overflow-hidden border-b">
         {/* Scrolling ticker background */}
-        <div className="absolute inset-0 flex items-center overflow-hidden pointer-events-none opacity-[0.07]">
+        <div className="absolute inset-0 flex items-center overflow-hidden pointer-events-none opacity-[0.04]">
           <motion.div
-            className="flex whitespace-nowrap gap-8 text-sm font-bold"
+            className="flex whitespace-nowrap gap-12 text-xs font-bold uppercase tracking-widest"
             animate={{ x: ["0%", "-50%"] }}
-            transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
             style={{ color: AMBER }}
           >
-            {Array.from({ length: 12 }).map((_, i) => (
+            {Array.from({ length: 16 }).map((_, i) => (
               <span key={i} className="flex items-center gap-2">
-                <Flame className="w-4 h-4" /> APENAS {VAGAS_RESTANTES} VAGAS RESTANTES
+                🔥 APENAS {VAGAS_RESTANTES} VAGAS RESTANTES
               </span>
             ))}
           </motion.div>
