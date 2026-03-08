@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Percent } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function FounderSignup() {
@@ -92,7 +92,7 @@ export default function FounderSignup() {
               
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[hsl(25,95%,53%/0.1)] text-[hsl(25,95%,40%)]">
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Percent className="w-3.5 h-3.5" />
                     50% vitalício
                   </div>
                   <h1 className="text-2xl font-bold text-foreground">
