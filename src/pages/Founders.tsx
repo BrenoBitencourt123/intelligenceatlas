@@ -111,9 +111,14 @@ export default function Founders() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* ─── Animated Urgency Ticker ─── */}
-      <div className="relative overflow-hidden border-b py-3" style={{ background: AMBER }}>
+      <div className="relative overflow-hidden border-b py-4" style={{ background: AMBER }}>
+        <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center px-4 sm:px-6" style={{ background: "hsl(25, 95%, 42%)" }}>
+          <span className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-white whitespace-nowrap">
+            Vagas Restantes
+          </span>
+        </div>
         <motion.div
-          className="flex whitespace-nowrap gap-12 text-sm font-bold uppercase tracking-wide text-white"
+          className="flex whitespace-nowrap gap-12 text-base font-bold uppercase tracking-wide text-white pl-40 sm:pl-48"
           animate={{ x: ["0%", "-50%"] }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         >
@@ -126,8 +131,8 @@ export default function Founders() {
       </div>
 
       {/* ─── Hero ─── */}
-      <main className="flex-1 px-5 py-10 sm:py-16">
-        <div className="max-w-3xl mx-auto w-full space-y-8">
+      <main className="flex-1 px-5 py-12 sm:py-16">
+        <div className="max-w-3xl mx-auto w-full space-y-6">
 
           {/* Headline */}
           <motion.h1
@@ -137,7 +142,12 @@ export default function Founders() {
             transition={{ duration: 0.5, delay: 0.05 }}
           >
             Restam{" "}
-            <span style={{ color: AMBER }}>{VAGAS_RESTANTES} vagas</span>{" "}
+            <span
+              className="relative inline-block px-2 py-0.5 rounded-md"
+              style={{ color: AMBER, background: AMBER_BG }}
+            >
+              {VAGAS_RESTANTES} vagas
+            </span>{" "}
             para os primeiros membros fundadores do Atlas
           </motion.h1>
 
