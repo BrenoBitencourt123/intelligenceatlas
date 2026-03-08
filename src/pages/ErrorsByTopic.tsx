@@ -25,11 +25,11 @@ interface TopicRow {
   next_review_at: string | null;
 }
 
-const AREA_CONFIG: Record<string, { label: string; icon: typeof BookOpen; color: string; bg: string }> = {
-  matematica: { label: 'Matemática', icon: Target, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
-  linguagens: { label: 'Linguagens', icon: BookOpen, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' },
-  natureza: { label: 'Ciências da Natureza', icon: Brain, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10 border-green-500/20' },
-  humanas: { label: 'Ciências Humanas', icon: Calendar, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
+const AREA_CONFIG: Record<string, { label: string; icon: typeof BookOpen; color: string }> = {
+  matematica: { label: 'Matemática', icon: Target, color: 'text-foreground' },
+  linguagens: { label: 'Linguagens', icon: BookOpen, color: 'text-foreground' },
+  natureza: { label: 'Ciências da Natureza', icon: Brain, color: 'text-foreground' },
+  humanas: { label: 'Ciências Humanas', icon: Calendar, color: 'text-foreground' },
 };
 
 function getMasteryLevel(accuracy: number, level: number): { label: string; color: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } {
@@ -54,7 +54,7 @@ function daysUntilReview(nextReviewAt: string | null): string {
 function AreaCard({ area, list }: { area: string; list: TopicRow[] }) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(true);
-  const cfg = AREA_CONFIG[area] || { label: area, icon: Target, color: 'text-foreground', bg: 'bg-muted/40 border-border' };
+  const cfg = AREA_CONFIG[area] || { label: area, icon: Target, color: 'text-foreground' };
   const Icon = cfg.icon;
 
   const totalAttempts = list.reduce((s, r) => s + r.attempts, 0);
@@ -63,7 +63,6 @@ function AreaCard({ area, list }: { area: string; list: TopicRow[] }) {
   const overdueCount = list.filter(r => isOverdue(r.next_review_at)).length;
   const avgLevel = list.length > 0 ? Math.round(list.reduce((s, r) => s + r.level, 0) / list.length) : 0;
 
-  // Sort: overdue first, then by priority_score desc
   const sorted = [...list].sort((a, b) => {
     const aOver = isOverdue(a.next_review_at) ? 1 : 0;
     const bOver = isOverdue(b.next_review_at) ? 1 : 0;
@@ -72,101 +71,72 @@ function AreaCard({ area, list }: { area: string; list: TopicRow[] }) {
   });
 
   return (
-    <Card className={`border ${cfg.bg}`}>
+    <Card>
       <CardContent className="p-0">
-        {/* Area header */}
         <button
-          className="w-full p-5 flex items-center gap-3 text-left"
+          className="w-full px-4 py-4 flex items-center gap-3 text-left"
           onClick={() => setExpanded(e => !e)}
         >
-          <div className={`p-2 rounded-lg bg-background/60`}>
-            <Icon className={`h-5 w-5 ${cfg.color}`} />
-          </div>
+          <Icon className={`h-4 w-4 ${cfg.color} shrink-0`} />
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-bold text-foreground">{cfg.label}</h2>
-              {overdueCount > 0 && (
-                <Badge variant="destructive" className="text-xs gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {overdueCount} para revisar
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-3 mt-1">
-              <Progress value={areaAccuracy} className="h-1.5 flex-1 max-w-[120px]" />
-              <span className="text-xs text-muted-foreground">{areaAccuracy}% acerto · N{avgLevel} médio · {list.length} tópicos</span>
-            </div>
+            <h2 className="text-sm font-semibold text-foreground">{cfg.label}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {areaAccuracy}% acerto · N{avgLevel} médio · {list.length} tópicos
+            </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {overdueCount > 0 && (
+              <Badge variant="destructive" className="text-[10px] h-5 px-1.5 gap-0.5">
+                <Clock className="h-2.5 w-2.5" />
+                {overdueCount}
+              </Badge>
+            )}
             <Button
               size="sm"
               variant="outline"
-              className="text-xs"
+              className="text-xs h-7 px-2.5"
               onClick={e => { e.stopPropagation(); navigate('/objetivas'); }}
             >
               Estudar
             </Button>
-            {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+            {expanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
           </div>
         </button>
 
-        {/* Topic list */}
         {expanded && (
-          <div className="border-t border-border/60 divide-y divide-border/40">
+          <div className="border-t border-border/50">
             {sorted.map((row) => {
               const accuracy = row.attempts > 0 ? Math.round((row.correct / row.attempts) * 100) : 0;
               const mastery = getMasteryLevel(accuracy, row.level);
               const overdue = isOverdue(row.next_review_at);
-              const reviewText = daysUntilReview(row.next_review_at);
 
               return (
-                <div key={row.id} className="px-5 py-3">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-foreground">
-                          {row.topic}{row.subtopic ? ` › ${row.subtopic}` : ''}
-                        </span>
-                        <Badge variant={mastery.variant} className="text-xs shrink-0">
-                          {mastery.label}
-                        </Badge>
-                        {overdue && (
-                          <Badge variant="destructive" className="text-xs shrink-0 gap-1">
-                            <Clock className="h-2.5 w-2.5" />
-                            Revisar hoje
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Progress value={accuracy} className="h-1 flex-1 max-w-[100px]" />
-                        <span className="text-xs text-muted-foreground">{accuracy}%</span>
-                      </div>
-
-                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3 text-green-500" />
-                          {row.correct} certas
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3 text-destructive" />
-                          {row.wrong} erradas
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <TrendingUp className="h-3 w-3" />
-                          N{row.level}
-                        </span>
-                        {row.next_review_at && (
-                          <span className={`flex items-center gap-1 ${overdue ? 'text-destructive font-medium' : ''}`}>
-                            <Clock className="h-3 w-3" />
-                            Revisar {reviewText}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="shrink-0 text-right">
-                      <span className="text-xs text-muted-foreground">{row.attempts} tentativas</span>
+                <div key={row.id} className="px-4 py-3 border-b border-border/30 last:border-b-0">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="text-sm font-medium text-foreground truncate">
+                      {row.topic}{row.subtopic ? ` › ${row.subtopic}` : ''}
+                    </span>
+                    <span className="text-xs text-muted-foreground shrink-0">{row.attempts} tentativas</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Badge variant={mastery.variant} className="text-[10px] h-5 px-1.5">
+                      {mastery.label}
+                    </Badge>
+                    {overdue && (
+                      <Badge variant="destructive" className="text-[10px] h-5 px-1.5 gap-0.5">
+                        <Clock className="h-2.5 w-2.5" />
+                        Revisar hoje
+                      </Badge>
+                    )}
+                    <div className="flex items-center gap-1.5 ml-auto text-xs text-muted-foreground">
+                      <span className="flex items-center gap-0.5">
+                        <CheckCircle2 className="h-3 w-3" /> {row.correct}
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        <AlertCircle className="h-3 w-3" /> {row.wrong}
+                      </span>
+                      <span>N{row.level}</span>
+                      <span>{accuracy}%</span>
                     </div>
                   </div>
                 </div>
@@ -221,44 +191,39 @@ export default function ErrorsByTopic() {
 
   return (
     <MainLayout>
-      <div className="container max-w-3xl mx-auto px-4 py-8 space-y-5">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">Mapa de Tópicos</h1>
-            <p className="text-muted-foreground text-sm">Prioridades, domínio e revisões por competência</p>
+      <div className="container max-w-2xl mx-auto px-4 py-8 space-y-6 pb-24">
+        {/* Header */}
+        <div>
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-foreground">Mapa de Tópicos</h1>
+            {totalOverdue > 0 && (
+              <Badge variant="destructive" className="text-xs gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {totalOverdue} vencidas
+              </Badge>
+            )}
           </div>
-          {totalOverdue > 0 && (
-            <Badge variant="destructive" className="gap-1">
-              <AlertCircle className="h-3.5 w-3.5" />
-              {totalOverdue} vencidas
-            </Badge>
-          )}
+          <p className="text-sm text-muted-foreground mt-0.5">Prioridades, domínio e revisões por competência</p>
         </div>
 
-        {/* Top 5 weaknesses & strengths summary */}
+        {/* Summary cards */}
         {!loading && rows.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Card>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                  <h3 className="font-semibold text-sm">Top 5 fraquezas</h3>
-                </div>
-                <div className="space-y-2">
+              <CardContent className="p-4 space-y-2.5">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Top 5 fraquezas</h3>
+                <div className="space-y-1.5">
                   {[...rows]
                     .sort((a, b) => b.priority_score - a.priority_score)
                     .slice(0, 5)
                     .map((row) => (
-                      <div key={row.id} className="flex items-center justify-between text-xs rounded-lg border p-2">
-                        <span className="text-foreground truncate flex-1 mr-2">
-                          {AREA_CONFIG[row.area]?.label || row.area} - {row.topic}
+                      <div key={row.id} className="flex items-center justify-between py-1.5 text-xs">
+                        <span className="text-foreground truncate flex-1 mr-3">
+                          {row.topic}
                         </span>
-                        <Badge variant="destructive" className="text-xs shrink-0">
+                        <span className="text-muted-foreground tabular-nums shrink-0">
                           {row.priority_score.toFixed(2)}
-                        </Badge>
+                        </span>
                       </div>
                     ))}
                 </div>
@@ -266,29 +231,26 @@ export default function ErrorsByTopic() {
             </Card>
 
             <Card>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <h3 className="font-semibold text-sm">Top 5 forças</h3>
-                </div>
-                <div className="space-y-2">
+              <CardContent className="p-4 space-y-2.5">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Top 5 forças</h3>
+                <div className="space-y-1.5">
                   {[...rows]
                     .filter(r => r.attempts > 0)
                     .sort((a, b) => {
                       if (b.level !== a.level) return b.level - a.level;
-                      const accA = a.correct / a.attempts;
-                      const accB = b.correct / b.attempts;
-                      return accB - accA;
+                      return (b.correct / b.attempts) - (a.correct / a.attempts);
                     })
                     .slice(0, 5)
                     .map((row) => {
                       const acc = Math.round((row.correct / row.attempts) * 100);
                       return (
-                        <div key={row.id} className="flex items-center justify-between text-xs rounded-lg border p-2">
-                          <span className="text-foreground truncate flex-1 mr-2">
-                            {AREA_CONFIG[row.area]?.label || row.area} - {row.topic}
+                        <div key={row.id} className="flex items-center justify-between py-1.5 text-xs">
+                          <span className="text-foreground truncate flex-1 mr-3">
+                            {row.topic}
                           </span>
-                          <span className="text-muted-foreground shrink-0">N{row.level} · {acc}%</span>
+                          <span className="text-muted-foreground tabular-nums shrink-0">
+                            N{row.level} · {acc}%
+                          </span>
                         </div>
                       );
                     })}
@@ -298,11 +260,11 @@ export default function ErrorsByTopic() {
           </div>
         )}
 
+        {/* Area cards */}
         {loading ? (
           <div className="space-y-3">
-            <Skeleton className="h-40 w-full rounded-xl" />
-            <Skeleton className="h-40 w-full rounded-xl" />
-            <Skeleton className="h-40 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
           </div>
         ) : grouped.length === 0 ? (
           <Card>
@@ -316,9 +278,11 @@ export default function ErrorsByTopic() {
             </CardContent>
           </Card>
         ) : (
-          grouped.map(([area, list]) => (
-            <AreaCard key={area} area={area} list={list} />
-          ))
+          <div className="space-y-3">
+            {grouped.map(([area, list]) => (
+              <AreaCard key={area} area={area} list={list} />
+            ))}
+          </div>
         )}
       </div>
     </MainLayout>
