@@ -155,6 +155,27 @@ export default function Founders() {
               style={{ color: AMBER, background: AMBER_BG }}>
               
               {vagasRestantes} vagas
+
+              {/* Balão 50% OFF com animação pulse/scale */}
+              <motion.span
+                className="absolute -top-10 -right-16 sm:-right-20 z-10 pointer-events-none"
+                initial={{ scale: 0 }}
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
+                <span
+                  className="inline-block px-2.5 py-1 rounded-full text-xs font-extrabold text-white shadow-lg whitespace-nowrap"
+                  style={{ background: AMBER }}>
+                  50% OFF
+                </span>
+                {/* Seta apontando para baixo */}
+                <span
+                  className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-0 h-0"
+                  style={{
+                    borderLeft: "6px solid transparent",
+                    borderRight: "6px solid transparent",
+                    borderTop: `6px solid ${AMBER}`,
+                  }} />
+              </motion.span>
             </span>{" "}
             para os primeiros membros fundadores do Atlas
           </motion.h1>
@@ -251,8 +272,8 @@ export default function Founders() {
             </Button>
             <p className="text-sm text-muted-foreground">
               <span className="font-semibold" style={{ color: AMBER }}>50% OFF</span>{" "}
-              vitalício · <span className="line-through">R$29,90</span>{" "}
-              <span className="font-bold text-foreground">R$14,95/mês</span>
+              vitalício · <span className="line-through">R$49,90</span>{" "}
+              <span className="font-bold text-foreground">R$24,95/mês</span>
             </p>
           </motion.div>
 
@@ -300,7 +321,7 @@ export default function Founders() {
                   <Accordion type="single" collapsible className="space-y-2">
                     {FAQ_ITEMS.map((item, i) => {
                   const answer = i === 2 ?
-                  `Atualmente restam ${vagasRestantes} de ${VAGAS_TOTAL} vagas. Quando acabarem, o preço será o valor cheio de R$49,90/mês.` :
+                  `Atualmente restam ${vagasRestantes} de ${VAGAS_TOTAL} vagas. Quando acabarem, o preço será o valor cheio de R$49,90/mês sem desconto.` :
                   item.a;
                   return (
                     <AccordionItem
