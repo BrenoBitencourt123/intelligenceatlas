@@ -134,6 +134,21 @@ function shuffleArray<T>(items: T[]): T[] {
   return [...items].sort(() => Math.random() - 0.5);
 }
 
+/**
+ * Detect if a response was likely a guess based on reading time.
+ * Uses ~240 wpm (~5 chars/word) as baseline reading speed.
+ * Returns true if time spent is less than 40% of estimated reading time.
+ */
+function isLikelyGuess(
+  statement: string,
+  alternatives: { text: string }[],
+  timeSpentSec: number,
+): boolean {
+  const totalChars = statement.length + alternatives.reduce((sum, a) => sum + (a.text?.length ?? 0), 0);
+  const estimatedReadSec = Math.max(8, (totalChars / 5) / 4);
+  return timeSpentSec < estimatedReadSec * 0.4;
+}
+
 type ProfileRow = {
   area: string;
   topic: string;
@@ -416,11 +431,15 @@ export function useStudySession() {
   );
 
   const syncTopicProfile = useCallback(
-    async (params: { question: Question; selectedLetter: string | null; isCorrect: boolean; timeSpentSec: number }) => {
+    async (params: { question: Question; selectedLetter: string | null; isCorrect: boolean; timeSpentSec: number; wasGuess?: boolean }) => {
       if (!user) return;
-      const { question, selectedLetter, isCorrect, timeSpentSec } = params;
+      const { question, selectedLetter, isCorrect, timeSpentSec, wasGuess = false } = params;
       const answer = selectedLetter ?? "dont_know";
       const nowIso = new Date().toISOString();
+
+      // Guess multipliers: attenuate the impact on the algorithm
+      const correctWeight = wasGuess ? 0.3 : 1;
+      const wrongWeight = wasGuess ? 0.5 : 1;
 
       const { error: historyError } = await supabase.from("user_question_history").insert({
         user_id: user.id,
@@ -453,20 +472,23 @@ export function useStudySession() {
       }
 
       const attempts = (existing?.attempts ?? 0) + 1;
-      const correct = (existing?.correct ?? 0) + (isCorrect ? 1 : 0);
+      const correct = (existing?.correct ?? 0) + (isCorrect ? correctWeight : 0);
       const dontKnowAnswer = selectedLetter === null;
-      const wrong = (existing?.wrong ?? 0) + (!isCorrect ? 1 : 0);
+      const wrong = (existing?.wrong ?? 0) + (!isCorrect ? wrongWeight : 0);
       const dontKnow = (existing?.dont_know ?? 0) + (dontKnowAnswer ? 1 : 0);
 
       let level = existing?.level ?? 1;
       let correctStreak = existing?.correct_streak ?? 0;
 
       if (isCorrect) {
-        correctStreak += 1;
-        if (correctStreak >= 3) {
-          level = Math.min(3, level + 1);
-          correctStreak = 0;
+        if (!wasGuess) {
+          correctStreak += 1;
+          if (correctStreak >= 3) {
+            level = Math.min(3, level + 1);
+            correctStreak = 0;
+          }
         }
+        // If it was a guess, don't increment streak
       } else {
         correctStreak = 0;
         if (dontKnowAnswer) {
@@ -536,7 +558,7 @@ export function useStudySession() {
                 .maybeSingle();
 
               const newAttempts = (ex?.attempts ?? 0) + 1;
-              const newCorrect = (ex?.correct ?? 0) + (isCorrect ? 1 : 0);
+              const newCorrect = (ex?.correct ?? 0) + (isCorrect ? correctWeight : 0);
               // Bayesian smoothing: score = (correct + 1) / (attempts + 2)
               const masteryScore = (newCorrect + 1) / (newAttempts + 2);
               const newAvgTime = ex?.avg_time_sec
@@ -899,8 +921,25 @@ export function useStudySession() {
   );
 
   const answerQuestion = useCallback(
-    async (selectedLetter: string | null, autoFlashcard = true) => {
-      if (!currentQuestion || showFeedback) return;
+    async (selectedLetter: string | null, autoFlashcard = true): Promise<{ submitted: boolean; suspectedGuess: boolean }> => {
+      if (!currentQuestion || showFeedback) return { submitted: false, suspectedGuess: false };
+
+      const isCorrect = selectedLetter === currentQuestion.correct_answer;
+      const timeSpentSec = Math.max(1, Math.round((Date.now() - questionStartedAt) / 1000));
+
+      // Check for suspected guess (only for actual answer selections, not "don't know")
+      if (selectedLetter !== null && isLikelyGuess(currentQuestion.statement, currentQuestion.alternatives, timeSpentSec)) {
+        return { submitted: false, suspectedGuess: true };
+      }
+
+      return submitAnswer(selectedLetter, autoFlashcard, false);
+    },
+    [currentQuestion, questionStartedAt, showFeedback],
+  );
+
+  const submitAnswer = useCallback(
+    async (selectedLetter: string | null, autoFlashcard: boolean, wasGuess: boolean): Promise<{ submitted: boolean; suspectedGuess: boolean }> => {
+      if (!currentQuestion || showFeedback) return { submitted: false, suspectedGuess: false };
 
       const isCorrect = selectedLetter === currentQuestion.correct_answer;
       const timeSpentSec = Math.max(1, Math.round((Date.now() - questionStartedAt) / 1000));
@@ -941,6 +980,7 @@ export function useStudySession() {
           selectedLetter,
           isCorrect,
           timeSpentSec,
+          wasGuess,
         }).then(() => {});
       }
 
@@ -948,6 +988,8 @@ export function useStudySession() {
       if (!isCorrect && autoFlashcard) {
         await generateFlashcard(currentQuestion, selectedLetter === null ? "dont_know" : "wrong");
       }
+
+      return { submitted: true, suspectedGuess: false };
     },
     [
       answers,
@@ -962,6 +1004,13 @@ export function useStudySession() {
       syncTopicProfile,
       user,
     ],
+  );
+
+  const confirmAnswer = useCallback(
+    async (selectedLetter: string, autoFlashcard: boolean, wasGuess: boolean) => {
+      return submitAnswer(selectedLetter, autoFlashcard, wasGuess);
+    },
+    [submitAnswer],
   );
 
   const nextQuestion = useCallback(async () => {
@@ -1074,6 +1123,7 @@ export function useStudySession() {
     exitSessionView,
     startPreviewQuestion,
     answerQuestion,
+    confirmAnswer,
     nextQuestion,
     resetSession,
   };

@@ -57,9 +57,11 @@ const Objectives = () => {
     exitSessionView,
     startPreviewQuestion,
     answerQuestion,
+    confirmAnswer,
     nextQuestion,
     resetSession,
   } = useStudySession();
+  const [pendingGuessAnswer, setPendingGuessAnswer] = useState<string | null>(null);
   const { available: pdfAvailable, openPdf, loading: pdfLoading } = useExamPdf(currentQuestion?.year);
   const { pedagogy, loading: pedagogyLoading } = useQuestionPedagogy(
     currentQuestion ? {
@@ -393,16 +395,26 @@ const Objectives = () => {
                             } else if (currentAnswer?.selected === alt.letter && !currentAnswer.correct) {
                               extraClass = 'border-red-500 bg-red-500/10 cursor-default';
                             }
+                          } else if (pendingGuessAnswer === alt.letter) {
+                            extraClass = 'border-primary bg-primary/10 ring-2 ring-primary/30';
                           } else if (currentAnswer?.selected === alt.letter) {
                             extraClass = 'border-primary bg-primary/10';
                           }
+
+                          const handleAltClick = async () => {
+                            if (showFeedback || pendingGuessAnswer) return;
+                            const result = await answerQuestion(alt.letter, hasAutoFlashcards);
+                            if (result.suspectedGuess) {
+                              setPendingGuessAnswer(alt.letter);
+                            }
+                          };
 
                           return (
                             <button
                               key={alt.letter}
                               className={`w-full text-left p-3 rounded-lg border transition-colors flex items-start gap-3 ${extraClass}`}
-                              onClick={() => !showFeedback && answerQuestion(alt.letter, hasAutoFlashcards)}
-                              disabled={showFeedback}
+                              onClick={handleAltClick}
+                              disabled={showFeedback || !!pendingGuessAnswer}
                             >
                               <span className="font-bold text-sm shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center">
                                 {alt.letter}
@@ -435,7 +447,47 @@ const Objectives = () => {
                   );
                 })()}
 
-                {/* Post-answer pedagogical blocks - Pro only */}
+                {/* Guess confirmation card */}
+                {pendingGuessAnswer && !showFeedback && (
+                  <div className="rounded-lg border border-muted bg-muted/30 p-4 space-y-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+                    <div className="flex items-start gap-2.5">
+                      <HelpCircle className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">Isso foi um chute?</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          O Atlas aprende com suas respostas para personalizar seu estudo. Respostas honestas nos ajudam a criar recomendações melhores para você.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={async () => {
+                          const letter = pendingGuessAnswer;
+                          setPendingGuessAnswer(null);
+                          await confirmAnswer(letter, hasAutoFlashcards, false);
+                        }}
+                      >
+                        Não, respondi consciente
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1"
+                        onClick={async () => {
+                          const letter = pendingGuessAnswer;
+                          setPendingGuessAnswer(null);
+                          await confirmAnswer(letter, hasAutoFlashcards, true);
+                        }}
+                      >
+                        Sim, foi chute
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {showFeedback && hasKnowledgeCapsules && (
                   <>
                     {/* Tags */}
