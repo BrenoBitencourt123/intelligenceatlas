@@ -19,6 +19,7 @@ import ErrorsByTopic from "./pages/ErrorsByTopic";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
+import Founders from "./pages/Founders";
 
 const queryClient = new QueryClient();
 
@@ -113,6 +114,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/fundadores" element={<Founders />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -24,6 +24,14 @@ export const DISCOUNT_COUPONS = {
   12: { id: 'HZWYfKsO', percent: 20, label: '12 meses' },
 } as const;
 
+// Founding Members coupon: 50% forever, max 20 redemptions
+export const FOUNDERS_COUPON = {
+  id: 'oPJ7c2xK',
+  percent: 50,
+  label: 'Membro Fundador - 50%',
+  maxRedemptions: 20,
+} as const;
+
 // Calculate months until next ENEM (November)
 export function getMonthsUntilEnem(): number {
   const now = new Date();
