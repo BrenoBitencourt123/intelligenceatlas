@@ -60,26 +60,9 @@ function useFounderSlots() {
 
 /* ─── Data ─── */
 const BENEFITS = [
-  {
-    icon: Target,
-    title: "Estudo adaptativo",
-    desc: "Questões reais do ENEM selecionadas por IA de acordo com suas fraquezas",
-  },
-  {
-    icon: BookOpen,
-    title: "Redações com IA",
-    desc: "Correção detalhada por competência com feedback instantâneo",
-  },
-  {
-    icon: Brain,
-    title: "Flashcards inteligentes",
-    desc: "Revisão espaçada que se adapta ao seu ritmo de aprendizado",
-  },
-  {
-    icon: Star,
-    title: "50% para sempre",
-    desc: "Pague metade — hoje e em todas as renovações futuras. Sem pegadinha.",
-  },
+  { icon: Target, text: "Estudo adaptativo com questões reais do ENEM" },
+  { icon: BookOpen, text: "Redações corrigidas por IA por competência" },
+  { icon: Brain, text: "Flashcards inteligentes com revisão espaçada" },
 ];
 
 const FOUNDER_PERKS = [
@@ -259,51 +242,45 @@ function VideoSection({ onCTAClick }: { onCTAClick: () => void }) {
 /* ─── Benefits Section ─── */
 function BenefitsSection() {
   return (
-    <section className="px-6 pb-20 max-w-4xl mx-auto">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl sm:text-4xl font-bold mb-3" style={{ color: C.text }}>
-          Tudo que você precisa para o ENEM
-        </h2>
-        <p className="text-lg" style={{ color: C.textMuted }}>
-          Ferramentas inteligentes que se adaptam a você
-        </p>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        {BENEFITS.map((b, i) => (
-          <motion.div
-            key={b.title}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-30px" }}
-            transition={{ duration: 0.5, delay: i * 0.1 }}
-          >
-          <div
-            className="group p-7 rounded-2xl border transition-all hover:-translate-y-0.5"
-            style={{
-              backgroundColor: C.bgCard,
-              borderColor: C.border,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = C.bgCardHover;
-              e.currentTarget.style.borderColor = C.green;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = C.bgCard;
-              e.currentTarget.style.borderColor = C.border;
-            }}
-          >
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-              style={{ backgroundColor: "hsla(150,60%,45%,0.12)" }}
-            >
-              <b.icon className="w-6 h-6" style={{ color: C.green }} />
+    <section className="px-6 pb-20 max-w-3xl mx-auto">
+      <motion.div
+        className="p-8 sm:p-10 rounded-2xl relative overflow-hidden border"
+        style={{ backgroundColor: C.bgCard, borderColor: C.border }}
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-30px" }}
+        transition={{ duration: 0.5 }}
+      >
+        <div
+          className="absolute top-0 left-0 w-40 h-40 rounded-full opacity-10 blur-[60px]"
+          style={{ backgroundColor: C.greenGlow }}
+        />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: C.green }}>
+              <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <h3 className="font-bold text-lg mb-1.5" style={{ color: C.text }}>{b.title}</h3>
-            <p className="text-sm leading-relaxed" style={{ color: C.textMuted }}>{b.desc}</p>
+            <h3 className="text-xl font-bold" style={{ color: C.text }}>
+              Tudo que você precisa para o ENEM
+            </h3>
           </div>
-          </motion.div>
-        ))}
-      </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {BENEFITS.map((item) => (
+              <div key={item.text} className="flex items-start gap-3">
+                <div
+                  className="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: "hsla(150,60%,45%,0.12)" }}
+                >
+                  <item.icon className="w-4 h-4" style={{ color: C.green }} />
+                </div>
+                <span className="text-sm leading-relaxed" style={{ color: C.textMuted }}>
+                  {item.text}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
     </section>
   );
 }
