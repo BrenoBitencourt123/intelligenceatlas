@@ -763,7 +763,7 @@ const Objectives = () => {
                     <Button
                       className="w-full gap-2"
                       disabled={schedule.isLoading}
-                      onClick={() => startSession(schedule.area, hasFullSessionAccess ? undefined : freeQuestionLimit)}
+                      onClick={() => startSession(effectiveArea, hasFullSessionAccess ? undefined : freeQuestionLimit)}
                     >
                       Iniciar Sessão
                       <ArrowRight className="h-4 w-4" />
