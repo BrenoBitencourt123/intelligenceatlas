@@ -494,8 +494,8 @@ export default function Founders() {
 
       <HeroSection remaining={remaining} loading={slotsLoading} />
       <VideoSection onCTAClick={() => setModalOpen(true)} />
-      <BenefitsSection />
       <FounderPerksSection />
+      <BenefitsSection />
 
       {/* Footer */}
       <footer className="py-8 text-center border-t" style={{ borderColor: C.border }}>
