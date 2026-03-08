@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowRight, ArrowLeft, Check, Percent } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function FounderSignup() {
@@ -35,11 +35,9 @@ export default function FounderSignup() {
     }
 
     setLoading(true);
-    const { error } = await supabase.
-    from("vip_leads" as any).
-    insert([
-    { name: name.trim(), email: email.trim(), whatsapp: phoneClean }] as
-    any);
+    const { error } = await supabase
+      .from("vip_leads" as any)
+      .insert([{ name: name.trim(), email: email.trim(), whatsapp: phoneClean }] as any);
 
     setLoading(false);
     if (error) {
@@ -50,150 +48,180 @@ export default function FounderSignup() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-5 max-w-2xl mx-auto w-full">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      {/* ─── Header ─── */}
+      <header className="flex items-center justify-between px-6 py-5 max-w-lg mx-auto w-full">
         <button
-          onClick={() => step === 1 ? navigate("/fundadores") : setStep(1)}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          
+          onClick={() => (step === 1 ? navigate("/fundadores") : setStep(1))}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
           <ArrowLeft className="w-4 h-4" />
           Voltar
         </button>
-        <span className="text-sm text-muted-foreground">
-          Passo {step} de 2
+        <span className="text-sm font-bold tracking-tight text-foreground">
+          Atlas
+        </span>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {step}/2
         </span>
       </header>
 
-      {/* Progress bar */}
-      <div className="max-w-2xl mx-auto w-full px-6">
-        <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+      {/* ─── Progress ─── */}
+      <div className="max-w-lg mx-auto w-full px-6">
+        <div className="h-0.5 bg-secondary rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-[hsl(25,95%,53%)] rounded-full"
+            className="h-full bg-foreground rounded-full"
             initial={{ width: "50%" }}
             animate={{ width: step === 1 ? "50%" : "100%" }}
-            transition={{ duration: 0.4, ease: "easeOut" }} />
-          
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          />
         </div>
       </div>
 
-      {/* Content */}
+      {/* ─── Content ─── */}
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="max-w-md w-full">
           <AnimatePresence mode="wait">
-            {step === 1 ?
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6">
-              
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[hsl(25,95%,53%/0.1)] text-[hsl(25,95%,40%)]">
-                    50%OFF vitalício
-                  </div>
-                  <h1 className="text-2xl font-bold text-foreground">
-                    Garanta sua vaga de fundador
+            {step === 1 ? (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.28 }}
+                className="space-y-8"
+              >
+                {/* Header text */}
+                <div className="space-y-3">
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card text-xs font-medium text-muted-foreground">
+                    Membro Fundador · 50% off vitalício
+                  </span>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+                    Garanta sua vaga
                   </h1>
-                  <p className="text-muted-foreground">
-                    Preencha seus dados para receber o cupom exclusivo de 50% de desconto vitalício.
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Preencha seus dados para receber o cupom exclusivo de 50%
+                    de desconto vitalício no Atlas.
                   </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Form */}
+                <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">Nome</label>
+                    <label className="text-sm font-medium text-foreground">
+                      Nome completo
+                    </label>
                     <Input
-                    placeholder="Seu nome completo"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    maxLength={100}
-                    required
-                    className="h-12 rounded-xl" />
-                  
+                      placeholder="Seu nome"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      maxLength={100}
+                      required
+                      className="h-12 rounded-xl bg-card border-border focus-visible:ring-foreground"
+                    />
                   </div>
+
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">Seu melhor E-mail</label>
+                    <label className="text-sm font-medium text-foreground">
+                      E-mail
+                    </label>
                     <Input
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    maxLength={255}
-                    required
-                    className="h-12 rounded-xl" />
-                  
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      maxLength={255}
+                      required
+                      className="h-12 rounded-xl bg-card border-border focus-visible:ring-foreground"
+                    />
                   </div>
+
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">WhatsApp</label>
+                    <label className="text-sm font-medium text-foreground">
+                      WhatsApp
+                    </label>
                     <Input
-                    type="tel"
-                    placeholder="(11) 99999-9999"
-                    value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value)}
-                    maxLength={15}
-                    required
-                    className="h-12 rounded-xl" />
-                  
+                      type="tel"
+                      placeholder="(11) 99999-9999"
+                      value={whatsapp}
+                      onChange={(e) => setWhatsapp(e.target.value)}
+                      maxLength={15}
+                      required
+                      className="h-12 rounded-xl bg-card border-border focus-visible:ring-foreground"
+                    />
                   </div>
+
                   <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(25,95%,53%)] border-0"
-                  disabled={loading}>
-                  
+                    type="submit"
+                    size="lg"
+                    className="w-full h-12 text-base font-bold rounded-xl bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98] transition-transform"
+                    disabled={loading}
+                  >
                     {loading ? "Enviando..." : "Continuar"}
-                    {!loading && <ArrowRight className="ml-2 w-5 h-5" />}
+                    {!loading && <ArrowRight className="ml-2 w-4 h-4" />}
                   </Button>
+
                   <p className="text-xs text-center text-muted-foreground">
                     Seus dados estão seguros e não serão compartilhados.
                   </p>
                 </form>
-              </motion.div> :
-
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6 text-center">
-              
-                <div className="relative mx-auto w-20 h-20">
-                  <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-[hsl(25,95%,53%)]" />
-                  <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-[hsl(25,95%,53%)]">
-                    <Check className="w-9 h-9 text-white" />
-                  </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.28 }}
+                className="space-y-8 text-center"
+              >
+                {/* Success icon */}
+                <div className="mx-auto w-16 h-16 rounded-full bg-foreground flex items-center justify-center">
+                  <Check className="w-8 h-8 text-background" />
                 </div>
 
-                <div className="space-y-2">
-                  <h1 className="text-2xl font-bold text-foreground">
-                    Inscrição confirmada! 🎉
+                {/* Text */}
+                <div className="space-y-3">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                    Inscrição confirmada!
                   </h1>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Agora entre no nosso grupo exclusivo no WhatsApp para receber seu cupom
-                    de <span className="font-bold text-foreground">50% vitalício</span> e
-                    todas as novidades em primeira mão.
+                  <p className="text-muted-foreground leading-relaxed max-w-sm mx-auto">
+                    Agora entre no nosso grupo exclusivo no WhatsApp para
+                    receber seu cupom de{" "}
+                    <span className="font-semibold text-foreground">
+                      50% vitalício
+                    </span>{" "}
+                    e todas as novidades em primeira mão.
                   </p>
                 </div>
 
-                <Button
-                size="lg"
-                className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(25,95%,53%)] border-0"
-                onClick={() =>
-                window.open("https://chat.whatsapp.com/SEU_LINK_AQUI", "_blank")
-                }>
-                
-                  Entrar no grupo VIP
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
+                {/* CTA */}
+                <div className="space-y-3">
+                  <Button
+                    size="lg"
+                    className="w-full h-12 text-base font-bold rounded-xl bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98] transition-transform"
+                    onClick={() =>
+                      window.open(
+                        "https://chat.whatsapp.com/SEU_LINK_AQUI",
+                        "_blank"
+                      )
+                    }
+                  >
+                    Entrar no grupo VIP
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                  <button
+                    onClick={() => navigate("/")}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+                  >
+                    Ir para o Atlas
+                  </button>
+                </div>
               </motion.div>
-            }
+            )}
           </AnimatePresence>
         </div>
       </main>
-    </div>);
-
+    </div>
+  );
 }
