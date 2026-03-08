@@ -128,21 +128,6 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <main className="flex-1 px-5 py-10 sm:py-16">
         <div className="max-w-3xl mx-auto w-full space-y-8">
-          {/* Urgency badge */}
-          <motion.div
-            className="flex justify-center"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <div
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
-              style={{ background: AMBER_BG, color: AMBER }}
-            >
-              <Flame className="w-4 h-4" />
-              Apenas {VAGAS_RESTANTES} vagas para membros fundadores
-            </div>
-          </motion.div>
 
           {/* Headline */}
           <motion.h1
