@@ -116,6 +116,7 @@ const App = () => (
               }
             />
             <Route path="/fundadores" element={<Founders />} />
+            <Route path="/fundadores/cadastro" element={<FounderSignup />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
