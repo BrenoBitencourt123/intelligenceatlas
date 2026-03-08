@@ -291,7 +291,11 @@ export default function Founders() {
                     Perguntas frequentes
                   </h2>
                   <Accordion type="single" collapsible className="space-y-2">
-                    {FAQ_ITEMS.map((item, i) => (
+                    {FAQ_ITEMS.map((item, i) => {
+                      const answer = i === 2
+                        ? `Atualmente restam ${vagasRestantes} de ${VAGAS_TOTAL} vagas. Quando acabarem, o preço será o valor cheio de R$49,90/mês.`
+                        : item.a;
+                      return (
                       <AccordionItem
                         key={i}
                         value={`faq-${i}`}
@@ -301,10 +305,11 @@ export default function Founders() {
                           {item.q}
                         </AccordionTrigger>
                         <AccordionContent className="text-sm text-muted-foreground pb-4">
-                          {item.a}
+                          {answer}
                         </AccordionContent>
                       </AccordionItem>
-                    ))}
+                      );
+                    })}
                   </Accordion>
                 </section>
               </motion.div>
