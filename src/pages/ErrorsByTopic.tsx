@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertCircle, CheckCircle2, Clock, TrendingUp, BookOpen, Brain, Target, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, AlertCircle, CheckCircle2, Clock, TrendingUp, BookOpen, Brain, Target, Calendar, ChevronDown, ChevronUp, TrendingDown, Shield } from 'lucide-react';
 
 interface TopicRow {
   id: string;
