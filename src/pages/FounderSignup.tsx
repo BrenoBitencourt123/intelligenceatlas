@@ -115,7 +115,7 @@ export default function FounderSignup() {
                   
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">Seu melhor E-mail.</label>
+                    <label className="text-sm font-medium text-foreground">Seu melhor E-mail</label>
                     <Input
                     type="email"
                     placeholder="seu@email.com"
