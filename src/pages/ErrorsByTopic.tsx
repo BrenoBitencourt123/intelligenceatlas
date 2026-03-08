@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertCircle, CheckCircle2, Clock, TrendingUp, BookOpen, Brain, Target, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, AlertCircle, CheckCircle2, Clock, TrendingUp, BookOpen, Brain, Target, Calendar, ChevronDown, ChevronUp, TrendingDown, Shield } from 'lucide-react';
 
 interface TopicRow {
   id: string;
@@ -101,7 +101,7 @@ function AreaCard({ area, list }: { area: string; list: TopicRow[] }) {
             <Button
               size="sm"
               variant="outline"
-              className="text-xs hidden sm:flex"
+              className="text-xs"
               onClick={e => { e.stopPropagation(); navigate('/objetivas'); }}
             >
               Estudar
@@ -237,6 +237,66 @@ export default function ErrorsByTopic() {
             </Badge>
           )}
         </div>
+
+        {/* Top 5 weaknesses & strengths summary */}
+        {!loading && rows.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-destructive" />
+                  <h3 className="font-semibold text-sm">Top 5 fraquezas</h3>
+                </div>
+                <div className="space-y-2">
+                  {[...rows]
+                    .sort((a, b) => b.priority_score - a.priority_score)
+                    .slice(0, 5)
+                    .map((row) => (
+                      <div key={row.id} className="flex items-center justify-between text-xs rounded-lg border p-2">
+                        <span className="text-foreground truncate flex-1 mr-2">
+                          {AREA_CONFIG[row.area]?.label || row.area} - {row.topic}
+                        </span>
+                        <Badge variant="destructive" className="text-xs shrink-0">
+                          {row.priority_score.toFixed(2)}
+                        </Badge>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <h3 className="font-semibold text-sm">Top 5 forças</h3>
+                </div>
+                <div className="space-y-2">
+                  {[...rows]
+                    .filter(r => r.attempts > 0)
+                    .sort((a, b) => {
+                      if (b.level !== a.level) return b.level - a.level;
+                      const accA = a.correct / a.attempts;
+                      const accB = b.correct / b.attempts;
+                      return accB - accA;
+                    })
+                    .slice(0, 5)
+                    .map((row) => {
+                      const acc = Math.round((row.correct / row.attempts) * 100);
+                      return (
+                        <div key={row.id} className="flex items-center justify-between text-xs rounded-lg border p-2">
+                          <span className="text-foreground truncate flex-1 mr-2">
+                            {AREA_CONFIG[row.area]?.label || row.area} - {row.topic}
+                          </span>
+                          <span className="text-muted-foreground shrink-0">N{row.level} · {acc}%</span>
+                        </div>
+                      );
+                    })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {loading ? (
           <div className="space-y-3">

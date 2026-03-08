@@ -195,43 +195,6 @@ const Today = () => {
             </Card>
           )}
 
-          {!stats.isLoading && !inDiagnosticMode && stats.topWeaknesses.length > 0 && (
-            <>
-              <Card className="bg-card">
-                <CardContent className="p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Top 5 fraquezas</h3>
-                    <Button variant="outline" size="sm" onClick={() => navigate('/errors')}>Ver por topico</Button>
-                  </div>
-                  <div className="space-y-2">
-                    {stats.topWeaknesses.map((item: any, idx: number) => (
-                      <div key={`${item.area}-${item.topic}-${idx}`} className="flex items-center justify-between text-sm rounded border p-2">
-                        <span><span className="capitalize">{item.area}</span> - {item.topic}{item.subtopic ? ` > ${item.subtopic}` : ''}</span>
-                        <span className="text-muted-foreground">Prioridade {item.priority.toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-card">
-                <CardContent className="p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Top 5 forcas</h3>
-                    <Badge variant="outline">{stats.overdueReviews} revisoes vencidas</Badge>
-                  </div>
-                  <div className="space-y-2">
-                    {stats.topStrengths.map((item: any, idx: number) => (
-                      <div key={`${item.area}-${item.topic}-${idx}`} className="flex items-center justify-between text-sm rounded border p-2">
-                        <span><span className="capitalize">{item.area}</span> - {item.topic}{item.subtopic ? ` > ${item.subtopic}` : ''}</span>
-                        <span className="text-muted-foreground">N{item.level} - {Math.round(item.accuracy * 100)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
         </div>
       </div>
     </MainLayout>
