@@ -125,7 +125,7 @@ export default function Founders() {
           >
             <Button
               size="lg"
-              className="h-14 px-10 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(142,71%,45%)] border-0"
+              className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(142,71%,45%)] border-0"
               onClick={() => navigate("/fundadores/cadastro")}
             >
               Começar agora
