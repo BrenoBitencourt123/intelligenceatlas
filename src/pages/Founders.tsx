@@ -156,8 +156,8 @@ export default function Founders() {
 
               {/* Balão 50% OFF centralizado acima, levemente diagonal */}
               <span
-                className="absolute left-1/2 -translate-x-1/2 -top-11 z-10 pointer-events-none"
-                style={{ rotate: "-6deg" }}>
+                className="absolute left-1/2 -translate-x-1/2 -top-14 z-10 pointer-events-none"
+                style={{ rotate: "6deg" }}>
                 <motion.span
                   className="relative inline-block will-change-transform"
                   initial={false}
@@ -263,13 +263,13 @@ export default function Founders() {
             
             <Button
               size="lg"
-              className="relative h-14 px-8 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] border-0 overflow-visible"
+              className="relative h-14 px-10 text-lg font-bold rounded-full text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] border-0 overflow-visible"
               style={{ background: AMBER }}
               onClick={() => navigate("/fundadores/cadastro")}>
               
               {/* Pulse/glow ring */}
               <span
-                className="absolute inset-0 rounded-2xl animate-ping opacity-20"
+                className="absolute inset-0 rounded-full animate-ping opacity-20"
                 style={{ background: AMBER }} />
               
               <span className="relative z-10 flex items-center">
@@ -277,10 +277,8 @@ export default function Founders() {
                 <ArrowRight className="ml-2 w-5 h-5" />
               </span>
             </Button>
-            <p className="text-sm text-muted-foreground">
-              <span className="font-semibold" style={{ color: AMBER }}>50% OFF</span>{" "}
-              vitalício · <span className="line-through">R$49,90</span>{" "}
-              <span className="font-bold text-foreground">R$24,95/mês</span>
+            <p className="text-sm font-medium text-muted-foreground">
+              Entre no Grupo VIP
             </p>
           </motion.div>
 
