@@ -472,20 +472,23 @@ export function useStudySession() {
       }
 
       const attempts = (existing?.attempts ?? 0) + 1;
-      const correct = (existing?.correct ?? 0) + (isCorrect ? 1 : 0);
+      const correct = (existing?.correct ?? 0) + (isCorrect ? correctWeight : 0);
       const dontKnowAnswer = selectedLetter === null;
-      const wrong = (existing?.wrong ?? 0) + (!isCorrect ? 1 : 0);
+      const wrong = (existing?.wrong ?? 0) + (!isCorrect ? wrongWeight : 0);
       const dontKnow = (existing?.dont_know ?? 0) + (dontKnowAnswer ? 1 : 0);
 
       let level = existing?.level ?? 1;
       let correctStreak = existing?.correct_streak ?? 0;
 
       if (isCorrect) {
-        correctStreak += 1;
-        if (correctStreak >= 3) {
-          level = Math.min(3, level + 1);
-          correctStreak = 0;
+        if (!wasGuess) {
+          correctStreak += 1;
+          if (correctStreak >= 3) {
+            level = Math.min(3, level + 1);
+            correctStreak = 0;
+          }
         }
+        // If it was a guess, don't increment streak
       } else {
         correctStreak = 0;
         if (dontKnowAnswer) {
