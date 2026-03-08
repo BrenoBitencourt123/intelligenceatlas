@@ -131,8 +131,8 @@ export default function Founders() {
       </div>
 
       {/* ─── Hero ─── */}
-      <main className="flex-1 px-5 py-10 sm:py-16">
-        <div className="max-w-3xl mx-auto w-full space-y-8">
+      <main className="flex-1 px-5 py-12 sm:py-16">
+        <div className="max-w-3xl mx-auto w-full space-y-6">
 
           {/* Headline */}
           <motion.h1
@@ -142,7 +142,12 @@ export default function Founders() {
             transition={{ duration: 0.5, delay: 0.05 }}
           >
             Restam{" "}
-            <span style={{ color: AMBER }}>{VAGAS_RESTANTES} vagas</span>{" "}
+            <span
+              className="relative inline-block px-2 py-0.5 rounded-md"
+              style={{ color: AMBER, background: AMBER_BG }}
+            >
+              {VAGAS_RESTANTES} vagas
+            </span>{" "}
             para os primeiros membros fundadores do Atlas
           </motion.h1>
 
