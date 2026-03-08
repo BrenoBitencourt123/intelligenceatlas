@@ -152,26 +152,6 @@ export default function Founders() {
             <span className="font-semibold text-foreground">50% de desconto vitalício</span>.
           </motion.p>
 
-          {/* Progress bar */}
-          <motion.div
-            className="max-w-md mx-auto space-y-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-          >
-            <div className="flex justify-between text-xs font-medium">
-              <span className="text-muted-foreground">Vagas preenchidas</span>
-              <span style={{ color: AMBER }} className="font-bold">
-                {VAGAS_RESTANTES}/{VAGAS_TOTAL} restantes
-              </span>
-            </div>
-            <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${progressPct}%`, background: AMBER }}
-              />
-            </div>
-          </motion.div>
 
           {/* Video placeholder */}
           <motion.div
