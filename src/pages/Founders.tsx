@@ -132,7 +132,7 @@ export default function Founders() {
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             {!slotsLoading && remaining !== null && (
-              <p className="text-sm text-muted-foreground mt-3">
+              <p className="text-sm text-muted-foreground mt-3 text-center">
                 🔥 Restam apenas <span className="font-bold text-foreground">{remaining} vagas</span>
               </p>
             )}
