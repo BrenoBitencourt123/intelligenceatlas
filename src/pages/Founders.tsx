@@ -148,18 +148,16 @@ export default function Founders() {
         className="min-h-screen flex items-center justify-center px-5 pt-14"
       >
         <div className="max-w-2xl mx-auto text-center space-y-8">
-          {/* Badge */}
-          <motion.div
+          {/* Eyebrow */}
+          <motion.p
+            className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
             custom={0}
           >
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border bg-card text-xs font-medium text-muted-foreground tracking-wide">
-              <Sparkles className="w-3.5 h-3.5" />
-              20 vagas · 50% off vitalício
-            </span>
-          </motion.div>
+            Inteligência Atlas · Lançamento exclusivo
+          </motion.p>
 
           {/* Headline */}
           <motion.h1
@@ -169,18 +167,29 @@ export default function Founders() {
             animate="visible"
             custom={1}
           >
-            Estude para o ENEM
+            Seja um dos 20
             <br />
-            <span className="text-muted-foreground">com inteligência</span>
+            <span className="text-muted-foreground">Membros Fundadores</span>
           </motion.h1>
 
-          {/* Sub */}
+          {/* Oferta em destaque */}
           <motion.p
-            className="text-lg sm:text-xl text-muted-foreground max-w-md mx-auto leading-relaxed"
+            className="text-2xl sm:text-3xl font-bold"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
             custom={2}
+          >
+            50% de desconto — para sempre.
+          </motion.p>
+
+          {/* Explicação do produto */}
+          <motion.p
+            className="text-base sm:text-lg text-muted-foreground max-w-md mx-auto leading-relaxed"
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            custom={3}
           >
             Um sistema que adapta o estudo às suas fraquezas — questões,
             redação e revisão, tudo com IA.
@@ -192,7 +201,7 @@ export default function Founders() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            custom={3}
+            custom={4}
           >
             <Button
               size="lg"

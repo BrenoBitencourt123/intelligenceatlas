@@ -1,29 +1,59 @@
 
-## Ajuste de hierarquia no Hero — Founders.tsx
 
-### O problema
-O hero atual prioriza o produto ("Estude para o ENEM com inteligência") e relega o conceito de membros fundadores a um badge pequeno em texto muted. Quem chega na página sem contexto não entende imediatamente que está diante de uma oportunidade exclusiva com 20 vagas.
+## Plano: Editor Visual de Questoes estilo Simulado
 
-### A correção (só o hero, sem redesign completo)
+O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
 
-Inverter a hierarquia de informação:
+### Arquitetura
 
-**Antes:**
-- Badge: "20 vagas · 50% off vitalício" (pequeno, muted)
-- H1: "Estude para o ENEM com inteligência" (protagonista)
-- Sub: explicação do produto
+```text
+PreviewStage (refatorado)
+├── QuestionEditor (painel esquerdo — scrollavel)
+│   ├── Header: "Q.1 de 90" + badges (area, idioma)
+│   ├── Statement editor (textarea com suporte a {{IMG_N}})
+│   │   └── Inline image slots (drag/drop, paste, upload)
+│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
+│   ├── Metadados: area, resposta correta, lingua estrangeira
+│   └── Navegacao: < Anterior | Proxima >
+│
+└── Sidebar (painel direito — fixo)
+    ├── Status summary (OK / Com erro / Vazias)
+    ├── Grid de numeros (1-90 ou 91-180)
+    │   ├── Verde: questao OK (tem enunciado + gabarito)
+    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
+    │   ├── Vermelho: questao vazia / critica
+    │   ├── Borda: questao atual selecionada
+    │   └── Cinza: questao nao importada
+    └── Botao "Revisar e Importar"
+```
 
-**Depois:**
-- Eyebrow label: "Inteligência Atlas · Lançamento exclusivo" (contexto, sem badge arredondado — texto simples com letra pequena e espaçamento)
-- H1: **"Seja um dos 20 Membros Fundadores"** — esse passa a ser o protagonista
-- Sub imediato (grande, bold, destaque): "50% de desconto — para sempre." — a oferta em evidência
-- Parágrafo explicativo: "Um sistema que adapta o estudo às suas fraquezas — questões, redação e revisão, tudo com IA."
-- CTA + contador de vagas (sem mudança)
+### Tarefas de implementacao
 
-### Por que funciona melhor
-- Em 2 segundos o visitante entende: "há 20 vagas exclusivas" e "50% para sempre" — os dois ganchos mais fortes
-- O produto entra como razão de querer a vaga, não como elemento principal
-- Eyebrow como texto simples (sem borda/card) é mais limpo e premium que um badge
+1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
+   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
+   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
+   - 5 alternativas editaveis (texto + slot de imagem cada)
+   - Selects para area, resposta correta, lingua estrangeira
+   - Navegacao Anterior/Proxima
 
-### Arquivo
-- `src/pages/Founders.tsx` — apenas a seção hero (linhas ~150–218), resto permanece igual
+2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
+   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
+   - Contadores no topo: "X completas, Y com erro, Z vazias"
+   - Click no numero navega para a questao
+
+3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
+   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
+   - Direita: QuestionGrid + botao de importar
+   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
+   - Mobile: grid em cima, editor embaixo (responsivo)
+
+4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
+
+### Detalhes tecnicos
+
+- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
+- O estado de "questao atual" sera controlado por um index no PreviewStage
+- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
+- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
+- Nenhuma mudanca no banco de dados ou edge functions necessaria
+
