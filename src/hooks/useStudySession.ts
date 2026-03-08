@@ -1123,6 +1123,7 @@ export function useStudySession() {
     exitSessionView,
     startPreviewQuestion,
     answerQuestion,
+    confirmAnswer,
     nextQuestion,
     resetSession,
   };
