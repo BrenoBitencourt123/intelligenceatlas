@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check, ArrowRight, BookOpen, PenLine, Brain, Flame, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Accordion,
   AccordionContent,
@@ -12,7 +13,6 @@ import {
 
 /* ─── Config ─── */
 const VAGAS_TOTAL = 20;
-const VAGAS_RESTANTES = 20; // ← editar manualmente. Trocar por query Stripe depois.
 
 const VIDEO_DURATION = 60;
 const REVEAL_AT_PERCENT = 0.75;
@@ -59,7 +59,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Quantas vagas restam?",
-    a: `Atualmente restam ${VAGAS_RESTANTES} de ${VAGAS_TOTAL} vagas. Quando acabarem, o preço será o valor cheio de R$49,90/mês.`,
+    a: "", // dynamic, overridden in component
   },
   {
     q: "Posso cancelar a qualquer momento?",
@@ -74,6 +74,19 @@ const FAQ_ITEMS = [
 /* ─── Component ─── */
 export default function Founders() {
   const navigate = useNavigate();
+
+  /* Dynamic slots from Stripe */
+  const [vagasRestantes, setVagasRestantes] = useState(VAGAS_TOTAL);
+  const [slotsLoaded, setSlotsLoaded] = useState(false);
+
+  useEffect(() => {
+    supabase.functions.invoke("founders-slots").then(({ data, error }) => {
+      if (!error && data?.remaining != null) {
+        setVagasRestantes(data.remaining);
+      }
+      setSlotsLoaded(true);
+    });
+  }, []);
 
   /* Video simulation */
   const [isPlaying, setIsPlaying] = useState(false);
@@ -105,7 +118,7 @@ export default function Founders() {
     };
   }, []);
 
-  const vagasPreenchidas = VAGAS_TOTAL - VAGAS_RESTANTES;
+  const vagasPreenchidas = VAGAS_TOTAL - vagasRestantes;
   const progressPct = (vagasPreenchidas / VAGAS_TOTAL) * 100;
 
   return (
@@ -119,7 +132,7 @@ export default function Founders() {
         >
           {Array.from({ length: 16 }).map((_, i) => (
             <span key={i} className="flex items-center gap-2">
-              🔥 APENAS {VAGAS_RESTANTES} VAGAS RESTANTES
+              🔥 APENAS {vagasRestantes} VAGAS RESTANTES
             </span>
           ))}
         </motion.div>
@@ -141,7 +154,7 @@ export default function Founders() {
               className="relative inline-block px-2 py-0.5 rounded-md"
               style={{ color: AMBER, background: AMBER_BG }}
             >
-              {VAGAS_RESTANTES} vagas
+              {vagasRestantes} vagas
             </span>{" "}
             para os primeiros membros fundadores do Atlas
           </motion.h1>
@@ -278,7 +291,11 @@ export default function Founders() {
                     Perguntas frequentes
                   </h2>
                   <Accordion type="single" collapsible className="space-y-2">
-                    {FAQ_ITEMS.map((item, i) => (
+                    {FAQ_ITEMS.map((item, i) => {
+                      const answer = i === 2
+                        ? `Atualmente restam ${vagasRestantes} de ${VAGAS_TOTAL} vagas. Quando acabarem, o preço será o valor cheio de R$49,90/mês.`
+                        : item.a;
+                      return (
                       <AccordionItem
                         key={i}
                         value={`faq-${i}`}
@@ -288,10 +305,11 @@ export default function Founders() {
                           {item.q}
                         </AccordionTrigger>
                         <AccordionContent className="text-sm text-muted-foreground pb-4">
-                          {item.a}
+                          {answer}
                         </AccordionContent>
                       </AccordionItem>
-                    ))}
+                      );
+                    })}
                   </Accordion>
                 </section>
               </motion.div>
