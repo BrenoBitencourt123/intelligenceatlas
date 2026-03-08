@@ -22,16 +22,20 @@ import {
   Zap,
   Shield,
   MessageCircle,
-  X,
 } from "lucide-react";
 
-/* ─── Colors ─── */
-const GREEN = {
-  base: "hsl(150, 60%, 40%)",
-  dark: "hsl(150, 60%, 30%)",
-  light: "hsl(150, 60%, 93%)",
-  text: "hsl(150, 60%, 35%)",
-  glow: "hsl(150, 60%, 45%)",
+/* ─── Dark theme colors (inline, isolated to this page) ─── */
+const C = {
+  bg: "hsl(160, 15%, 12%)",
+  bgCard: "hsl(160, 12%, 16%)",
+  bgCardHover: "hsl(160, 12%, 19%)",
+  border: "hsl(160, 10%, 22%)",
+  text: "hsl(0, 0%, 94%)",
+  textMuted: "hsl(160, 8%, 55%)",
+  green: "hsl(150, 60%, 45%)",
+  greenDark: "hsl(150, 60%, 35%)",
+  greenLight: "hsl(150, 60%, 93%)",
+  greenGlow: "hsl(150, 60%, 50%)",
 };
 
 /* ─── Slots hook (real from Stripe) ─── */
@@ -91,25 +95,25 @@ function SlotsCounter({ remaining, loading }: { remaining: number | null; loadin
 
   return (
     <div
-      className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-sm"
+      className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border"
       style={{
-        borderColor: isUrgent ? "hsl(0,72%,70%)" : GREEN.glow,
-        backgroundColor: isUrgent ? "hsl(0,72%,97%)" : GREEN.light,
+        borderColor: isUrgent ? "hsl(0,72%,50%)" : C.green,
+        backgroundColor: isUrgent ? "hsla(0,72%,50%,0.1)" : "hsla(150,60%,45%,0.1)",
       }}
     >
       <div className="relative w-2.5 h-2.5">
         <div
           className="absolute inset-0 rounded-full animate-ping opacity-40"
-          style={{ backgroundColor: isUrgent ? "hsl(0,72%,51%)" : GREEN.base }}
+          style={{ backgroundColor: isUrgent ? "hsl(0,72%,51%)" : C.green }}
         />
         <div
           className="relative w-2.5 h-2.5 rounded-full"
-          style={{ backgroundColor: isUrgent ? "hsl(0,72%,51%)" : GREEN.base }}
+          style={{ backgroundColor: isUrgent ? "hsl(0,72%,51%)" : C.green }}
         />
       </div>
       <span
         className="text-sm font-bold"
-        style={{ color: isUrgent ? "hsl(0,72%,40%)" : GREEN.dark }}
+        style={{ color: isUrgent ? "hsl(0,72%,65%)" : C.green }}
       >
         {isUrgent ? `Últimas ${display} vagas!` : `Restam ${display} vagas`}
       </span>
@@ -120,26 +124,26 @@ function SlotsCounter({ remaining, loading }: { remaining: number | null; loadin
 /* ─── Success State ─── */
 function SuccessState() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6">
+    <div className="min-h-screen flex items-center justify-center px-6" style={{ backgroundColor: C.bg }}>
       <div className="max-w-md w-full text-center space-y-6 animate-fade-in">
         <div className="relative mx-auto w-20 h-20">
-          <div className="absolute inset-0 rounded-full animate-ping opacity-20" style={{ backgroundColor: GREEN.base }} />
-          <div className="relative w-20 h-20 rounded-full flex items-center justify-center" style={{ backgroundColor: GREEN.base }}>
+          <div className="absolute inset-0 rounded-full animate-ping opacity-20" style={{ backgroundColor: C.green }} />
+          <div className="relative w-20 h-20 rounded-full flex items-center justify-center" style={{ backgroundColor: C.green }}>
             <Check className="w-9 h-9 text-white" />
           </div>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+        <h1 className="text-3xl font-bold tracking-tight" style={{ color: C.text }}>
           Inscrição confirmada! 🎉
         </h1>
-        <p className="text-muted-foreground text-lg leading-relaxed">
+        <p className="text-lg leading-relaxed" style={{ color: C.textMuted }}>
           Agora entre no nosso grupo exclusivo no WhatsApp para receber seu cupom
-          de <span className="font-bold text-foreground">50% vitalício</span> e
+          de <span className="font-bold" style={{ color: C.text }}>50% vitalício</span> e
           todas as novidades em primeira mão.
         </p>
         <Button
           size="lg"
-          className="w-full text-lg h-14 font-semibold rounded-xl text-white"
-          style={{ backgroundColor: GREEN.base }}
+          className="w-full text-lg h-14 font-semibold rounded-xl text-white hover:opacity-90"
+          style={{ backgroundColor: C.green }}
           onClick={() =>
             window.open("https://chat.whatsapp.com/SEU_LINK_AQUI", "_blank")
           }
@@ -162,23 +166,34 @@ function HeroSection({
 }) {
   return (
     <section className="relative px-6 pt-12 pb-16 max-w-3xl mx-auto text-center">
+      {/* Subtle green glow */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full blur-[150px] pointer-events-none opacity-15"
+        style={{ backgroundColor: C.green }}
+      />
+
       <div className="relative z-10">
-        {/* Slots counter */}
         <div className="mb-8">
           <SlotsCounter remaining={remaining} loading={loading} />
         </div>
 
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1] mb-5">
+        <h1
+          className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] mb-5"
+          style={{ color: C.text }}
+        >
           Pague metade.
           <br />
-          Para sempre.
+          Para sempre<span style={{ color: C.green }}>.</span>
         </h1>
 
-        <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+        <p
+          className="text-base sm:text-lg max-w-xl mx-auto leading-relaxed"
+          style={{ color: C.textMuted }}
+        >
           Seja um dos{" "}
-          <span className="font-bold text-foreground">20 membros fundadores</span>{" "}
+          <span className="font-bold" style={{ color: C.text }}>20 membros fundadores</span>{" "}
           do Intelligence Atlas e garanta{" "}
-          <span className="font-bold" style={{ color: GREEN.text }}>
+          <span className="font-bold" style={{ color: C.green }}>
             50% de desconto vitalício
           </span>{" "}
           na plataforma de estudos inteligente para o ENEM.
@@ -192,26 +207,32 @@ function HeroSection({
 function VideoSection({ onCTAClick }: { onCTAClick: () => void }) {
   return (
     <section className="px-6 pb-20 max-w-3xl mx-auto">
-      <div className="aspect-video bg-card border border-border rounded-2xl flex items-center justify-center cursor-pointer hover:border-foreground/20 transition-all hover:shadow-lg group">
+      <div
+        className="aspect-video rounded-2xl flex items-center justify-center cursor-pointer transition-all hover:shadow-xl group border"
+        style={{ backgroundColor: C.bgCard, borderColor: C.border }}
+      >
         <div className="text-center space-y-3">
-          <div className="w-20 h-20 bg-foreground rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform shadow-lg">
-            <Play className="w-8 h-8 text-background ml-1" />
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform"
+            style={{ backgroundColor: C.green }}
+          >
+            <Play className="w-8 h-8 text-white ml-1" />
           </div>
-          <p className="text-muted-foreground text-sm font-medium">Vídeo em breve</p>
+          <p className="text-sm font-medium" style={{ color: C.textMuted }}>Vídeo em breve</p>
         </div>
       </div>
 
-      {/* Single CTA */}
       <div className="text-center mt-8 space-y-3">
         <Button
           size="lg"
-          className="text-lg h-14 px-10 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+          className="text-lg h-14 px-10 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] text-white border-0"
+          style={{ backgroundColor: C.green }}
           onClick={onCTAClick}
         >
           Garantir minha vaga
           <ArrowRight className="ml-2 w-5 h-5" />
         </Button>
-        <p className="text-sm text-muted-foreground animate-pulse">
+        <p className="text-sm animate-pulse" style={{ color: C.textMuted }}>
           ⚡ Vagas preenchendo rápido
         </p>
       </div>
@@ -224,10 +245,10 @@ function BenefitsSection() {
   return (
     <section className="px-6 pb-20 max-w-4xl mx-auto">
       <div className="text-center mb-12">
-        <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
+        <h2 className="text-3xl sm:text-4xl font-bold mb-3" style={{ color: C.text }}>
           Tudo que você precisa para o ENEM
         </h2>
-        <p className="text-muted-foreground text-lg">
+        <p className="text-lg" style={{ color: C.textMuted }}>
           Ferramentas inteligentes que se adaptam a você
         </p>
       </div>
@@ -235,13 +256,28 @@ function BenefitsSection() {
         {BENEFITS.map((b) => (
           <div
             key={b.title}
-            className="group p-7 rounded-2xl border border-border bg-card hover:shadow-md transition-all hover:-translate-y-0.5"
+            className="group p-7 rounded-2xl border transition-all hover:-translate-y-0.5"
+            style={{
+              backgroundColor: C.bgCard,
+              borderColor: C.border,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = C.bgCardHover;
+              e.currentTarget.style.borderColor = C.green;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = C.bgCard;
+              e.currentTarget.style.borderColor = C.border;
+            }}
           >
-            <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center mb-4 group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
-              <b.icon className="w-6 h-6" />
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+              style={{ backgroundColor: "hsla(150,60%,45%,0.12)" }}
+            >
+              <b.icon className="w-6 h-6" style={{ color: C.green }} />
             </div>
-            <h3 className="font-bold text-foreground text-lg mb-1.5">{b.title}</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
+            <h3 className="font-bold text-lg mb-1.5" style={{ color: C.text }}>{b.title}</h3>
+            <p className="text-sm leading-relaxed" style={{ color: C.textMuted }}>{b.desc}</p>
           </div>
         ))}
       </div>
@@ -249,26 +285,39 @@ function BenefitsSection() {
   );
 }
 
-/* ─── Founder Perks Section (dark card like screenshot) ─── */
+/* ─── Founder Perks Section ─── */
 function FounderPerksSection() {
   return (
     <section className="px-6 pb-20 max-w-3xl mx-auto">
-      <div className="p-8 sm:p-10 rounded-2xl bg-accent text-accent-foreground relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 blur-[60px]" style={{ backgroundColor: GREEN.glow }} />
+      <div
+        className="p-8 sm:p-10 rounded-2xl relative overflow-hidden border"
+        style={{ backgroundColor: C.bgCard, borderColor: C.border }}
+      >
+        <div
+          className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 blur-[60px]"
+          style={{ backgroundColor: C.greenGlow }}
+        />
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: GREEN.base }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: C.green }}>
               <Trophy className="w-5 h-5 text-white" />
             </div>
-            <h3 className="text-xl font-bold">Vantagens exclusivas de fundador</h3>
+            <h3 className="text-xl font-bold" style={{ color: C.text }}>
+              Vantagens exclusivas de fundador
+            </h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {FOUNDER_PERKS.map((item) => (
               <div key={item.text} className="flex items-start gap-3">
-                <div className="mt-0.5 w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-                  <item.icon className="w-4 h-4" style={{ color: GREEN.glow }} />
+                <div
+                  className="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: "hsla(150,60%,45%,0.12)" }}
+                >
+                  <item.icon className="w-4 h-4" style={{ color: C.green }} />
                 </div>
-                <span className="text-sm text-accent-foreground/80 leading-relaxed">{item.text}</span>
+                <span className="text-sm leading-relaxed" style={{ color: C.textMuted }}>
+                  {item.text}
+                </span>
               </div>
             ))}
           </div>
@@ -309,12 +358,14 @@ function LeadModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-0">
-        {/* Top accent bar */}
-        <div className="h-1.5 w-full bg-accent" />
+        <div className="h-1.5 w-full" style={{ backgroundColor: C.green }} />
 
         <div className="p-6 sm:p-8">
           <DialogHeader className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold mx-auto mb-3" style={{ backgroundColor: GREEN.light, color: GREEN.dark }}>
+            <div
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold mx-auto mb-3"
+              style={{ backgroundColor: C.greenLight, color: C.greenDark }}
+            >
               <Sparkles className="w-4 h-4" />
               50% vitalício
             </div>
@@ -325,7 +376,7 @@ function LeadModal({
               Preencha abaixo para entrar no grupo VIP e receber seu cupom exclusivo.
             </p>
             {!slotsLoading && remaining !== null && (
-              <p className="mt-2 text-sm font-bold" style={{ color: GREEN.text }}>
+              <p className="mt-2 text-sm font-bold" style={{ color: C.greenDark }}>
                 🔥 Restam apenas {remaining} vagas
               </p>
             )}
@@ -361,8 +412,8 @@ function LeadModal({
             <Button
               type="submit"
               size="lg"
-              className="w-full text-lg h-14 font-bold rounded-xl text-white shadow-lg transition-all hover:shadow-xl"
-              style={{ backgroundColor: GREEN.base }}
+              className="w-full text-lg h-14 font-bold rounded-xl text-white shadow-lg transition-all hover:shadow-xl hover:opacity-90"
+              style={{ backgroundColor: C.green }}
               disabled={loading}
             >
               {loading ? "Enviando..." : "Entrar no grupo VIP →"}
@@ -425,16 +476,16 @@ export default function Founders() {
   if (submitted) return <SuccessState />;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ backgroundColor: C.bg }}>
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 max-w-4xl mx-auto">
-        <span className="font-bold text-foreground text-lg tracking-tight">
+        <span className="font-bold text-lg tracking-tight" style={{ color: C.text }}>
           Intelligence Atlas
         </span>
         <Button
           variant="outline"
           size="sm"
-          className="rounded-full font-semibold"
+          className="rounded-full font-semibold border-white/20 text-white/80 hover:text-white hover:bg-white/10 bg-transparent"
           onClick={() => window.open("/login", "_self")}
         >
           Entrar
@@ -447,13 +498,12 @@ export default function Founders() {
       <FounderPerksSection />
 
       {/* Footer */}
-      <footer className="py-8 text-center border-t border-border">
-        <p className="text-sm text-muted-foreground">
+      <footer className="py-8 text-center border-t" style={{ borderColor: C.border }}>
+        <p className="text-sm" style={{ color: C.textMuted }}>
           Intelligence Atlas © {new Date().getFullYear()}
         </p>
       </footer>
 
-      {/* Lead capture modal */}
       <LeadModal
         open={modalOpen}
         onOpenChange={setModalOpen}
