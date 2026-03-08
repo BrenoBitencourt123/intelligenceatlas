@@ -132,7 +132,7 @@ export default function Founders() {
         >
           {Array.from({ length: 16 }).map((_, i) => (
             <span key={i} className="flex items-center gap-2">
-              🔥 APENAS {VAGAS_RESTANTES} VAGAS RESTANTES
+              🔥 APENAS {vagasRestantes} VAGAS RESTANTES
             </span>
           ))}
         </motion.div>
