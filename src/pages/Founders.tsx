@@ -12,24 +12,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Check,
-  BookOpen,
-  Brain,
-  Star,
-  Play,
   ArrowRight,
-  Trophy,
-  Target,
   Sparkles,
-  Zap,
-  Shield,
-  MessageCircle,
+  Rocket,
+  BarChart3,
+  BookOpen,
+  BrainCircuit,
 } from "lucide-react";
 
 /* ─── Dark theme colors (inline, isolated to this page) ─── */
 const C = {
   bg: "hsl(160, 15%, 12%)",
   bgCard: "hsl(160, 12%, 16%)",
-  bgCardHover: "hsl(160, 12%, 19%)",
   border: "hsl(160, 10%, 22%)",
   text: "hsl(0, 0%, 94%)",
   textMuted: "hsl(160, 8%, 55%)",
@@ -58,52 +52,11 @@ function useFounderSlots() {
   return { remaining, loading };
 }
 
-/* ─── Data ─── */
-const BENEFITS = [
-  { icon: Target, text: "Estudo adaptativo com questões reais do ENEM" },
-  { icon: BookOpen, text: "Redações corrigidas por IA por competência" },
-  { icon: Brain, text: "Flashcards inteligentes com revisão espaçada" },
+const CHECKS = [
+  { icon: BookOpen, text: "Questões reais do ENEM" },
+  { icon: BrainCircuit, text: "Plano de estudo inteligente" },
+  { icon: BarChart3, text: "Análise de desempenho" },
 ];
-
-const FOUNDER_PERKS = [
-  { icon: Zap, text: "Acesso antecipado a todas as funcionalidades" },
-  { icon: MessageCircle, text: "Canal direto com os criadores da plataforma" },
-  { icon: Shield, text: "Influência nas próximas features do produto" },
-  { icon: Trophy, text: "Badge exclusiva de Membro Fundador" },
-];
-
-/* ─── Slots Counter ─── */
-function SlotsCounter({ remaining, loading }: { remaining: number | null; loading: boolean }) {
-  const display = loading ? "—" : (remaining ?? 20);
-  const isUrgent = !loading && remaining !== null && remaining <= 5;
-
-  return (
-    <div
-      className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border"
-      style={{
-        borderColor: isUrgent ? "hsl(0,72%,50%)" : C.green,
-        backgroundColor: isUrgent ? "hsla(0,72%,50%,0.1)" : "hsla(150,60%,45%,0.1)",
-      }}
-    >
-      <div className="relative w-2.5 h-2.5">
-        <div
-          className="absolute inset-0 rounded-full animate-ping opacity-40"
-          style={{ backgroundColor: isUrgent ? "hsl(0,72%,51%)" : C.green }}
-        />
-        <div
-          className="relative w-2.5 h-2.5 rounded-full"
-          style={{ backgroundColor: isUrgent ? "hsl(0,72%,51%)" : C.green }}
-        />
-      </div>
-      <span
-        className="text-sm font-bold"
-        style={{ color: isUrgent ? "hsl(0,72%,65%)" : C.green }}
-      >
-        {isUrgent ? `Últimas ${display} vagas!` : `Restam ${display} vagas`}
-      </span>
-    </div>
-  );
-}
 
 /* ─── Success State ─── */
 function SuccessState() {
@@ -137,193 +90,6 @@ function SuccessState() {
         </Button>
       </div>
     </div>
-  );
-}
-
-/* ─── Hero Section ─── */
-function HeroSection({
-  remaining,
-  loading,
-}: {
-  remaining: number | null;
-  loading: boolean;
-}) {
-  return (
-    <section className="relative px-6 pt-12 pb-16 max-w-3xl mx-auto text-center">
-      {/* Subtle green glow */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full blur-[150px] pointer-events-none opacity-15"
-        style={{ backgroundColor: C.green }}
-      />
-
-      <div className="relative z-10">
-        <motion.div
-          className="mb-8"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <SlotsCounter remaining={remaining} loading={loading} />
-        </motion.div>
-
-        <motion.h1
-          className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] mb-5"
-          style={{ color: C.text }}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-        >
-          Pague metade.
-          <br />
-          Para sempre<span style={{ color: C.green }}>.</span>
-        </motion.h1>
-
-        <motion.p
-          className="text-base sm:text-lg max-w-xl mx-auto leading-relaxed"
-          style={{ color: C.textMuted }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-        >
-          Seja um dos{" "}
-          <span className="font-bold" style={{ color: C.text }}>20 membros fundadores</span>{" "}
-          do Intelligence Atlas e garanta{" "}
-          <span className="font-bold" style={{ color: C.green }}>
-            50% de desconto vitalício
-          </span>{" "}
-          na plataforma de estudos inteligente para o ENEM.
-        </motion.p>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Video + CTA Section ─── */
-function VideoSection({ onCTAClick }: { onCTAClick: () => void }) {
-  return (
-    <section className="px-6 pb-20 max-w-3xl mx-auto">
-      <motion.div
-        className="aspect-video rounded-2xl flex items-center justify-center cursor-pointer transition-all hover:shadow-xl group border"
-        style={{ backgroundColor: C.bgCard, borderColor: C.border }}
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-50px" }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="text-center space-y-3">
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform"
-            style={{ backgroundColor: C.green }}
-          >
-            <Play className="w-8 h-8 text-white ml-1" />
-          </div>
-          <p className="text-sm font-medium" style={{ color: C.textMuted }}>Vídeo em breve</p>
-        </div>
-      </motion.div>
-
-      <div className="text-center mt-8 space-y-3">
-        <Button
-          size="lg"
-          className="text-lg h-14 px-10 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] text-white border-0"
-          style={{ backgroundColor: C.green }}
-          onClick={onCTAClick}
-        >
-          Garantir minha vaga
-          <ArrowRight className="ml-2 w-5 h-5" />
-        </Button>
-        <p className="text-sm animate-pulse" style={{ color: C.textMuted }}>
-          ⚡ Vagas preenchendo rápido
-        </p>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Benefits Section ─── */
-function BenefitsSection() {
-  return (
-    <section className="px-6 pb-20 max-w-3xl mx-auto">
-      <motion.div
-        className="p-8 sm:p-10 rounded-2xl relative overflow-hidden border"
-        style={{ backgroundColor: C.bgCard, borderColor: C.border }}
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-30px" }}
-        transition={{ duration: 0.5 }}
-      >
-        <div
-          className="absolute top-0 left-0 w-40 h-40 rounded-full opacity-10 blur-[60px]"
-          style={{ backgroundColor: C.greenGlow }}
-        />
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: C.green }}>
-              <BookOpen className="w-5 h-5 text-white" />
-            </div>
-            <h3 className="text-xl font-bold" style={{ color: C.text }}>
-              Tudo que você precisa para o ENEM
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {BENEFITS.map((item) => (
-              <div key={item.text} className="flex items-start gap-3">
-                <div
-                  className="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: "hsla(150,60%,45%,0.12)" }}
-                >
-                  <item.icon className="w-4 h-4" style={{ color: C.green }} />
-                </div>
-                <span className="text-sm leading-relaxed" style={{ color: C.textMuted }}>
-                  {item.text}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </motion.div>
-    </section>
-  );
-}
-
-/* ─── Founder Perks Section ─── */
-function FounderPerksSection() {
-  return (
-    <section className="px-6 pb-6 max-w-3xl mx-auto">
-      <div
-        className="p-8 sm:p-10 rounded-2xl relative overflow-hidden border"
-        style={{ backgroundColor: C.bgCard, borderColor: C.border }}
-      >
-        <div
-          className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 blur-[60px]"
-          style={{ backgroundColor: C.greenGlow }}
-        />
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: C.green }}>
-              <Trophy className="w-5 h-5 text-white" />
-            </div>
-            <h3 className="text-xl font-bold" style={{ color: C.text }}>
-              Vantagens exclusivas de fundador
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {FOUNDER_PERKS.map((item) => (
-              <div key={item.text} className="flex items-start gap-3">
-                <div
-                  className="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: "hsla(150,60%,45%,0.12)" }}
-                >
-                  <item.icon className="w-4 h-4" style={{ color: C.green }} />
-                </div>
-                <span className="text-sm leading-relaxed" style={{ color: C.textMuted }}>
-                  {item.text}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -476,9 +242,9 @@ export default function Founders() {
   if (submitted) return <SuccessState />;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: C.bg }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: C.bg }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 max-w-4xl mx-auto">
+      <header className="flex items-center justify-between px-6 py-4 max-w-4xl mx-auto w-full">
         <span className="font-bold text-lg tracking-tight" style={{ color: C.text }}>
           Intelligence Atlas
         </span>
@@ -492,10 +258,112 @@ export default function Founders() {
         </Button>
       </header>
 
-      <HeroSection remaining={remaining} loading={slotsLoading} />
-      <VideoSection onCTAClick={() => setModalOpen(true)} />
-      <FounderPerksSection />
-      <BenefitsSection />
+      {/* Main content — single centered section */}
+      <main className="flex-1 flex items-center justify-center px-6 py-12 sm:py-20">
+        <div className="max-w-2xl w-full text-center space-y-8">
+          {/* Pill */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border text-sm font-semibold"
+              style={{
+                borderColor: C.green,
+                backgroundColor: "hsla(150,60%,45%,0.1)",
+                color: C.green,
+              }}
+            >
+              <Rocket className="w-4 h-4" />
+              Vagas limitadas para membros fundadores
+            </div>
+          </motion.div>
+
+          {/* Headline */}
+          <motion.h1
+            className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1]"
+            style={{ color: C.text }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            O jeito mais inteligente de estudar para o ENEM<span style={{ color: C.green }}>.</span>
+          </motion.h1>
+
+          {/* Description */}
+          <motion.div
+            className="space-y-4 max-w-xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.25 }}
+          >
+            <p className="text-base sm:text-lg leading-relaxed" style={{ color: C.textMuted }}>
+              O Atlas analisa seu desempenho nas próprias questões do ENEM e mostra exatamente o que estudar para alcançar{" "}
+              <span className="font-bold" style={{ color: C.text }}>900+ pontos</span>.
+            </p>
+            <p className="text-base sm:text-lg leading-relaxed" style={{ color: C.textMuted }}>
+              Os primeiros membros fundadores recebem{" "}
+              <span className="font-bold" style={{ color: C.green }}>50% de desconto vitalício</span>.
+            </p>
+          </motion.div>
+
+          {/* CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <Button
+              size="lg"
+              className="text-lg h-14 px-12 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] text-white border-0"
+              style={{ backgroundColor: C.green }}
+              onClick={() => setModalOpen(true)}
+            >
+              Começar agora
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </motion.div>
+
+          {/* Checkmarks */}
+          <motion.div
+            className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
+          >
+            {CHECKS.map((item) => (
+              <div key={item.text} className="flex items-center gap-2">
+                <item.icon className="w-4 h-4" style={{ color: C.green }} />
+                <span className="text-sm font-medium" style={{ color: C.textMuted }}>
+                  {item.text}
+                </span>
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Dashboard mockup placeholder */}
+          <motion.div
+            className="mt-4 aspect-[16/9] rounded-2xl border flex items-center justify-center"
+            style={{ backgroundColor: C.bgCard, borderColor: C.border }}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.65 }}
+          >
+            <div className="text-center space-y-3">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+                style={{ backgroundColor: "hsla(150,60%,45%,0.12)" }}
+              >
+                <BarChart3 className="w-8 h-8" style={{ color: C.green }} />
+              </div>
+              <p className="text-sm font-medium" style={{ color: C.textMuted }}>
+                Dashboard do Atlas — em breve
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </main>
 
       {/* Footer */}
       <footer className="py-8 text-center border-t" style={{ borderColor: C.border }}>
