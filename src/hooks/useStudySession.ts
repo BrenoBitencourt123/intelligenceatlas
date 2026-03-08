@@ -134,6 +134,21 @@ function shuffleArray<T>(items: T[]): T[] {
   return [...items].sort(() => Math.random() - 0.5);
 }
 
+/**
+ * Detect if a response was likely a guess based on reading time.
+ * Uses ~240 wpm (~5 chars/word) as baseline reading speed.
+ * Returns true if time spent is less than 40% of estimated reading time.
+ */
+function isLikelyGuess(
+  statement: string,
+  alternatives: { text: string }[],
+  timeSpentSec: number,
+): boolean {
+  const totalChars = statement.length + alternatives.reduce((sum, a) => sum + (a.text?.length ?? 0), 0);
+  const estimatedReadSec = Math.max(8, (totalChars / 5) / 4);
+  return timeSpentSec < estimatedReadSec * 0.4;
+}
+
 type ProfileRow = {
   area: string;
   topic: string;
