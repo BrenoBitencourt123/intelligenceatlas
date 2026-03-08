@@ -35,11 +35,11 @@ export default function FounderSignup() {
     }
 
     setLoading(true);
-    const { error } = await supabase
-      .from("vip_leads" as any)
-      .insert([
-        { name: name.trim(), email: email.trim(), whatsapp: phoneClean },
-      ] as any);
+    const { error } = await supabase.
+    from("vip_leads" as any).
+    insert([
+    { name: name.trim(), email: email.trim(), whatsapp: phoneClean }] as
+    any);
 
     setLoading(false);
     if (error) {
@@ -55,8 +55,8 @@ export default function FounderSignup() {
       <header className="flex items-center justify-between px-6 py-5 max-w-2xl mx-auto w-full">
         <button
           onClick={() => step === 1 ? navigate("/fundadores") : setStep(1)}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          
           <ArrowLeft className="w-4 h-4" />
           Voltar
         </button>
@@ -72,8 +72,8 @@ export default function FounderSignup() {
             className="h-full bg-[hsl(25,95%,53%)] rounded-full"
             initial={{ width: "50%" }}
             animate={{ width: step === 1 ? "50%" : "100%" }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          />
+            transition={{ duration: 0.4, ease: "easeOut" }} />
+          
         </div>
       </div>
 
@@ -81,15 +81,15 @@ export default function FounderSignup() {
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="max-w-md w-full">
           <AnimatePresence mode="wait">
-            {step === 1 ? (
-              <motion.div
-                key="step1"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
+            {step === 1 ?
+            <motion.div
+              key="step1"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6">
+              
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[hsl(25,95%,53%/0.1)] text-[hsl(25,95%,40%)]">
                     <Sparkles className="w-3.5 h-3.5" />
@@ -107,44 +107,44 @@ export default function FounderSignup() {
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-foreground">Nome</label>
                     <Input
-                      placeholder="Seu nome completo"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      maxLength={100}
-                      required
-                      className="h-12 rounded-xl"
-                    />
+                    placeholder="Seu nome completo"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={100}
+                    required
+                    className="h-12 rounded-xl" />
+                  
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">E-mail</label>
+                    <label className="text-sm font-medium text-foreground">Seu melhor E-mail.</label>
                     <Input
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      maxLength={255}
-                      required
-                      className="h-12 rounded-xl"
-                    />
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    maxLength={255}
+                    required
+                    className="h-12 rounded-xl" />
+                  
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-foreground">WhatsApp</label>
                     <Input
-                      type="tel"
-                      placeholder="(11) 99999-9999"
-                      value={whatsapp}
-                      onChange={(e) => setWhatsapp(e.target.value)}
-                      maxLength={15}
-                      required
-                      className="h-12 rounded-xl"
-                    />
+                    type="tel"
+                    placeholder="(11) 99999-9999"
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    maxLength={15}
+                    required
+                    className="h-12 rounded-xl" />
+                  
                   </div>
                   <Button
-                    type="submit"
-                    size="lg"
-                    className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(25,95%,53%)] border-0"
-                    disabled={loading}
-                  >
+                  type="submit"
+                  size="lg"
+                  className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(25,95%,53%)] border-0"
+                  disabled={loading}>
+                  
                     {loading ? "Enviando..." : "Continuar"}
                     {!loading && <ArrowRight className="ml-2 w-5 h-5" />}
                   </Button>
@@ -152,16 +152,16 @@ export default function FounderSignup() {
                     Seus dados estão seguros e não serão compartilhados.
                   </p>
                 </form>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6 text-center"
-              >
+              </motion.div> :
+
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6 text-center">
+              
                 <div className="relative mx-auto w-20 h-20">
                   <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-[hsl(25,95%,53%)]" />
                   <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-[hsl(25,95%,53%)]">
@@ -181,20 +181,20 @@ export default function FounderSignup() {
                 </div>
 
                 <Button
-                  size="lg"
-                  className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(25,95%,53%)] border-0"
-                  onClick={() =>
-                    window.open("https://chat.whatsapp.com/SEU_LINK_AQUI", "_blank")
-                  }
-                >
+                size="lg"
+                className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(25,95%,53%)] border-0"
+                onClick={() =>
+                window.open("https://chat.whatsapp.com/SEU_LINK_AQUI", "_blank")
+                }>
+                
                   Entrar no grupo VIP
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </motion.div>
-            )}
+            }
           </AnimatePresence>
         </div>
       </main>
-    </div>
-  );
+    </div>);
+
 }
