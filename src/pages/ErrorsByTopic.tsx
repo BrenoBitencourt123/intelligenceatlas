@@ -25,11 +25,11 @@ interface TopicRow {
   next_review_at: string | null;
 }
 
-const AREA_CONFIG: Record<string, { label: string; icon: typeof BookOpen; color: string; bg: string }> = {
-  matematica: { label: 'Matemática', icon: Target, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
-  linguagens: { label: 'Linguagens', icon: BookOpen, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' },
-  natureza: { label: 'Ciências da Natureza', icon: Brain, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10 border-green-500/20' },
-  humanas: { label: 'Ciências Humanas', icon: Calendar, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
+const AREA_CONFIG: Record<string, { label: string; icon: typeof BookOpen; color: string }> = {
+  matematica: { label: 'Matemática', icon: Target, color: 'text-foreground' },
+  linguagens: { label: 'Linguagens', icon: BookOpen, color: 'text-foreground' },
+  natureza: { label: 'Ciências da Natureza', icon: Brain, color: 'text-foreground' },
+  humanas: { label: 'Ciências Humanas', icon: Calendar, color: 'text-foreground' },
 };
 
 function getMasteryLevel(accuracy: number, level: number): { label: string; color: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } {
