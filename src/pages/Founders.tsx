@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -173,22 +174,33 @@ function HeroSection({
       />
 
       <div className="relative z-10">
-        <div className="mb-8">
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
           <SlotsCounter remaining={remaining} loading={loading} />
-        </div>
+        </motion.div>
 
-        <h1
+        <motion.h1
           className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] mb-5"
           style={{ color: C.text }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
         >
           Pague metade.
           <br />
           Para sempre<span style={{ color: C.green }}>.</span>
-        </h1>
+        </motion.h1>
 
-        <p
+        <motion.p
           className="text-base sm:text-lg max-w-xl mx-auto leading-relaxed"
           style={{ color: C.textMuted }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
         >
           Seja um dos{" "}
           <span className="font-bold" style={{ color: C.text }}>20 membros fundadores</span>{" "}
@@ -197,7 +209,7 @@ function HeroSection({
             50% de desconto vitalício
           </span>{" "}
           na plataforma de estudos inteligente para o ENEM.
-        </p>
+        </motion.p>
       </div>
     </section>
   );
@@ -207,9 +219,13 @@ function HeroSection({
 function VideoSection({ onCTAClick }: { onCTAClick: () => void }) {
   return (
     <section className="px-6 pb-20 max-w-3xl mx-auto">
-      <div
+      <motion.div
         className="aspect-video rounded-2xl flex items-center justify-center cursor-pointer transition-all hover:shadow-xl group border"
         style={{ backgroundColor: C.bgCard, borderColor: C.border }}
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.6 }}
       >
         <div className="text-center space-y-3">
           <div
@@ -220,7 +236,7 @@ function VideoSection({ onCTAClick }: { onCTAClick: () => void }) {
           </div>
           <p className="text-sm font-medium" style={{ color: C.textMuted }}>Vídeo em breve</p>
         </div>
-      </div>
+      </motion.div>
 
       <div className="text-center mt-8 space-y-3">
         <Button
@@ -253,9 +269,15 @@ function BenefitsSection() {
         </p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        {BENEFITS.map((b) => (
-          <div
+        {BENEFITS.map((b, i) => (
+          <motion.div
             key={b.title}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-30px" }}
+            transition={{ duration: 0.5, delay: i * 0.1 }}
+          >
+          <div
             className="group p-7 rounded-2xl border transition-all hover:-translate-y-0.5"
             style={{
               backgroundColor: C.bgCard,
@@ -279,6 +301,7 @@ function BenefitsSection() {
             <h3 className="font-bold text-lg mb-1.5" style={{ color: C.text }}>{b.title}</h3>
             <p className="text-sm leading-relaxed" style={{ color: C.textMuted }}>{b.desc}</p>
           </div>
+          </motion.div>
         ))}
       </div>
     </section>
