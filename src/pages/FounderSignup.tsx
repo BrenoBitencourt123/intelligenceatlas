@@ -142,7 +142,7 @@ export default function FounderSignup() {
                   <Button
                     type="submit"
                     size="lg"
-                    className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(142,71%,45%)] border-0"
+                    className="w-full h-14 text-lg font-bold rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] bg-[hsl(25,95%,53%)] border-0"
                     disabled={loading}
                   >
                     {loading ? "Enviando..." : "Continuar"}
