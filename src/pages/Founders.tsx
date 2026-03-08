@@ -244,6 +244,7 @@ export default function Founders() {
                       </motion.div>
                     ))}
                   </div>
+                </section>
 
                 {/* CTA */}
                 <motion.div
