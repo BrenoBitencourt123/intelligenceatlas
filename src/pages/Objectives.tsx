@@ -10,7 +10,7 @@ import { useStudySession } from '@/hooks/useStudySession';
 import { useStudyStats } from '@/hooks/useStudyStats';
 import { useExamPdf } from '@/hooks/useExamPdf';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
-import { ArrowRight, BookOpen, Brain, Check, Crown, FileText, HelpCircle, RotateCcw, Target, X, ChevronRight } from 'lucide-react';
+import { ArrowRight, BookOpen, Brain, Check, ChevronRight, Crown, FileText, HelpCircle, RotateCcw, Target, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import MarkdownText from '@/components/atlas/MarkdownText';
 import { useQuestionPedagogy } from '@/hooks/useQuestionPedagogy';
