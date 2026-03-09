@@ -145,9 +145,9 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="min-h-screen flex items-start sm:items-center justify-center px-4 sm:px-5 pt-6 sm:pt-14"
+        className="flex items-center justify-center px-5 pt-20 pb-12 sm:min-h-screen sm:pt-0 sm:pb-0"
       >
-        <div className="max-w-2xl mx-auto text-center space-y-6 sm:space-y-8">
+        <div className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-8">
           {/* Eyebrow */}
           <motion.p
             className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground"
