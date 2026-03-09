@@ -191,7 +191,7 @@ export default function Founders() {
 
           {/* Explicação do produto */}
           <motion.p
-            className="text-base sm:text-lg text-gray-400 max-w-md mx-auto leading-relaxed"
+            className="text-base sm:text-lg text-[#9CA3AF] max-w-md mx-auto leading-relaxed"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
