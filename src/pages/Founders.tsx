@@ -145,9 +145,9 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="min-h-screen flex items-start sm:items-center justify-center px-4 sm:px-5 pt-6 sm:pt-14"
+        className="flex items-center justify-center px-5 pt-20 pb-12 sm:min-h-screen sm:pt-0 sm:pb-0"
       >
-        <div className="max-w-2xl mx-auto text-center space-y-6 sm:space-y-8">
+        <div className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-8">
           {/* Eyebrow */}
           <motion.p
             className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground"
@@ -161,15 +161,15 @@ export default function Founders() {
 
           {/* Headline */}
           <motion.h1
-            className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]"
+            className="text-[1.75rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.12]"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
             custom={1}
           >
-            Seja um dos 20
+            Seja um dos 20{" "}
             <br className="hidden sm:block" />
-            <span className="sm:whitespace-nowrap"> Membros Fundadores</span>
+            Membros Fundadores
           </motion.h1>
 
           {/* Oferta em destaque */}
@@ -205,13 +205,13 @@ export default function Founders() {
           >
             <Button
               size="lg"
-              className="h-14 px-10 text-lg font-bold rounded-full bg-foreground text-background hover:bg-foreground/90 shadow-lg active:scale-[0.98] transition-transform"
+              className="h-12 px-8 text-base sm:h-14 sm:px-10 sm:text-lg font-bold rounded-full bg-foreground text-background hover:bg-foreground/90 shadow-lg active:scale-[0.98] transition-transform"
               onClick={handleCTA}
             >
               Garantir minha vaga
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-1">
               {vagasRestantes > 0 ? (
                 <>
                   <span className="font-semibold text-foreground">
