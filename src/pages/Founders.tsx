@@ -113,7 +113,7 @@ export default function Founders() {
   const handleCTA = () => navigate("/fundadores/cadastro");
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="h-screen overflow-y-auto snap-y snap-mandatory bg-background text-foreground scroll-smooth">
       {/* ─── Sticky Navbar ─── */}
       <motion.nav
         className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50"
@@ -151,7 +151,7 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="relative min-h-[100svh] flex items-start sm:items-center justify-center px-5 pt-28 pb-24 sm:pt-0 sm:pb-0">
+        className="snap-start relative min-h-screen flex items-start sm:items-center justify-center px-5 pt-28 pb-24 sm:pt-0 sm:pb-0">
         
         <div className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-8">
           {/* Eyebrow */}
@@ -257,7 +257,7 @@ export default function Founders() {
       </section>
 
       {/* ─── Como funciona ─── */}
-      <section className="px-5 py-20 sm:py-28">
+      <section className="snap-start min-h-screen flex flex-col justify-center px-5 py-20 sm:py-28">
         <div className="max-w-3xl mx-auto">
           <motion.h2
             className="text-2xl sm:text-3xl font-bold text-center mb-14"
@@ -300,7 +300,7 @@ export default function Founders() {
       </section>
 
       {/* ─── Por que ser fundador — Dark section ─── */}
-      <section className="bg-foreground text-background px-5 py-20 sm:py-28">
+      <section className="snap-start min-h-screen flex flex-col justify-center bg-foreground text-background px-5 py-20 sm:py-28">
         <div className="max-w-2xl mx-auto space-y-12">
           <motion.div
             className="space-y-4 text-center"
@@ -393,7 +393,7 @@ export default function Founders() {
       </section>
 
       {/* ─── FAQ ─── */}
-      <section className="px-5 py-20 sm:py-28">
+      <section className="snap-start min-h-screen flex flex-col justify-center px-5 py-20 sm:py-28">
         <div className="max-w-2xl mx-auto space-y-10">
           <motion.h2
             className="text-2xl sm:text-3xl font-bold text-center"
@@ -432,7 +432,7 @@ export default function Founders() {
       </section>
 
       {/* ─── CTA Final ─── */}
-      <section className="px-5 pb-20">
+      <section className="snap-start min-h-screen flex flex-col justify-center px-5 pb-20">
         <motion.div
           className="max-w-lg mx-auto text-center space-y-5"
           variants={fadeUp}
