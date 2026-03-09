@@ -396,7 +396,7 @@ export default function Founders() {
       <section className="px-5 py-20 sm:py-28">
         <div className="max-w-2xl mx-auto space-y-10">
           <motion.h2
-            className="text-2xl sm:text-3xl font-bold text-center"
+            className="text-2xl sm:text-3xl font-bold text-center text-[#111827]"
             variants={fadeUp}
             initial="hidden"
             whileInView="visible"
