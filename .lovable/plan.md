@@ -1,59 +1,54 @@
 
 
-## Plano: Editor Visual de Questoes estilo Simulado
+# Plano: Nome + Telefone no Cadastro, Onboarding só para configuração
 
-O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
+## Mudanças
 
-### Arquitetura
+### 1. `src/pages/Signup.tsx` — Adicionar campos Nome e Telefone
 
-```text
-PreviewStage (refatorado)
-├── QuestionEditor (painel esquerdo — scrollavel)
-│   ├── Header: "Q.1 de 90" + badges (area, idioma)
-│   ├── Statement editor (textarea com suporte a {{IMG_N}})
-│   │   └── Inline image slots (drag/drop, paste, upload)
-│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
-│   ├── Metadados: area, resposta correta, lingua estrangeira
-│   └── Navegacao: < Anterior | Proxima >
-│
-└── Sidebar (painel direito — fixo)
-    ├── Status summary (OK / Com erro / Vazias)
-    ├── Grid de numeros (1-90 ou 91-180)
-    │   ├── Verde: questao OK (tem enunciado + gabarito)
-    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
-    │   ├── Vermelho: questao vazia / critica
-    │   ├── Borda: questao atual selecionada
-    │   └── Cinza: questao nao importada
-    └── Botao "Revisar e Importar"
+Adicionar dois campos novos entre Email e Senha:
+- **Nome** (obrigatório) — `input text`
+- **Telefone / WhatsApp** (obrigatório) — `input tel`, placeholder `(11) 99999-9999`
+
+Após `signUp` bem-sucedido (sem erro), salvar nome e telefone no perfil via `supabase.from('profiles').update({ name, phone }).eq('id', data.user.id)`. O `signUp` retorna o `user` no `data`, então precisamos ajustar o retorno no AuthContext.
+
+### 2. `src/contexts/AuthContext.tsx` — Retornar `data` do signUp
+
+Alterar `signUp` para retornar `{ error, data }` em vez de só `{ error }`, para que o Signup.tsx tenha acesso ao `user.id` e possa fazer o update no perfil.
+
+Assinatura atualizada:
+```typescript
+signUp: (email: string, password: string) => Promise<{ error: Error | null; data: any }>;
 ```
 
-### Tarefas de implementacao
+### 3. `src/pages/Onboarding.tsx` — Remover Step 1 (Nome + Telefone)
 
-1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
-   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
-   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
-   - 5 alternativas editaveis (texto + slot de imagem cada)
-   - Selects para area, resposta correta, lingua estrangeira
-   - Navegacao Anterior/Proxima
+- Remover o Step 1 completamente (nome e telefone)
+- O onboarding passa de 4 para 3 steps:
+  - **Step 1**: Língua estrangeira (antigo step 2)
+  - **Step 2**: Áreas de foco (antigo step 3)
+  - **Step 3**: Cronograma (antigo step 4)
+- Remover states `name` e `phone`
+- No `handleFinish`, remover o update de `name` e `phone` no profiles (já foram salvos no cadastro)
+- Remover imports não utilizados (`Phone`, `BookOpen`)
 
-2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
-   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
-   - Contadores no topo: "X completas, Y com erro, Z vazias"
-   - Click no numero navega para a questao
+### 4. Sobre mensagens automáticas
 
-3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
-   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
-   - Direita: QuestionGrid + botao de importar
-   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
-   - Mobile: grid em cima, editor embaixo (responsivo)
+Para envio automático de WhatsApp após cadastro, existem duas opções viáveis:
 
-4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
+- **Webhook + n8n/Make**: Criar uma edge function `on-signup-webhook` que é chamada por um database trigger no insert da tabela `profiles`. A function dispara um webhook para n8n/Make, que envia a mensagem via WhatsApp Business API. Requer conta na API do WhatsApp (~R$0,15/msg).
 
-### Detalhes tecnicos
+- **Email de boas-vindas**: Customizar o email de confirmação de cadastro com conteúdo de boas-vindas, regras e link do grupo VIP. Custo zero, funciona nativamente.
 
-- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
-- O estado de "questao atual" sera controlado por um index no PreviewStage
-- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
-- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
-- Nenhuma mudanca no banco de dados ou edge functions necessaria
+A automação de WhatsApp depende de uma API paga externa. Recomendo começar com o email customizado e adicionar WhatsApp quando tiver o volume.
+
+---
+
+## Resumo de arquivos
+
+| Ação | Arquivo |
+|------|---------|
+| Editar | `src/pages/Signup.tsx` — campos nome + telefone |
+| Editar | `src/contexts/AuthContext.tsx` — retornar data do signUp |
+| Editar | `src/pages/Onboarding.tsx` — remover step 1, reordenar steps |
 
