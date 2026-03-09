@@ -124,7 +124,7 @@ export default function Founders() {
           <div className="max-w-5xl mx-auto flex items-center justify-between px-5 h-14 gap-4">
             {/* Logo */}
             <div className="flex items-center gap-2 shrink-0">
-              <img src="https://storage.googleapis.com/gpt-engineer-file-uploads/f4QJ9UCag0bQmfSQvlHZMs1PDKy2/uploads/1770063094363-favicon.ico" alt="Atlas" className="h-5 w-5 rounded brightness-0 invert" />
+              <img src="https://storage.googleapis.com/gpt-engineer-file-uploads/f4QJ9UCag0bQmfSQvlHZMs1PDKy2/uploads/1770063094363-favicon.ico" alt="Atlas" className="h-5 w-5 rounded invert" />
               <span className="text-sm font-bold tracking-tight">Atlas</span>
             </div>
 
@@ -165,7 +165,7 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="snap-start relative min-h-screen flex items-start sm:items-center justify-center px-5 pt-35 pb-24 sm:pt-0 sm:pb-0">
+        className="snap-start relative min-h-screen flex items-start sm:items-center justify-center px-5 pt-40 pb-24 sm:pt-0 sm:pb-0">
         
         <div className="max-w-2xl mx-auto text-center space-y-4 sm:space-y-8">
 
