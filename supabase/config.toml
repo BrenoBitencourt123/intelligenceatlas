@@ -44,3 +44,9 @@ verify_jwt = false
 
 [functions.flashcards-smart]
 verify_jwt = false
+
+[functions.get-vapid-key]
+verify_jwt = false
+
+[functions.send-push]
+verify_jwt = false
