@@ -1,59 +1,49 @@
 
 
-## Plano: Editor Visual de Questoes estilo Simulado
+## Plano: Push Notifications PWA + Página de Instalação
 
-O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
+### Visão geral
+Implementar Web Push Notifications para lembretes diários (área de estudo do dia + tema de redação) e criar uma experiência de instalação do PWA como app nativo. A logo do Atlas (triângulo) será usada como ícone das notificações.
 
-### Arquitetura
+### Mudanças
 
-```text
-PreviewStage (refatorado)
-├── QuestionEditor (painel esquerdo — scrollavel)
-│   ├── Header: "Q.1 de 90" + badges (area, idioma)
-│   ├── Statement editor (textarea com suporte a {{IMG_N}})
-│   │   └── Inline image slots (drag/drop, paste, upload)
-│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
-│   ├── Metadados: area, resposta correta, lingua estrangeira
-│   └── Navegacao: < Anterior | Proxima >
-│
-└── Sidebar (painel direito — fixo)
-    ├── Status summary (OK / Com erro / Vazias)
-    ├── Grid de numeros (1-90 ou 91-180)
-    │   ├── Verde: questao OK (tem enunciado + gabarito)
-    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
-    │   ├── Vermelho: questao vazia / critica
-    │   ├── Borda: questao atual selecionada
-    │   └── Cinza: questao nao importada
-    └── Botao "Revisar e Importar"
-```
+**1. Tabela `push_subscriptions` (migração)**
+- `id`, `user_id` (ref profiles), `endpoint`, `p256dh`, `auth`, `created_at`
+- RLS: usuário só lê/escreve suas próprias subscriptions
 
-### Tarefas de implementacao
+**2. Gerar VAPID keys (secret)**
+- Adicionar secrets `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY` via tool
+- Expor a chave pública no client via variável de ambiente ou edge function
 
-1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
-   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
-   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
-   - 5 alternativas editaveis (texto + slot de imagem cada)
-   - Selects para area, resposta correta, lingua estrangeira
-   - Navegacao Anterior/Proxima
+**3. Custom Service Worker (`public/sw-push.js`)**
+- Listener `push` que exibe notificação com ícone `/icon-192.png` (logo Atlas)
+- Listener `notificationclick` que abre o app na rota relevante (`/` ou `/redacao`)
 
-2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
-   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
-   - Contadores no topo: "X completas, Y com erro, Z vazias"
-   - Click no numero navega para a questao
+**4. Hook `useNotifications`**
+- Verifica suporte a `Notification` e `PushManager`
+- Pede permissão, cria subscription com VAPID public key
+- Salva subscription no banco via `push_subscriptions`
 
-3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
-   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
-   - Direita: QuestionGrid + botao de importar
-   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
-   - Mobile: grid em cima, editor embaixo (responsivo)
+**5. Edge function `send-push` (cron ou invocação manual)**
+- Consulta `push_subscriptions` + `user_preferences` (schedule do dia)
+- Monta payload: "Hoje é dia de [Área] — [X questões]" ou "Tema do dia: [título]"
+- Envia via Web Push protocol usando `web-push` lib
+- Pode ser agendada via cron (ex: 8h da manhã)
 
-4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
+**6. Integração no app**
+- No `Today.tsx` ou `MainLayout`, chamar `useNotifications` para solicitar permissão (com UI sutil, tipo banner ou botão)
+- Configurar o VitePWA para não cachear `/~oauth` (navigateFallbackDenylist)
 
-### Detalhes tecnicos
+**7. Página/componente de instalação PWA**
+- Banner ou prompt na Home incentivando "Instalar o Atlas" quando `beforeinstallprompt` estiver disponível
+- Instruções para iOS (Safari → Compartilhar → Adicionar à Tela de Início)
 
-- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
-- O estado de "questao atual" sera controlado por um index no PreviewStage
-- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
-- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
-- Nenhuma mudanca no banco de dados ou edge functions necessaria
+### Ordem de execução
+1. Gerar VAPID keys e adicionar como secrets
+2. Criar tabela `push_subscriptions`
+3. Criar `sw-push.js` (service worker de push)
+4. Criar hook `useNotifications`
+5. Criar edge function `send-push`
+6. Integrar UI de permissão + banner de instalação
+7. Atualizar `vite.config.ts` (navigateFallbackDenylist)
 
