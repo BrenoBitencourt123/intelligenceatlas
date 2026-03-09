@@ -26,7 +26,7 @@ export const DISCOUNT_COUPONS = {
 
 // Founding Members coupon: 50% forever, max 20 redemptions
 export const FOUNDERS_COUPON = {
-  id: 'oPJ7c2xK',
+  id: 'FUNDADOR',
   percent: 50,
   label: 'Membro Fundador - 50%',
   maxRedemptions: 20,
