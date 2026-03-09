@@ -432,7 +432,7 @@ export default function Founders() {
       </section>
 
       {/* ─── CTA Final ─── */}
-      <section className="px-5 pb-20">
+      <section className="snap-start min-h-screen flex flex-col justify-center px-5 pb-20">
         <motion.div
           className="max-w-lg mx-auto text-center space-y-5"
           variants={fadeUp}
