@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.import-enem-api]
 verify_jwt = false
+
+[functions.flashcards-smart]
+verify_jwt = false
