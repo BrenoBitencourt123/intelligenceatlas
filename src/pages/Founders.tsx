@@ -180,7 +180,7 @@ export default function Founders() {
 
           {/* Oferta em destaque */}
           <motion.p
-            className="text-xl sm:text-2xl lg:text-3xl font-bold"
+            className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-amber-600 via-orange-500 to-rose-500 bg-clip-text text-transparent"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
