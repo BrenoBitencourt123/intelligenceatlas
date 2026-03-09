@@ -281,7 +281,7 @@ export default function Founders() {
                 viewport={{ once: true }}
                 custom={i}
               >
-                <span className="text-xs font-mono font-bold text-muted-foreground/50 tracking-widest">
+                <span className="text-xs font-mono font-bold text-[#9CA3AF]/50 tracking-widest">
                   {p.num}
                 </span>
                 <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
