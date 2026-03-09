@@ -1,59 +1,48 @@
 
 
-## Plano: Editor Visual de Questoes estilo Simulado
+## Análise do Problema
 
-O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
+Comparando as screenshots:
+- **Desktop (image-179)**: Layout perfeito, título em duas linhas equilibradas
+- **Mobile (image-178)**: O texto "20 Membros Fundadores" está vazando para fora da tela (cortado à direita)
 
-### Arquitetura
+**Causa raiz**: O `text-4xl` (36px) combinado com `whitespace-nowrap` em "Membros Fundadores" é muito grande para telas de 320-375px.
 
-```text
-PreviewStage (refatorado)
-├── QuestionEditor (painel esquerdo — scrollavel)
-│   ├── Header: "Q.1 de 90" + badges (area, idioma)
-│   ├── Statement editor (textarea com suporte a {{IMG_N}})
-│   │   └── Inline image slots (drag/drop, paste, upload)
-│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
-│   ├── Metadados: area, resposta correta, lingua estrangeira
-│   └── Navegacao: < Anterior | Proxima >
-│
-└── Sidebar (painel direito — fixo)
-    ├── Status summary (OK / Com erro / Vazias)
-    ├── Grid de numeros (1-90 ou 91-180)
-    │   ├── Verde: questao OK (tem enunciado + gabarito)
-    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
-    │   ├── Vermelho: questao vazia / critica
-    │   ├── Borda: questao atual selecionada
-    │   └── Cinza: questao nao importada
-    └── Botao "Revisar e Importar"
+---
+
+## Plano de Correção
+
+### 1. Reduzir tamanho do título no mobile
+**Linha 164**: Mudar de `text-4xl` para `text-2xl` ou `text-3xl`
+
+```tsx
+// De:
+className="text-4xl sm:text-5xl lg:text-6xl ..."
+
+// Para:
+className="text-3xl sm:text-5xl lg:text-6xl ..."
 ```
 
-### Tarefas de implementacao
+### 2. Tornar o `whitespace-nowrap` responsivo
+**Linha 172**: Aplicar `whitespace-nowrap` apenas em telas maiores
 
-1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
-   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
-   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
-   - 5 alternativas editaveis (texto + slot de imagem cada)
-   - Selects para area, resposta correta, lingua estrangeira
-   - Navegacao Anterior/Proxima
+```tsx
+// De:
+<span className="whitespace-nowrap"> Membros Fundadores</span>
 
-2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
-   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
-   - Contadores no topo: "X completas, Y com erro, Z vazias"
-   - Click no numero navega para a questao
+// Para:
+<span className="sm:whitespace-nowrap"> Membros Fundadores</span>
+```
 
-3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
-   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
-   - Direita: QuestionGrid + botao de importar
-   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
-   - Mobile: grid em cima, editor embaixo (responsivo)
+Isso permite que o texto quebre naturalmente no mobile, evitando overflow.
 
-4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
+### 3. Alternativa mais agressiva (se necessário)
+Se ainda vazar, reduzir para `text-2xl` no mobile e ajustar leading.
 
-### Detalhes tecnicos
+---
 
-- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
-- O estado de "questao atual" sera controlado por um index no PreviewStage
-- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
-- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
-- Nenhuma mudanca no banco de dados ou edge functions necessaria
+## Resultado Esperado
+
+- **Mobile**: Título quebra naturalmente em 2-3 linhas sem overflow
+- **Desktop**: Mantém o layout elegante atual com "Membros Fundadores" numa única linha
 
