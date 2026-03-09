@@ -567,13 +567,7 @@ const Objectives = () => {
             )}
           </div>
 
-          <Tabs defaultValue="estudar" className="w-full">
-            <TabsList className="w-full">
-              <TabsTrigger value="estudar" className="flex-1">Estudar</TabsTrigger>
-              <TabsTrigger value="desempenho" className="flex-1">Desempenho</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="estudar" className="space-y-6 mt-4">
+          <div className="space-y-6 mt-4">
               {/* Daily progress card */}
               {!stats.isLoading && (
                 <div className="rounded-xl border border-border bg-card p-4 space-y-3">
