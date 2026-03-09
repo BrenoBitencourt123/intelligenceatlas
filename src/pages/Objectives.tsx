@@ -647,6 +647,13 @@ const Objectives = () => {
 
   // ── Idle dashboard ─────────────────────────────────────────────
   const questionLimit = hasFullSessionAccess ? schedule.questionCount : freeQuestionLimit;
+  const dailyTarget = 20;
+  const dailyPct = Math.min(100, Math.round((stats.questionsToday / dailyTarget) * 100));
+
+  // Weak topics (top 3 by priority score, with at least 1 attempt)
+  const weakTopics = stats.topWeaknesses
+    .filter((t: any) => t.priority > 0)
+    .slice(0, 3);
 
   return (
     <MainLayout>
@@ -654,13 +661,33 @@ const Objectives = () => {
         <div className="space-y-6">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold text-foreground">Questões Objetivas</h1>
-            {/* Compact stats line */}
             {!stats.isLoading && stats.questionsToday > 0 && (
               <p className="text-sm text-muted-foreground">
                 Hoje: {stats.questionsToday} questões · {stats.accuracyToday}% acerto
               </p>
             )}
           </div>
+
+          {/* Daily progress card */}
+          {!stats.isLoading && (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Progresso do dia</span>
+                </div>
+                <span className="text-sm font-semibold tabular-nums text-foreground">
+                  {stats.questionsToday}/{dailyTarget}
+                </span>
+              </div>
+              <Progress value={dailyPct} className="h-2" />
+              {stats.questionsToday >= dailyTarget && (
+                <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                  🎉 Meta diária atingida!
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Session card */}
           <div className="rounded-xl border border-border bg-card p-6 space-y-4">
@@ -743,6 +770,51 @@ const Objectives = () => {
               </>
             )}
           </div>
+
+          {/* Weak topics */}
+          {!stats.isLoading && weakTopics.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-muted-foreground" />
+                  Tópicos para reforçar
+                </h3>
+                <button
+                  onClick={() => navigate('/errors')}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5"
+                >
+                  Ver todos
+                  <ChevronRight className="h-3 w-3" />
+                </button>
+              </div>
+              <div className="space-y-2">
+                {weakTopics.map((t: any, i: number) => {
+                  const topicLabel = t.topic?.includes('__')
+                    ? t.topic.split('__').pop()
+                    : t.topic;
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{topicLabel}</p>
+                        <p className="text-xs text-muted-foreground truncate">{t.area}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-12 h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-destructive/70"
+                            style={{ width: `${Math.round(t.priority * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Flashcard line */}
           <button
