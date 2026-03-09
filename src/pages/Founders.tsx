@@ -151,12 +151,12 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="relative min-h-[100svh] flex items-start sm:items-center justify-center px-5 pt-28 pb-24 sm:pt-0 sm:pb-0 bg-[#F5F5F5]"
+        className="relative min-h-[100svh] flex items-start sm:items-center justify-center px-5 pt-28 pb-24 sm:pt-0 sm:pb-0"
       >
         <div className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-8">
           {/* Eyebrow */}
           <motion.p
-            className="text-xs font-medium tracking-[0.15em] uppercase bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500 bg-clip-text text-transparent"
+            className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
@@ -167,20 +167,20 @@ export default function Founders() {
 
           {/* Headline */}
           <motion.h1
-            className="text-[1.75rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.12] text-[#111827]"
+            className="text-[1.75rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.12]"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
             custom={1}
           >
-            Garanta sua vaga como{" "}
+            Seja um dos 20{" "}
             <br className="hidden sm:block" />
-            Fundador do Atlas
+            Membros Fundadores
           </motion.h1>
 
           {/* Oferta em destaque */}
           <motion.p
-            className="text-xl sm:text-2xl lg:text-3xl font-bold text-amber-600"
+            className="text-xl sm:text-2xl lg:text-3xl font-bold"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
@@ -191,7 +191,7 @@ export default function Founders() {
 
           {/* Explicação do produto */}
           <motion.p
-            className="text-base sm:text-lg text-[#9CA3AF] max-w-md mx-auto leading-relaxed"
+            className="text-base sm:text-lg text-muted-foreground max-w-md mx-auto leading-relaxed"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
@@ -211,16 +211,16 @@ export default function Founders() {
           >
             <Button
               size="lg"
-              className="h-12 px-8 text-base sm:h-14 sm:px-10 sm:text-lg font-bold rounded-full bg-[#111827] text-white hover:bg-[#111827]/90 shadow-lg active:scale-[0.98] transition-transform"
+              className="h-12 px-8 text-base sm:h-14 sm:px-10 sm:text-lg font-bold rounded-full bg-foreground text-background hover:bg-foreground/90 shadow-lg active:scale-[0.98] transition-transform"
               onClick={handleCTA}
             >
               Garantir minha vaga
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <p className="text-sm text-[#6B7280] mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {vagasRestantes > 0 ? (
                 <>
-                  <span className="font-semibold text-[#111827]">
+                  <span className="font-semibold text-foreground">
                     {vagasPreenchidas} de {VAGAS_TOTAL}
                   </span>{" "}
                   vagas preenchidas · Cancele quando quiser
@@ -240,7 +240,7 @@ export default function Founders() {
           transition={{ duration: 0.3 }}
           style={{ pointerEvents: scrollProgress > 0.5 ? "none" : "auto" }}
         >
-          <span className="text-sm sm:text-base text-[#6B7280] font-medium">
+          <span className="text-sm sm:text-base text-muted-foreground font-medium">
             Arraste para baixo
           </span>
           <motion.div
@@ -251,7 +251,7 @@ export default function Founders() {
               ease: "easeInOut",
             }}
           >
-            <ChevronDown className="w-6 h-6 sm:w-7 sm:h-7 text-[#6B7280]" />
+            <ChevronDown className="w-6 h-6 sm:w-7 sm:h-7 text-muted-foreground" />
           </motion.div>
         </motion.div>
       </section>
