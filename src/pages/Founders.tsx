@@ -260,7 +260,7 @@ export default function Founders() {
       <section className="px-5 py-20 sm:py-28">
         <div className="max-w-3xl mx-auto">
           <motion.h2
-            className="text-2xl sm:text-3xl font-bold text-center mb-14"
+            className="text-2xl sm:text-3xl font-bold text-center mb-14 text-[#111827]"
             variants={fadeUp}
             initial="hidden"
             whileInView="visible"
@@ -281,16 +281,16 @@ export default function Founders() {
                 viewport={{ once: true }}
                 custom={i}
               >
-                <span className="text-xs font-mono font-bold text-muted-foreground/50 tracking-widest">
+                <span className="text-xs font-mono font-bold text-[#9CA3AF]/50 tracking-widest">
                   {p.num}
                 </span>
                 <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
-                  <p.icon className="w-5 h-5 text-foreground" />
+                  <p.icon className="w-5 h-5 text-[#111827]" />
                 </div>
-                <h3 className="font-semibold text-foreground text-base">
+                <h3 className="font-semibold text-[#111827] text-base">
                   {p.title}
                 </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-sm text-[#6B7280] leading-relaxed">
                   {p.desc}
                 </p>
               </motion.div>
@@ -300,7 +300,7 @@ export default function Founders() {
       </section>
 
       {/* ─── Por que ser fundador — Dark section ─── */}
-      <section className="bg-foreground text-background px-5 py-20 sm:py-28">
+      <section className="bg-[#111827] text-white px-5 py-20 sm:py-28">
         <div className="max-w-2xl mx-auto space-y-12">
           <motion.div
             className="space-y-4 text-center"
@@ -382,7 +382,7 @@ export default function Founders() {
           >
             <Button
               size="lg"
-              className="h-14 px-10 text-lg font-bold rounded-full bg-background text-foreground hover:bg-background/90 shadow-lg active:scale-[0.98] transition-transform"
+              className="h-14 px-10 text-lg font-bold rounded-full bg-white text-[#111827] hover:bg-white/90 shadow-lg active:scale-[0.98] transition-transform"
               onClick={handleCTA}
             >
               Garantir minha vaga
@@ -396,7 +396,7 @@ export default function Founders() {
       <section className="px-5 py-20 sm:py-28">
         <div className="max-w-2xl mx-auto space-y-10">
           <motion.h2
-            className="text-2xl sm:text-3xl font-bold text-center"
+            className="text-2xl sm:text-3xl font-bold text-center text-[#111827]"
             variants={fadeUp}
             initial="hidden"
             whileInView="visible"
@@ -418,10 +418,10 @@ export default function Founders() {
                   value={`faq-${i}`}
                   className="rounded-xl border border-border bg-card px-5"
                 >
-                  <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-4 text-left">
+                  <AccordionTrigger className="text-sm font-medium text-[#111827] hover:no-underline py-4 text-left">
                     {item.q}
                   </AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground pb-4">
+                  <AccordionContent className="text-sm text-[#6B7280] pb-4">
                     {answer}
                   </AccordionContent>
                 </AccordionItem>
@@ -441,16 +441,16 @@ export default function Founders() {
           viewport={{ once: true }}
           custom={0}
         >
-          <h2 className="text-xl sm:text-2xl font-bold">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#111827]">
             Pronto para estudar de forma inteligente?
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-[#6B7280]">
             Garanta seu lugar entre os 20 primeiros e pague metade — para
             sempre.
           </p>
           <Button
             size="lg"
-            className="h-14 px-10 text-lg font-bold rounded-full bg-foreground text-background hover:bg-foreground/90 shadow-lg active:scale-[0.98] transition-transform"
+            className="h-14 px-10 text-lg font-bold rounded-full bg-[#111827] text-white hover:bg-[#111827]/90 shadow-lg active:scale-[0.98] transition-transform"
             onClick={handleCTA}
           >
             Garantir minha vaga
@@ -461,7 +461,7 @@ export default function Founders() {
 
       {/* ─── Footer ─── */}
       <footer className="py-8 text-center border-t border-border">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-[#9CA3AF]">
           Inteligência Atlas © {new Date().getFullYear()}
         </p>
       </footer>
