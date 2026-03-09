@@ -173,9 +173,9 @@ export default function Founders() {
             animate="visible"
             custom={1}
           >
-            Seja um dos 20{" "}
-            <br className="hidden sm:block" />
-            Membros Fundadores
+            <span style={{ color: '#111827' }}>Seja um dos 20</span>
+            <br />
+            <span style={{ color: '#737373' }}>membros fundadores</span>
           </motion.h1>
 
           {/* Oferta em destaque */}
