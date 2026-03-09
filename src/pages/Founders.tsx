@@ -251,7 +251,7 @@ export default function Founders() {
               ease: "easeInOut",
             }}
           >
-            <ChevronDown className="w-6 h-6 sm:w-7 sm:h-7 text-muted-foreground" />
+            <ChevronDown className="w-6 h-6 sm:w-7 sm:h-7 text-[#6B7280]" />
           </motion.div>
         </motion.div>
       </section>
