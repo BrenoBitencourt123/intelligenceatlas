@@ -257,10 +257,10 @@ export default function Founders() {
       </section>
 
       {/* ─── Como funciona ─── */}
-      <section className="snap-start min-h-screen flex flex-col justify-center px-5 py-20 sm:py-28">
+      <section className="snap-start min-h-screen flex flex-col justify-center px-5 py-10 sm:py-28">
         <div className="max-w-3xl mx-auto">
           <motion.h2
-            className="text-2xl sm:text-3xl font-bold text-center mb-14"
+            className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-14"
             variants={fadeUp}
             initial="hidden"
             whileInView="visible"
@@ -270,11 +270,11 @@ export default function Founders() {
             Como o Atlas funciona
           </motion.h2>
 
-          <div className="grid sm:grid-cols-3 gap-8 sm:gap-6">
+          <div className="grid sm:grid-cols-3 gap-5 sm:gap-6">
             {PILLARS.map((p, i) =>
             <motion.div
               key={p.num}
-              className="space-y-4"
+              className="space-y-2 sm:space-y-4"
               variants={fadeUp}
               initial="hidden"
               whileInView="visible"
@@ -284,7 +284,7 @@ export default function Founders() {
                 <span className="text-xs font-mono font-bold text-muted-foreground/50 tracking-widest">
                   {p.num}
                 </span>
-                <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-secondary flex items-center justify-center">
                   <p.icon className="w-5 h-5 text-foreground" />
                 </div>
                 <h3 className="font-semibold text-foreground text-base">
