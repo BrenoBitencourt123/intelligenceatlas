@@ -125,6 +125,18 @@ export default function Founders() {
             <span className="text-base font-bold tracking-tight text-foreground">
               Atlas
             </span>
+            {vagasRestantes > 0 && (
+              <>
+                <span className="mx-1.5 h-4 w-px bg-border" />
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
+                  </span>
+                  {vagasRestantes} {vagasRestantes === 1 ? "vaga restante" : "vagas restantes"}
+                </span>
+              </>
+            )}
           </div>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
