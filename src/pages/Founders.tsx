@@ -119,31 +119,31 @@ export default function Founders() {
         animate={{ y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}>
         
-        {/* Banner de urgência */}
-        {vagasRestantes > 0 && (
-          <div className="bg-foreground text-background">
-            <div className="max-w-5xl mx-auto flex items-center justify-center px-5 h-10 gap-2">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
-              </span>
-              <span className="text-xs sm:text-sm font-semibold tracking-wide uppercase">
-                🔥 Apenas {vagasRestantes} {vagasRestantes === 1 ? "vaga restante" : "vagas restantes"} — 50% off para sempre
-              </span>
+        {/* Header unificado */}
+        <div className="bg-foreground text-background">
+          <div className="max-w-5xl mx-auto flex items-center justify-between px-5 h-14 gap-4">
+            {/* Logo */}
+            <div className="flex items-center gap-2 shrink-0">
+              <img src="/icon-192.png" alt="Atlas" className="h-5 w-5 brightness-0 invert" />
+              <span className="text-sm font-bold tracking-tight">Atlas</span>
             </div>
-          </div>
-        )}
 
-        {/* Navbar */}
-        <div className="backdrop-blur-xl bg-background/80 border-b border-border/50">
-          <div className="max-w-5xl mx-auto flex items-center justify-between px-5 h-12">
-            <div className="flex items-center gap-2">
-              <img src="/icon-192.png" alt="Atlas" className="h-6 w-6" />
-              <span className="text-base font-bold tracking-tight text-foreground">
-                Atlas
-              </span>
-            </div>
+            {/* Urgência centralizada */}
+            {vagasRestantes > 0 && (
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="relative flex h-1.5 w-1.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
+                </span>
+                <span className="text-xs sm:text-sm font-semibold tracking-wide uppercase truncate">
+                  🔥 Apenas {vagasRestantes} {vagasRestantes === 1 ? "vaga restante" : "vagas restantes"} — 50% off para sempre
+                </span>
+              </div>
+            )}
+
+            {/* CTA (aparece no scroll) */}
             <motion.div
+              className="shrink-0"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{
                 opacity: showNavCTA ? 1 : 0,
@@ -151,12 +151,10 @@ export default function Founders() {
                 pointerEvents: showNavCTA ? "auto" as const : "none" as const
               }}
               transition={{ duration: 0.2 }}>
-              
               <Button
                 size="sm"
-                className="rounded-full bg-foreground text-background hover:bg-foreground/90 font-semibold text-xs px-4"
+                className="rounded-full bg-background text-foreground hover:bg-background/90 font-semibold text-xs px-4"
                 onClick={handleCTA}>
-                
                 Garantir vaga
               </Button>
             </motion.div>
@@ -167,7 +165,7 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="snap-start relative min-h-screen flex items-start sm:items-center justify-center px-5 pt-32 pb-24 sm:pt-0 sm:pb-0">
+        className="snap-start relative min-h-screen flex items-start sm:items-center justify-center px-5 pt-24 pb-24 sm:pt-0 sm:pb-0">
         
         <div className="max-w-2xl mx-auto text-center space-y-4 sm:space-y-8">
 
