@@ -167,7 +167,7 @@ export default function Founders() {
 
           {/* Headline */}
           <motion.h1
-            className="text-[1.75rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.12] text-white"
+            className="text-[1.75rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.12] text-[#111827]"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
