@@ -124,7 +124,7 @@ export default function Founders() {
           <div className="max-w-5xl mx-auto flex items-center justify-between px-5 h-14 gap-4">
             {/* Logo */}
             <div className="flex items-center gap-2 shrink-0">
-              <img src="/icon-192.png" alt="Atlas" className="h-5 w-5 brightness-0 invert" />
+              <img src="https://storage.googleapis.com/gpt-engineer-file-uploads/f4QJ9UCag0bQmfSQvlHZMs1PDKy2/uploads/1770063094363-favicon.ico" alt="Atlas" className="h-5 w-5 rounded brightness-0 invert" />
               <span className="text-sm font-bold tracking-tight">Atlas</span>
             </div>
 
