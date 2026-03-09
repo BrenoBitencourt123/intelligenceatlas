@@ -129,7 +129,7 @@ const Today = () => {
                 </div>
               )}
 
-              <Button onClick={() => navigate('/redacao')} className="w-full gap-2" variant={schedule.isEssayDay ? 'default' : 'outline'}>
+              <Button onClick={() => navigate('/redacao')} className="w-full gap-2">
                 {schedule.isEssayDay ? 'Escrever Redação' : 'Praticar Redação'}
                 <ArrowRight className="h-4 w-4" />
               </Button>
