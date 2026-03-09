@@ -270,7 +270,7 @@ export default function Founders() {
             Como o Atlas funciona
           </motion.h2>
 
-          <div className="grid sm:grid-cols-3 gap-8 sm:gap-6">
+          <div className="grid sm:grid-cols-3 gap-5 sm:gap-6">
             {PILLARS.map((p, i) =>
             <motion.div
               key={p.num}
