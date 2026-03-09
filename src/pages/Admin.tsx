@@ -65,7 +65,7 @@ const Admin = () => {
         description: "Você não tem permissão para acessar esta página.",
         variant: "destructive",
       });
-      navigate("/");
+      navigate("/hoje");
     }
   }, [isAdmin, isAdminLoading, navigate]);
 
