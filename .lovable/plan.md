@@ -1,59 +1,49 @@
 
+## Checklist de Prontidão para Lançamento
 
-## Plano: Editor Visual de Questoes estilo Simulado
+### 🔴 Críticos (Devem ser corrigidos)
 
-O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
+**1. Autenticação no `generate-flashcard`**
+- A edge function não valida sessão do usuário
+- Qualquer pessoa pode consumir API AI sem login
+- **Fix**: Adicionar validação de `Authorization` header e verificar `supabase.auth.getUser()`
 
-### Arquitetura
+**2. Storage bucket `question-images` muito permissivo**
+- Qualquer usuário autenticado pode deletar/modificar imagens de outros
+- **Fix**: Restringir policies para `(storage.foldername(name))[1] = auth.uid()::text`
 
-```text
-PreviewStage (refatorado)
-├── QuestionEditor (painel esquerdo — scrollavel)
-│   ├── Header: "Q.1 de 90" + badges (area, idioma)
-│   ├── Statement editor (textarea com suporte a {{IMG_N}})
-│   │   └── Inline image slots (drag/drop, paste, upload)
-│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
-│   ├── Metadados: area, resposta correta, lingua estrangeira
-│   └── Navegacao: < Anterior | Proxima >
-│
-└── Sidebar (painel direito — fixo)
-    ├── Status summary (OK / Com erro / Vazias)
-    ├── Grid de numeros (1-90 ou 91-180)
-    │   ├── Verde: questao OK (tem enunciado + gabarito)
-    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
-    │   ├── Vermelho: questao vazia / critica
-    │   ├── Borda: questao atual selecionada
-    │   └── Cinza: questao nao importada
-    └── Botao "Revisar e Importar"
-```
+---
 
-### Tarefas de implementacao
+### 🟡 Recomendados (Baixo risco, bom fazer)
 
-1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
-   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
-   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
-   - 5 alternativas editaveis (texto + slot de imagem cada)
-   - Selects para area, resposta correta, lingua estrangeira
-   - Navegacao Anterior/Proxima
+**3. Leaked Password Protection desabilitado**
+- Senhas vazadas não são bloqueadas no signup
+- **Ação**: Ativar em Lovable Cloud → Auth → Security settings
 
-2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
-   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
-   - Contadores no topo: "X completas, Y com erro, Z vazias"
-   - Click no numero navega para a questao
+**4. React warning no `ProfileMenu`**
+- Warning de ref em `DropdownMenuContent` (cosmético)
+- **Fix**: Adicionar `forwardRef` no componente
 
-3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
-   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
-   - Direita: QuestionGrid + botao de importar
-   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
-   - Mobile: grid em cima, editor embaixo (responsivo)
+---
 
-4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
+### ✅ Já está OK
 
-### Detalhes tecnicos
+| Área | Status |
+|------|--------|
+| RLS em todas as tabelas | ✓ Coberto |
+| Fluxo de pagamento Stripe | ✓ Sincroniza plan_type |
+| Onboarding simplificado | ✓ Recém implementado |
+| Autenticação (signup/login) | ✓ Funcionando |
+| Admin protegido server-side | ✓ via `has_role` |
+| check-subscription | ✓ Com sync automático |
 
-- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
-- O estado de "questao atual" sera controlado por um index no PreviewStage
-- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
-- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
-- Nenhuma mudanca no banco de dados ou edge functions necessaria
+---
 
+### 📋 Ações sugeridas
+
+1. **Corrigir `generate-flashcard`** — adicionar auth check
+2. **Restringir storage policies** — question-images bucket
+3. (Opcional) Ativar leaked password protection
+4. **Testar fluxo completo**: Signup → Onboarding → Plano → Checkout → PRO ativo
+
+Esses 2 fixes de segurança são rápidos (~20 min total) e eliminam os riscos de abuso de API e manipulação de dados.
