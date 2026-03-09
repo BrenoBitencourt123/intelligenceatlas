@@ -80,8 +80,7 @@ const Objectives = () => {
     } : null,
     state === 'active' && hasKnowledgeCapsules
   );
-  const flashcards = useFlashcardReview();
-  const [flashcardMode, setFlashcardMode] = useState(false);
+  const { user } = useAuth();
   const [blockTransition, setBlockTransition] = useState<{
     completedBlock: number;
     correct: number;
