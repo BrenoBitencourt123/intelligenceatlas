@@ -211,7 +211,7 @@ export default function Founders() {
           >
             <Button
               size="lg"
-              className="h-12 px-8 text-base sm:h-14 sm:px-10 sm:text-lg font-bold rounded-full bg-foreground text-background hover:bg-foreground/90 shadow-lg active:scale-[0.98] transition-transform"
+              className="h-12 px-8 text-base sm:h-14 sm:px-10 sm:text-lg font-bold rounded-full bg-[#111827] text-white hover:bg-[#111827]/90 shadow-lg active:scale-[0.98] transition-transform"
               onClick={handleCTA}
             >
               Garantir minha vaga
