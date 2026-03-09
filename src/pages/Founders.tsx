@@ -156,13 +156,14 @@ export default function Founders() {
         <div className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-8">
           {/* Eyebrow */}
           <motion.p
-            className="text-[0.65rem] sm:text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground"
+            className="text-[0.65rem] sm:text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground leading-relaxed"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
             custom={0}>
-            
-            Inteligência Atlas · Lançamento exclusivo
+            Inteligência Atlas
+            <br />
+            Lançamento exclusivo
           </motion.p>
 
           {/* Headline */}
