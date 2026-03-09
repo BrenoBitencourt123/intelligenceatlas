@@ -205,13 +205,13 @@ export default function Founders() {
           >
             <Button
               size="lg"
-              className="h-14 px-10 text-lg font-bold rounded-full bg-foreground text-background hover:bg-foreground/90 shadow-lg active:scale-[0.98] transition-transform"
+              className="h-12 px-8 text-base sm:h-14 sm:px-10 sm:text-lg font-bold rounded-full bg-foreground text-background hover:bg-foreground/90 shadow-lg active:scale-[0.98] transition-transform"
               onClick={handleCTA}
             >
               Garantir minha vaga
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-1">
               {vagasRestantes > 0 ? (
                 <>
                   <span className="font-semibold text-foreground">
