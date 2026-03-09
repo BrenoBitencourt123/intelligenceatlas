@@ -210,8 +210,8 @@ export default function Onboarding() {
 
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { id: 'ingles', label: 'Inglês', flag: '🇬🇧', desc: 'English' },
-                    { id: 'espanhol', label: 'Espanhol', flag: '🇪🇸', desc: 'Español' },
+                    { id: 'ingles', label: 'Inglês', abbr: 'EN', desc: 'English' },
+                    { id: 'espanhol', label: 'Espanhol', abbr: 'ES', desc: 'Español' },
                   ].map((lang, i) => {
                     const selected = foreignLanguage === lang.id;
                     return (
@@ -227,7 +227,11 @@ export default function Onboarding() {
                             : 'border-border hover:border-primary/30 hover:bg-muted/50'
                         }`}
                       >
-                        <span className="text-4xl block mb-3">{lang.flag}</span>
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold mb-3 ${
+                          selected ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                        }`}>
+                          {lang.abbr}
+                        </div>
                         <span className="text-base font-semibold block">{lang.label}</span>
                         <span className="text-xs text-muted-foreground">{lang.desc}</span>
                         {selected && (
