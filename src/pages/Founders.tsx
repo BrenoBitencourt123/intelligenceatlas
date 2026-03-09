@@ -300,7 +300,7 @@ export default function Founders() {
       </section>
 
       {/* ─── Por que ser fundador — Dark section ─── */}
-      <section className="bg-foreground text-background px-5 py-20 sm:py-28">
+      <section className="bg-[#111827] text-white px-5 py-20 sm:py-28">
         <div className="max-w-2xl mx-auto space-y-12">
           <motion.div
             className="space-y-4 text-center"
