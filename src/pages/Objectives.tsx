@@ -716,32 +716,6 @@ const Objectives = () => {
             </div>
           )}
 
-          {/* Flashcard line */}
-          <button
-            onClick={() => {
-              if (flashcards.totalDue > 0) {
-                flashcards.startReview();
-                setFlashcardMode(true);
-              }
-            }}
-            disabled={flashcards.totalDue === 0}
-            className="w-full flex items-center justify-between rounded-lg border border-border p-4 hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-default"
-          >
-            <div className="flex items-center gap-2.5">
-              <Brain className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Flashcards</span>
-              <span className="text-xs text-muted-foreground">
-                {flashcards.totalDue > 0 ? `${flashcards.totalDue} pendentes` : 'Nenhum pendente'}
-              </span>
-            </div>
-            {flashcards.totalDue > 0 && <ArrowRight className="h-4 w-4 text-muted-foreground" />}
-          </button>
-          {!hasAutoFlashcards && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1 -mt-4 ml-1">
-              <Crown className="h-3 w-3 text-amber-500" />
-              Flashcards automáticos: Plano Pro
-            </p>
-          )}
         </div>
       </div>
     </MainLayout>
