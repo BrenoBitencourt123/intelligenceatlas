@@ -1,4 +1,5 @@
 import React from 'react';
+import { renderMath } from '@/lib/renderMath';
 
 /**
  * Auto-detect and apply Markdown formatting to plain-text statements.
@@ -106,6 +107,7 @@ function markdownToHtml(text: string): string {
 function formatInline(text: string): string {
   let result = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   result = result.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+  result = renderMath(result);
   return result;
 }
 
