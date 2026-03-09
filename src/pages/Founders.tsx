@@ -167,27 +167,26 @@ export default function Founders() {
 
           {/* Headline */}
           <motion.h1
-            className="text-[1.75rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.12]"
+            className="text-[2.25rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
             custom={1}>
             
-            <span style={{ color: '#111827' }}>Seja um dos 20</span>
+            <span className="text-foreground">Seja um dos 20</span>
             <br />
-            <span style={{ color: '#737373' }}>Membros Fundadores</span>
+            <span className="text-muted-foreground">Membros Fundadores</span>
           </motion.h1>
 
           {/* Oferta em destaque */}
           <motion.p
-            className="text-xl sm:text-2xl lg:text-3xl font-bold"
+            className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
             custom={2}>
             
-            50% de desconto — para sempre.
-          </motion.p>
+            50% de desconto — para sempre.</motion.p>
 
           {/* Explicação do produto */}
           <motion.p
