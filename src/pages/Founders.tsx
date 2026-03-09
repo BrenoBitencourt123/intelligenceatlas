@@ -151,7 +151,7 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="relative min-h-[100svh] flex items-start sm:items-center justify-center px-5 pt-28 pb-24 sm:pt-0 sm:pb-0"
+        className="relative min-h-[100svh] flex items-start sm:items-center justify-center px-5 pt-28 pb-24 sm:pt-0 sm:pb-0 bg-[#0a0a0a]"
       >
         <div className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-8">
           {/* Eyebrow */}
@@ -167,20 +167,20 @@ export default function Founders() {
 
           {/* Headline */}
           <motion.h1
-            className="text-[1.75rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.12]"
+            className="text-[1.75rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.12] text-white"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
             custom={1}
           >
-            Seja um dos 20{" "}
+            Garanta sua vaga como{" "}
             <br className="hidden sm:block" />
-            Membros Fundadores
+            Fundador do Atlas
           </motion.h1>
 
           {/* Oferta em destaque */}
           <motion.p
-            className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-amber-600 via-orange-500 to-rose-500 bg-clip-text text-transparent"
+            className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
@@ -191,7 +191,7 @@ export default function Founders() {
 
           {/* Explicação do produto */}
           <motion.p
-            className="text-base sm:text-lg text-muted-foreground max-w-md mx-auto leading-relaxed"
+            className="text-base sm:text-lg text-gray-400 max-w-md mx-auto leading-relaxed"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
