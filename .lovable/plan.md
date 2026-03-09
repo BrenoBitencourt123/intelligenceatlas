@@ -1,59 +1,35 @@
 
 
-## Plano: Editor Visual de Questoes estilo Simulado
+## Plano: Corrigir mismatch de nomes de área entre DB e código
 
-O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
+### Problema
+A tabela `questions` armazena áreas com nomes completos do ENEM:
+- `Ciências Humanas e suas Tecnologias`
+- `Ciências da Natureza e suas Tecnologias`
+- `Linguagens, Códigos e suas Tecnologias`
+- `Matemática e suas Tecnologias`
 
-### Arquitetura
+Mas o código inteiro (schedule, sessão de estudo, admin) usa chaves curtas: `humanas`, `natureza`, `linguagens`, `matematica`. Resultado: `.eq("area", "matematica")` retorna 0 questões.
 
-```text
-PreviewStage (refatorado)
-├── QuestionEditor (painel esquerdo — scrollavel)
-│   ├── Header: "Q.1 de 90" + badges (area, idioma)
-│   ├── Statement editor (textarea com suporte a {{IMG_N}})
-│   │   └── Inline image slots (drag/drop, paste, upload)
-│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
-│   ├── Metadados: area, resposta correta, lingua estrangeira
-│   └── Navegacao: < Anterior | Proxima >
-│
-└── Sidebar (painel direito — fixo)
-    ├── Status summary (OK / Com erro / Vazias)
-    ├── Grid de numeros (1-90 ou 91-180)
-    │   ├── Verde: questao OK (tem enunciado + gabarito)
-    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
-    │   ├── Vermelho: questao vazia / critica
-    │   ├── Borda: questao atual selecionada
-    │   └── Cinza: questao nao importada
-    └── Botao "Revisar e Importar"
+### Solução
+Normalizar os valores de `area` no banco para as chaves curtas via migração SQL. Isso alinha com o restante do sistema (schedule, importação, taxonomia) que já opera com chaves curtas.
+
+**1. Migração SQL** — `UPDATE questions` para converter os 4 valores longos nos curtos:
+```sql
+UPDATE questions SET area = 'humanas' WHERE area = 'Ciências Humanas e suas Tecnologias';
+UPDATE questions SET area = 'natureza' WHERE area = 'Ciências da Natureza e suas Tecnologias';
+UPDATE questions SET area = 'linguagens' WHERE area ILIKE 'Linguagens%';
+UPDATE questions SET area = 'matematica' WHERE area ILIKE 'Matemática%';
 ```
 
-### Tarefas de implementacao
+Também normalizar `user_topic_profile.area` que tem o mesmo problema (vimos `"Ciências da Natureza e suas Tecnologias"` nos dados do usuário).
 
-1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
-   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
-   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
-   - 5 alternativas editaveis (texto + slot de imagem cada)
-   - Selects para area, resposta correta, lingua estrangeira
-   - Navegacao Anterior/Proxima
+**2. Corrigir o fluxo de importação** — Garantir que a edge function `import-enem-api` e `parse-exam-pdf` gravem as chaves curtas (verificar se já fazem isso).
 
-2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
-   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
-   - Contadores no topo: "X completas, Y com erro, Z vazias"
-   - Click no numero navega para a questao
+Nenhuma mudança de código no frontend é necessária, pois ele já usa as chaves curtas corretamente. O problema é exclusivamente nos dados do banco.
 
-3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
-   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
-   - Direita: QuestionGrid + botao de importar
-   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
-   - Mobile: grid em cima, editor embaixo (responsivo)
-
-4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
-
-### Detalhes tecnicos
-
-- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
-- O estado de "questao atual" sera controlado por um index no PreviewStage
-- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
-- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
-- Nenhuma mudanca no banco de dados ou edge functions necessaria
+### Impacto
+- Sessão de estudo passa a encontrar questões corretamente por área
+- Filtro de área no Admin funciona
+- Mapa de tópicos do usuário fica consistente
 
