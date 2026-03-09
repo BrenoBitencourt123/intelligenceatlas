@@ -290,7 +290,7 @@ export default function Founders() {
                 <h3 className="font-semibold text-[#111827] text-base">
                   {p.title}
                 </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-sm text-[#6B7280] leading-relaxed">
                   {p.desc}
                 </p>
               </motion.div>
