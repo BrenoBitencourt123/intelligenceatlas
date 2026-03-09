@@ -113,7 +113,7 @@ export default function Founders() {
   const handleCTA = () => navigate("/fundadores/cadastro");
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="h-screen overflow-y-auto snap-y snap-mandatory bg-background text-foreground scroll-smooth">
       {/* ─── Sticky Navbar ─── */}
       <motion.nav
         className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50"
