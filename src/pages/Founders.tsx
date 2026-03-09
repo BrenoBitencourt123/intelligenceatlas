@@ -240,7 +240,7 @@ export default function Founders() {
           transition={{ duration: 0.3 }}
           style={{ pointerEvents: scrollProgress > 0.5 ? "none" : "auto" }}
         >
-          <span className="text-sm sm:text-base text-muted-foreground font-medium">
+          <span className="text-sm sm:text-base text-[#6B7280] font-medium">
             Arraste para baixo
           </span>
           <motion.div
