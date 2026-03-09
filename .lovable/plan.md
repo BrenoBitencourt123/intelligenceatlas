@@ -1,53 +1,59 @@
 
 
-## Atualização da Paleta de Cores - /fundadores
+## Plano: Editor Visual de Questoes estilo Simulado
 
-### Paleta Definida pelo Usuário
+O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
 
-| Elemento | Cor Atual | Nova Cor |
-|----------|-----------|----------|
-| Background da página | `#0a0a0a` (preto) | `#F5F5F5` (cinza claro) |
-| Headline | `text-white` | `#111827` (grafite) |
-| "50% de desconto" | gradient amber | `#111827` (grafite) ou manter destaque |
-| Texto secundário | `text-gray-400` | `#6B7280` (cinza médio) |
-| Texto leve (descrição) | - | `#9CA3AF` |
-| Botão | `bg-foreground` | `#111827` com texto `#FFFFFF` |
-| Vagas info | `text-muted-foreground` | `#6B7280` |
+### Arquitetura
 
-### Alterações no Hero (linhas 152-257)
-
-**Linha 154** - Background:
-```tsx
-className="... bg-[#F5F5F5]"
+```text
+PreviewStage (refatorado)
+├── QuestionEditor (painel esquerdo — scrollavel)
+│   ├── Header: "Q.1 de 90" + badges (area, idioma)
+│   ├── Statement editor (textarea com suporte a {{IMG_N}})
+│   │   └── Inline image slots (drag/drop, paste, upload)
+│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
+│   ├── Metadados: area, resposta correta, lingua estrangeira
+│   └── Navegacao: < Anterior | Proxima >
+│
+└── Sidebar (painel direito — fixo)
+    ├── Status summary (OK / Com erro / Vazias)
+    ├── Grid de numeros (1-90 ou 91-180)
+    │   ├── Verde: questao OK (tem enunciado + gabarito)
+    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
+    │   ├── Vermelho: questao vazia / critica
+    │   ├── Borda: questao atual selecionada
+    │   └── Cinza: questao nao importada
+    └── Botao "Revisar e Importar"
 ```
 
-**Linha 170** - Headline:
-```tsx
-className="... text-[#111827]"
-```
+### Tarefas de implementacao
 
-**Linhas 182-183** - "50% de desconto":
-```tsx
-className="... text-amber-600"  // manter destaque dourado
-```
+1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
+   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
+   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
+   - 5 alternativas editaveis (texto + slot de imagem cada)
+   - Selects para area, resposta correta, lingua estrangeira
+   - Navegacao Anterior/Proxima
 
-**Linha 194** - Descrição:
-```tsx
-className="... text-[#9CA3AF] ..."
-```
+2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
+   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
+   - Contadores no topo: "X completas, Y com erro, Z vazias"
+   - Click no numero navega para a questao
 
-**Linha 214** - Botão:
-```tsx
-className="... bg-[#111827] text-white hover:bg-[#111827]/90 ..."
-```
+3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
+   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
+   - Direita: QuestionGrid + botao de importar
+   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
+   - Mobile: grid em cima, editor embaixo (responsivo)
 
-**Linhas 220, 223, 243, 254** - Textos informativos:
-```tsx
-text-[#6B7280]
-```
+4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
 
-### Detalhes Técnicos
-- Usar cores hardcoded (`#111827`, `#F5F5F5`, etc.) para garantir consistência exata
-- O gradiente rainbow do eyebrow permanece intacto
-- O texto "50% de desconto" pode manter tom amber (`text-amber-600`) para destaque comercial, ou usar `#111827` se preferir uniformidade total
+### Detalhes tecnicos
+
+- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
+- O estado de "questao atual" sera controlado por um index no PreviewStage
+- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
+- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
+- Nenhuma mudanca no banco de dados ou edge functions necessaria
 
