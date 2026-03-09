@@ -393,7 +393,7 @@ export default function Founders() {
       </section>
 
       {/* ─── FAQ ─── */}
-      <section className="px-5 py-20 sm:py-28">
+      <section className="snap-start min-h-screen flex flex-col justify-center px-5 py-20 sm:py-28">
         <div className="max-w-2xl mx-auto space-y-10">
           <motion.h2
             className="text-2xl sm:text-3xl font-bold text-center"
