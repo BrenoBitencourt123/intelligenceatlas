@@ -74,7 +74,29 @@ export default function Login() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Senha</Label>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                  onClick={async () => {
+                    if (!email) {
+                      toast.error('Digite seu email primeiro');
+                      return;
+                    }
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                      redirectTo: `${window.location.origin}/reset-password`,
+                    });
+                    if (error) {
+                      toast.error('Erro ao enviar email', { description: error.message });
+                    } else {
+                      toast.success('Email enviado!', { description: 'Verifique sua caixa de entrada para redefinir a senha.' });
+                    }
+                  }}
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
               <Input
                 id="password"
                 type="password"

@@ -570,11 +570,11 @@ export default function Founders() {
           Inteligência Atlas © {new Date().getFullYear()}
         </p>
         <div className="flex justify-center gap-4">
-          <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <a href="/termos" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
             Termos de uso
           </a>
           <span className="text-xs text-muted-foreground">·</span>
-          <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <a href="/privacidade" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
             Política de privacidade
           </a>
         </div>

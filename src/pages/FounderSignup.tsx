@@ -202,7 +202,7 @@ export default function FounderSignup() {
                     className="w-full h-12 text-base font-bold rounded-xl bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98] transition-transform"
                     onClick={() =>
                       window.open(
-                        "https://chat.whatsapp.com/SEU_LINK_AQUI",
+                        "https://chat.whatsapp.com/LINK_DO_GRUPO_VIP",
                         "_blank"
                       )
                     }

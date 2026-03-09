@@ -195,10 +195,6 @@ export default function Onboarding() {
               <Button
                 className="w-full gap-2"
                 onClick={() => {
-                  if (!phone.trim()) {
-                    toast.error('Informe seu telefone para continuar.');
-                    return;
-                  }
                   setStep(2);
                 }}
               >
