@@ -1,84 +1,59 @@
 
 
-## Análise de Design — Landing Page Fundadores
+## Plano: Editor Visual de Questoes estilo Simulado
 
-Analisei toda a página seção por seção. A estrutura geral é sólida: hierarquia clara, snap scrolling, seção dark para contraste, FAQ, e CTA repetido. Mas há oportunidades concretas para elevar a conversão e o polish visual.
+O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
 
----
-
-### 1. Hero — Adicionar badge de urgência/escassez
-
-**Problema:** O contador "X de 20 vagas preenchidas" está discreto demais abaixo do botão, em texto pequeno e cinza. É o maior gatilho de conversão da página mas compete visualmente com "Cancele quando quiser".
-
-**Proposta:** Adicionar um badge/pill animado acima do eyebrow com um ponto pulsante (vermelho ou âmbar) + texto tipo `🔴 3 vagas restantes`. Isso cria urgência imediata antes mesmo de ler o headline.
+### Arquitetura
 
 ```text
-  ● 3 vagas restantes        ← badge pulsante, pequeno, acima do eyebrow
-  
-  INTELIGÊNCIA ATLAS
-  LANÇAMENTO EXCLUSIVO
-  
-  Seja um dos 20
-  Membros Fundadores
-  ...
+PreviewStage (refatorado)
+├── QuestionEditor (painel esquerdo — scrollavel)
+│   ├── Header: "Q.1 de 90" + badges (area, idioma)
+│   ├── Statement editor (textarea com suporte a {{IMG_N}})
+│   │   └── Inline image slots (drag/drop, paste, upload)
+│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
+│   ├── Metadados: area, resposta correta, lingua estrangeira
+│   └── Navegacao: < Anterior | Proxima >
+│
+└── Sidebar (painel direito — fixo)
+    ├── Status summary (OK / Com erro / Vazias)
+    ├── Grid de numeros (1-90 ou 91-180)
+    │   ├── Verde: questao OK (tem enunciado + gabarito)
+    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
+    │   ├── Vermelho: questao vazia / critica
+    │   ├── Borda: questao atual selecionada
+    │   └── Cinza: questao nao importada
+    └── Botao "Revisar e Importar"
 ```
 
----
+### Tarefas de implementacao
 
-### 2. Hero — Separar "vagas preenchidas" de "Cancele quando quiser"
+1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
+   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
+   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
+   - 5 alternativas editaveis (texto + slot de imagem cada)
+   - Selects para area, resposta correta, lingua estrangeira
+   - Navegacao Anterior/Proxima
 
-**Problema:** Duas informações com propósitos diferentes (urgência vs. segurança) estão na mesma linha, diluindo ambas.
+2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
+   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
+   - Contadores no topo: "X completas, Y com erro, Z vazias"
+   - Click no numero navega para a questao
 
-**Proposta:** Colocar o progresso de vagas como uma mini barra de progresso compacta logo abaixo do botão, e "Cancele quando quiser" como texto separado abaixo. Isso dá peso visual à escassez.
+3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
+   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
+   - Direita: QuestionGrid + botao de importar
+   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
+   - Mobile: grid em cima, editor embaixo (responsivo)
 
----
+4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
 
-### 3. Seção "Como funciona" — Adicionar linha conectora ou numeração mais visível
+### Detalhes tecnicos
 
-**Problema:** Os 3 pilares estão visualmente desconectados. No mobile (onde ficam empilhados), os números "01 02 03" são muito discretos e não comunicam progressão.
-
-**Proposta:** No mobile, adicionar uma linha vertical sutil entre os cards (como um stepper) para comunicar que é um fluxo sequencial. No desktop está ok como grid.
-
----
-
-### 4. Seção Dark "Por que ser fundador" — Destacar o primeiro benefício
-
-**Problema:** Todos os 5 benefícios têm o mesmo peso visual. O primeiro ("50% de desconto — para sempre") é o mais forte e deveria se destacar.
-
-**Proposta:** Renderizar o primeiro benefício com fonte maior e bold, ou como um card/badge separado antes da lista. Os outros 4 ficam como checklist normal.
-
----
-
-### 5. CTA Final — Muito fraco para fechar a página
-
-**Problema:** A última seção antes do footer tem headline pequena ("Pronto para estudar de forma inteligente?"), texto genérico, e o mesmo botão. Para uma landing de escassez, o fechamento deveria ser mais impactante.
-
-**Proposta:** 
-- Headline maior e mais direta: "Últimas vagas com 50% off"
-- Re-exibir o badge de vagas restantes com a barra de progresso
-- Adicionar um texto de reforço tipo "Depois das 20, o preço volta ao normal"
-
----
-
-### 6. Footer — Adicionar links de confiança
-
-**Problema:** O footer é só copyright. Para uma página de venda, faltam sinais de confiança.
-
-**Proposta:** Adicionar links discretos: "Termos de uso" e "Política de privacidade" (mesmo que sejam placeholder). Isso aumenta a percepção de legitimidade.
-
----
-
-### Resumo das mudanças
-
-| # | Onde | O quê | Por quê |
-|---|------|--------|---------|
-| 1 | Hero topo | Badge pulsante "X vagas restantes" | Urgência imediata |
-| 2 | Hero abaixo do CTA | Mini progress bar separada | Destaque à escassez |
-| 3 | Como funciona (mobile) | Stepper vertical entre cards | Comunicar fluxo |
-| 4 | Seção dark | Primeiro benefício destacado | Hierarquia de valor |
-| 5 | CTA final | Headline forte + barra de vagas | Fechamento impactante |
-| 6 | Footer | Links termos/privacidade | Confiança |
-
-### Arquivos editados
-- `src/pages/Founders.tsx` — todas as mudanças concentradas neste arquivo
+- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
+- O estado de "questao atual" sera controlado por um index no PreviewStage
+- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
+- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
+- Nenhuma mudanca no banco de dados ou edge functions necessaria
 
