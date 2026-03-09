@@ -1,4 +1,4 @@
-import { CalendarCheck, ListChecks, PenLine, BarChart2 } from 'lucide-react';
+import { CalendarCheck, ListChecks, PenLine } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
