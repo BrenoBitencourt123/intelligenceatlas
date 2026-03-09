@@ -557,8 +557,8 @@ const Objectives = () => {
 
   return (
     <MainLayout>
-      <div className="container max-w-lg mx-auto px-4 py-8">
-        <div className="space-y-6">
+      <div className="container max-w-lg mx-auto px-4 py-8 pb-24">
+        <div className="space-y-4">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold text-foreground">Questões Objetivas</h1>
             {!stats.isLoading && stats.questionsToday > 0 && (
@@ -568,154 +568,157 @@ const Objectives = () => {
             )}
           </div>
 
-          {/* Daily progress card */}
-          {!stats.isLoading && (
-            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Progresso do dia</span>
+          <Tabs defaultValue="estudar" className="w-full">
+            <TabsList className="w-full">
+              <TabsTrigger value="estudar" className="flex-1">Estudar</TabsTrigger>
+              <TabsTrigger value="desempenho" className="flex-1">Desempenho</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="estudar" className="space-y-6 mt-4">
+              {/* Daily progress card */}
+              {!stats.isLoading && (
+                <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Progresso do dia</span>
+                    </div>
+                    <span className="text-sm font-semibold tabular-nums text-foreground">
+                      {stats.questionsToday}/{dailyTarget}
+                    </span>
+                  </div>
+                  <Progress value={dailyPct} className="h-2" />
+                  {stats.questionsToday >= dailyTarget && (
+                    <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                      🎉 Meta diária atingida!
+                    </p>
+                  )}
                 </div>
-                <span className="text-sm font-semibold tabular-nums text-foreground">
-                  {stats.questionsToday}/{dailyTarget}
-                </span>
-              </div>
-              <Progress value={dailyPct} className="h-2" />
-              {stats.questionsToday >= dailyTarget && (
-                <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-                  🎉 Meta diária atingida!
-                </p>
               )}
-            </div>
-          )}
 
-          {/* Session card */}
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-            {schedule.isLoading ? (
-              <Skeleton className="h-6 w-48 rounded" />
-            ) : (
-              <div className="space-y-1">
-                <h2 className="text-lg font-semibold text-foreground">
-                  {areaOverride ? `Revisão: ${AREA_LABELS[areaOverride] ?? areaOverride}` : schedule.label}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {hasFullSessionAccess
-                    ? `${schedule.questionCount} questões · 3 blocos`
-                    : `${freeQuestionLimit} questões (degustação)`}
-                </p>
-              </div>
-            )}
-
-            {/* Free area locked paywall */}
-            {isFree && isAreaLocked(effectiveArea) ? (
-              <div className="rounded-lg border border-border p-4 space-y-3 text-center">
-                <Crown className="h-5 w-5 text-amber-500 mx-auto" />
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Degustação encerrada</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Assine o PRO para continuar sem limites.
-                  </p>
-                </div>
-                <Button className="w-full gap-2" onClick={() => navigate('/plano')}>
-                  <Crown className="h-4 w-4" />
-                  Ver plano PRO
-                </Button>
-              </div>
-            ) : (
-              <>
-                {!hasFullSessionAccess && (
-                  <div className="rounded-lg border border-border p-3 text-center space-y-2">
-                    <p className="text-xs text-muted-foreground">Sessões completas de 20 questões</p>
-                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/plano')}>
-                      <Crown className="h-3.5 w-3.5 text-amber-500" />
-                      Ver planos
-                    </Button>
+              {/* Session card */}
+              <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+                {schedule.isLoading ? (
+                  <Skeleton className="h-6 w-48 rounded" />
+                ) : (
+                  <div className="space-y-1">
+                    <h2 className="text-lg font-semibold text-foreground">
+                      {areaOverride ? `Revisão: ${AREA_LABELS[areaOverride] ?? areaOverride}` : schedule.label}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      {hasFullSessionAccess
+                        ? `${schedule.questionCount} questões · 3 blocos`
+                        : `${freeQuestionLimit} questões (degustação)`}
+                    </p>
                   </div>
                 )}
-                {hasSavedSession ? (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      className="flex-1 gap-2"
-                      onClick={resumeSession}
-                    >
-                      Continuar estudo
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() =>
-                        startSession(
-                          effectiveArea,
-                          hasFullSessionAccess ? undefined : freeQuestionLimit,
-                          false,
-                          true
-                        )
-                      }
-                      title="Resetar"
-                    >
-                      <RotateCcw className="h-4 w-4" />
+
+                {/* Free area locked paywall */}
+                {isFree && isAreaLocked(effectiveArea) ? (
+                  <div className="rounded-lg border border-border p-4 space-y-3 text-center">
+                    <Crown className="h-5 w-5 text-amber-500 mx-auto" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Degustação encerrada</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Assine o PRO para continuar sem limites.
+                      </p>
+                    </div>
+                    <Button className="w-full gap-2" onClick={() => navigate('/plano')}>
+                      <Crown className="h-4 w-4" />
+                      Ver plano PRO
                     </Button>
                   </div>
                 ) : (
-                  <Button
-                    className="w-full gap-2"
-                    disabled={schedule.isLoading}
-                    onClick={() => startSession(effectiveArea, hasFullSessionAccess ? undefined : freeQuestionLimit)}
-                  >
-                    Iniciar Sessão
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+                  <>
+                    {!hasFullSessionAccess && (
+                      <div className="rounded-lg border border-border p-3 text-center space-y-2">
+                        <p className="text-xs text-muted-foreground">Sessões completas de 20 questões</p>
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/plano')}>
+                          <Crown className="h-3.5 w-3.5 text-amber-500" />
+                          Ver planos
+                        </Button>
+                      </div>
+                    )}
+                    {hasSavedSession ? (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          className="flex-1 gap-2"
+                          onClick={resumeSession}
+                        >
+                          Continuar estudo
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            startSession(
+                              effectiveArea,
+                              hasFullSessionAccess ? undefined : freeQuestionLimit,
+                              false,
+                              true
+                            )
+                          }
+                          title="Resetar"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        className="w-full gap-2"
+                        disabled={schedule.isLoading}
+                        onClick={() => startSession(effectiveArea, hasFullSessionAccess ? undefined : freeQuestionLimit)}
+                      >
+                        Iniciar Sessão
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-          </div>
-
-          {/* Weak topics */}
-          {!stats.isLoading && weakTopics.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-muted-foreground" />
-                  Tópicos para reforçar
-                </h3>
-                <button
-                  onClick={() => navigate('/errors')}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5"
-                >
-                  Ver todos
-                  <ChevronRight className="h-3 w-3" />
-                </button>
               </div>
-              <div className="space-y-2">
-                {weakTopics.map((t: any, i: number) => {
-                  const topicLabel = t.topic?.includes('__')
-                    ? t.topic.split('__').pop()
-                    : t.topic;
-                  return (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{topicLabel}</p>
-                        <p className="text-xs text-muted-foreground truncate">{t.area}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-12 h-1.5 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-destructive/70"
-                            style={{ width: `${Math.round(t.priority * 100)}%` }}
-                          />
+
+              {/* Weak topics */}
+              {!stats.isLoading && weakTopics.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                    Tópicos para reforçar
+                  </h3>
+                  <div className="space-y-2">
+                    {weakTopics.map((t: any, i: number) => {
+                      const topicLabel = t.topic?.includes('__')
+                        ? t.topic.split('__').pop()
+                        : t.topic;
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{topicLabel}</p>
+                            <p className="text-xs text-muted-foreground truncate">{t.area}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-12 h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-destructive/70"
+                                style={{ width: `${Math.round(t.priority * 100)}%` }}
+                              />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
 
+            <TabsContent value="desempenho" className="mt-4">
+              {user && <TopicMap userId={user.id} />}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </MainLayout>
