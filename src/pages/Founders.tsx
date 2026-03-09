@@ -175,7 +175,7 @@ export default function Founders() {
             
             <span className="text-foreground">Seja um dos 20</span>
             <br />
-            <span className="text-muted-foreground">Membros Fundadores</span>
+            <span className="text-muted-foreground whitespace-nowrap">Membros&nbsp;Fundadores</span>
           </motion.h1>
 
           {/* Oferta em destaque */}
