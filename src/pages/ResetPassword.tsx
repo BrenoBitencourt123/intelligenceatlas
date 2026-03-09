@@ -54,7 +54,7 @@ export default function ResetPassword() {
     }
 
     toast.success('Senha redefinida com sucesso!');
-    navigate('/', { replace: true });
+    navigate('/hoje', { replace: true });
   };
 
   if (!ready) {
