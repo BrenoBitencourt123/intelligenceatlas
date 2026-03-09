@@ -145,7 +145,7 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="min-h-screen flex items-center justify-center px-4 sm:px-5 pt-4 sm:pt-14"
+        className="min-h-screen flex items-start sm:items-center justify-center px-4 sm:px-5 pt-6 sm:pt-14"
       >
         <div className="max-w-2xl mx-auto text-center space-y-6 sm:space-y-8">
           {/* Eyebrow */}
