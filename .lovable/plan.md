@@ -1,34 +1,59 @@
 
 
-## Plano: Mover urgência do badge pill para o header
+## Plano: Editor Visual de Questoes estilo Simulado
 
-Concordo — o badge pill vermelho no hero compete com o visual clean e o header já está "vazio" na maioria do tempo. Melhor usar esse espaço.
+O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
 
-### Mudanças em `src/pages/Founders.tsx`
+### Arquitetura
 
-**1. Remover o badge pill do hero (linhas 155-175)**
-Deletar todo o `motion.div` com o badge de urgência pulsante.
-
-**2. Adicionar indicador de vagas no header (linhas 122-146)**
-No navbar, ao lado do logo (lado esquerdo), adicionar um texto compacto com o ponto pulsante:
-
-```tsx
-<div className="flex items-center gap-2">
-  <img src="/icon-192.png" alt="Atlas" className="h-6 w-6" />
-  <span className="text-base font-bold tracking-tight text-foreground">Atlas</span>
-  <span className="mx-1.5 h-4 w-px bg-border" /> {/* separador */}
-  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-    <span className="relative flex h-1.5 w-1.5">
-      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
-      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
-    </span>
-    {vagasRestantes} vagas restantes
-  </span>
-</div>
+```text
+PreviewStage (refatorado)
+├── QuestionEditor (painel esquerdo — scrollavel)
+│   ├── Header: "Q.1 de 90" + badges (area, idioma)
+│   ├── Statement editor (textarea com suporte a {{IMG_N}})
+│   │   └── Inline image slots (drag/drop, paste, upload)
+│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
+│   ├── Metadados: area, resposta correta, lingua estrangeira
+│   └── Navegacao: < Anterior | Proxima >
+│
+└── Sidebar (painel direito — fixo)
+    ├── Status summary (OK / Com erro / Vazias)
+    ├── Grid de numeros (1-90 ou 91-180)
+    │   ├── Verde: questao OK (tem enunciado + gabarito)
+    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
+    │   ├── Vermelho: questao vazia / critica
+    │   ├── Borda: questao atual selecionada
+    │   └── Cinza: questao nao importada
+    └── Botao "Revisar e Importar"
 ```
 
-Isso mantém a urgência sempre visível (sticky header), é discreto e elegante, e libera espaço no hero para o conteúdo respirar.
+### Tarefas de implementacao
 
-### Arquivo editado
-- `src/pages/Founders.tsx`
+1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
+   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
+   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
+   - 5 alternativas editaveis (texto + slot de imagem cada)
+   - Selects para area, resposta correta, lingua estrangeira
+   - Navegacao Anterior/Proxima
+
+2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
+   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
+   - Contadores no topo: "X completas, Y com erro, Z vazias"
+   - Click no numero navega para a questao
+
+3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
+   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
+   - Direita: QuestionGrid + botao de importar
+   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
+   - Mobile: grid em cima, editor embaixo (responsivo)
+
+4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
+
+### Detalhes tecnicos
+
+- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
+- O estado de "questao atual" sera controlado por um index no PreviewStage
+- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
+- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
+- Nenhuma mudanca no banco de dados ou edge functions necessaria
 

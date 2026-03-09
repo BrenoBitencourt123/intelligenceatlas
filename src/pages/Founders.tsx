@@ -125,6 +125,18 @@ export default function Founders() {
             <span className="text-base font-bold tracking-tight text-foreground">
               Atlas
             </span>
+            {vagasRestantes > 0 && (
+              <>
+                <span className="mx-1.5 h-4 w-px bg-border" />
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
+                  </span>
+                  {vagasRestantes} {vagasRestantes === 1 ? "vaga restante" : "vagas restantes"}
+                </span>
+              </>
+            )}
           </div>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -152,27 +164,6 @@ export default function Founders() {
         className="snap-start relative min-h-screen flex items-start sm:items-center justify-center px-5 pt-28 pb-24 sm:pt-0 sm:pb-0">
         
         <div className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-8">
-          {/* 🔴 Badge de urgência — Melhoria #1 */}
-          <motion.div
-            className="flex justify-center"
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            custom={0}>
-            {vagasRestantes > 0 ? (
-              <span className="inline-flex items-center gap-2 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-xs font-semibold text-destructive">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
-                </span>
-                {vagasRestantes} {vagasRestantes === 1 ? "vaga restante" : "vagas restantes"}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-2 rounded-full border border-muted bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-                Vagas esgotadas
-              </span>
-            )}
-          </motion.div>
 
           {/* Eyebrow */}
           <motion.p
