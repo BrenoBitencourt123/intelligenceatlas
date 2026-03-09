@@ -1,59 +1,39 @@
 
 
-## Plano: Editor Visual de Questoes estilo Simulado
+## Análise Visual — Página Fundadores
 
-O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
+Comparando as duas screenshots (desktop vs mobile), identifico estes pontos de melhoria:
 
-### Arquitetura
+### Problemas no Mobile (image-184)
+1. **Espaço excessivo entre header e conteúdo** — o `items-start` com `pt-6` + `min-h-screen` cria um gap enorme no topo, empurrando o conteúdo para baixo
+2. **Eyebrow ("INTELIGÊNCIA ATLAS · LANÇAMENTO EXCLUSIVO") sumindo** — não aparece na screenshot mobile, provavelmente cortada pelo espaçamento
+3. **Título "Membros Fundadores" quebrando de forma estranha** — "20 Membros" numa linha e "Fundadores" sozinho na outra
 
-```text
-PreviewStage (refatorado)
-├── QuestionEditor (painel esquerdo — scrollavel)
-│   ├── Header: "Q.1 de 90" + badges (area, idioma)
-│   ├── Statement editor (textarea com suporte a {{IMG_N}})
-│   │   └── Inline image slots (drag/drop, paste, upload)
-│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
-│   ├── Metadados: area, resposta correta, lingua estrangeira
-│   └── Navegacao: < Anterior | Proxima >
-│
-└── Sidebar (painel direito — fixo)
-    ├── Status summary (OK / Com erro / Vazias)
-    ├── Grid de numeros (1-90 ou 91-180)
-    │   ├── Verde: questao OK (tem enunciado + gabarito)
-    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
-    │   ├── Vermelho: questao vazia / critica
-    │   ├── Borda: questao atual selecionada
-    │   └── Cinza: questao nao importada
-    └── Botao "Revisar e Importar"
+### Correções Propostas
+
+**1. Hero section — remover `min-h-screen` no mobile**
+- Mobile: usar `min-h-[80vh]` ou simplesmente padding generoso sem forçar viewport inteiro
+- Trocar para `min-h-[auto] sm:min-h-screen` com `pt-20 sm:pt-0` (compensar o navbar fixo)
+- Voltar `items-center` em todos os tamanhos
+
+**2. Título — melhorar quebra de linha no mobile**
+- Usar `text-[1.75rem]` (28px) no mobile em vez de `text-3xl` (30px) para dar mais respiro
+- Remover o `<br className="hidden sm:block" />` e deixar o texto fluir naturalmente
+- Garantir que "Seja um dos 20 Membros Fundadores" quebre como "Seja um dos 20 / Membros Fundadores"
+
+**3. Espaçamento vertical do hero**
 ```
+className="flex items-center justify-center px-5 pt-20 pb-12 sm:min-h-screen sm:pt-0 sm:pb-0"
+```
+- No mobile: padding top de 20 (80px, compensa navbar) + padding bottom
+- No desktop: mantém centralizado na viewport inteira
 
-### Tarefas de implementacao
+**4. Micro-ajustes de polish**
+- Reduzir `space-y-6` para `space-y-5` no mobile para compactar
+- CTA button: `h-12 px-8 text-base` no mobile (levemente menor)
+- Texto "vagas preenchidas": manter `text-sm` mas adicionar `mt-1`
 
-1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
-   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
-   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
-   - 5 alternativas editaveis (texto + slot de imagem cada)
-   - Selects para area, resposta correta, lingua estrangeira
-   - Navegacao Anterior/Proxima
-
-2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
-   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
-   - Contadores no topo: "X completas, Y com erro, Z vazias"
-   - Click no numero navega para a questao
-
-3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
-   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
-   - Direita: QuestionGrid + botao de importar
-   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
-   - Mobile: grid em cima, editor embaixo (responsivo)
-
-4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
-
-### Detalhes tecnicos
-
-- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
-- O estado de "questao atual" sera controlado por um index no PreviewStage
-- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
-- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
-- Nenhuma mudanca no banco de dados ou edge functions necessaria
+### Resultado Esperado
+- Mobile: conteúdo logo abaixo do navbar, centralizado verticalmente no espaço disponível, sem gaps enormes
+- Desktop: mantém o layout elegante atual com hero full-screen
 
