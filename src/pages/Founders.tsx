@@ -165,7 +165,7 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="snap-start relative min-h-screen flex items-start sm:items-center justify-center px-5 pt-28 pb-24 sm:pt-0 sm:pb-0">
+        className="snap-start relative min-h-screen flex items-start sm:items-center justify-center px-5 pt-35 pb-24 sm:pt-0 sm:pb-0">
         
         <div className="max-w-2xl mx-auto text-center space-y-4 sm:space-y-8">
 
