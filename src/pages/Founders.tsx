@@ -285,7 +285,7 @@ export default function Founders() {
                   {p.num}
                 </span>
                 <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
-                  <p.icon className="w-5 h-5 text-foreground" />
+                  <p.icon className="w-5 h-5 text-[#111827]" />
                 </div>
                 <h3 className="font-semibold text-foreground text-base">
                   {p.title}
