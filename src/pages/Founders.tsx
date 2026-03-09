@@ -7,7 +7,7 @@ import {
   BookOpen,
   PenLine,
   Brain,
-  Sparkles,
+  ChevronDown,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,11 +90,14 @@ export default function Founders() {
   const navigate = useNavigate();
   const [vagasRestantes, setVagasRestantes] = useState(VAGAS_TOTAL);
   const [showNavCTA, setShowNavCTA] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
 
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (latest) => {
     setShowNavCTA(latest > 400);
+    // Fade out scroll indicator as user scrolls (0 to 150px)
+    setScrollProgress(Math.min(latest / 150, 1));
   });
 
   useEffect(() => {
@@ -145,7 +148,7 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="flex items-center justify-center px-5 pt-20 pb-12 sm:min-h-screen sm:pt-0 sm:pb-0"
+        className="relative min-h-[100svh] flex items-center justify-center px-5 pt-20 pb-20 sm:pt-0 sm:pb-0"
       >
         <div className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-8">
           {/* Eyebrow */}
@@ -225,6 +228,29 @@ export default function Founders() {
             </p>
           </motion.div>
         </div>
+
+        {/* ─── Scroll Indicator ─── */}
+        <motion.div
+          className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 - scrollProgress }}
+          transition={{ duration: 0.3 }}
+          style={{ pointerEvents: scrollProgress > 0.5 ? "none" : "auto" }}
+        >
+          <span className="text-xs text-muted-foreground font-medium">
+            Arraste para baixo
+          </span>
+          <motion.div
+            animate={{ y: [0, 6, 0] }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            <ChevronDown className="w-5 h-5 text-muted-foreground" />
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* ─── Como funciona ─── */}
