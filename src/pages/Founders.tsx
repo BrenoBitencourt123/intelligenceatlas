@@ -257,7 +257,7 @@ export default function Founders() {
       </section>
 
       {/* ─── Como funciona ─── */}
-      <section className="snap-start min-h-screen flex flex-col justify-center px-5 py-20 sm:py-28">
+      <section className="snap-start min-h-screen flex flex-col justify-center px-5 py-10 sm:py-28">
         <div className="max-w-3xl mx-auto">
           <motion.h2
             className="text-2xl sm:text-3xl font-bold text-center mb-14"
