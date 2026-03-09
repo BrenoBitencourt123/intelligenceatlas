@@ -1,4 +1,5 @@
 import React from 'react';
+import { renderMath } from '@/lib/renderMath';
 
 /**
  * Auto-detect and apply Markdown formatting to plain-text statements.
