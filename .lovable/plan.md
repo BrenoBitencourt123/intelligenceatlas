@@ -1,59 +1,40 @@
 
 
-## Plano: Editor Visual de Questoes estilo Simulado
+## Plano: Componente de Questão ENEM com renderização matemática/química
 
-O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
+### Problema
+Textos com notação tipo `H_{2}O`, `10^3`, `x^{-1}` aparecem crus para o usuário. Não existe `renderMath` no projeto.
 
-### Arquitetura
+### Mudanças
 
-```text
-PreviewStage (refatorado)
-├── QuestionEditor (painel esquerdo — scrollavel)
-│   ├── Header: "Q.1 de 90" + badges (area, idioma)
-│   ├── Statement editor (textarea com suporte a {{IMG_N}})
-│   │   └── Inline image slots (drag/drop, paste, upload)
-│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
-│   ├── Metadados: area, resposta correta, lingua estrangeira
-│   └── Navegacao: < Anterior | Proxima >
-│
-└── Sidebar (painel direito — fixo)
-    ├── Status summary (OK / Com erro / Vazias)
-    ├── Grid de numeros (1-90 ou 91-180)
-    │   ├── Verde: questao OK (tem enunciado + gabarito)
-    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
-    │   ├── Vermelho: questao vazia / critica
-    │   ├── Borda: questao atual selecionada
-    │   └── Cinza: questao nao importada
-    └── Botao "Revisar e Importar"
-```
+**1. Função `renderMath` em `src/lib/renderMath.ts`**
+- Regex: `/\^[({]([^)}]+)[)}]|\^([\w\-+]+)|_[({]([^)}]+)[)}]|_([\w]+)/g`
+- Converte `^` → `<sup>`, `_` → `<sub>`
+- Exporta como string HTML
 
-### Tarefas de implementacao
+**2. Integrar `renderMath` no `MarkdownText` existente**
+- Chamar `renderMath()` dentro de `formatInline()` para que todos os textos do app (enunciados, alternativas) já se beneficiem automaticamente
+- Isso resolve o problema atual sem precisar de componente novo
 
-1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
-   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
-   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
-   - 5 alternativas editaveis (texto + slot de imagem cada)
-   - Selects para area, resposta correta, lingua estrangeira
-   - Navegacao Anterior/Proxima
+**3. Novo componente `src/components/study/EnemQuestionCard.tsx`**
+- Props: `question` (estrutura do JSON informado), `selectedAnswer`, `onSelectAnswer`
+- Header: badge com exam + número
+- Content blocks renderizados em ordem:
+  - `type: "text"` → `<div>` com `whitespace-pre-wrap`, respeita `format.color/bold/align`, usa `dangerouslySetInnerHTML` com `renderMath` + `formatInline`
+  - `type: "image"` → imagem centralizada, `max-h-[280px]`, rounded, caption em cinza
+- Command: texto em `font-medium font-semibold` com renderMath
+- Alternativas A–E: botões clicáveis com círculo de letra à esquerda
+  - Neutro: `border-gray-200 bg-white`
+  - Selecionado: `border-violet-500 bg-violet-50`, círculo `bg-violet-500 text-white`
+  - Texto com renderMath; se `image` presente, exibe abaixo do texto
+- Visual: `bg-white rounded-xl shadow-sm`, espaçamento generoso
 
-2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
-   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
-   - Contadores no topo: "X completas, Y com erro, Z vazias"
-   - Click no numero navega para a questao
+**4. Tipos em `src/types/enemQuestion.ts`**
+- Interfaces: `EnemContentBlock`, `EnemAlternative`, `EnemQuestion`
 
-3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
-   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
-   - Direita: QuestionGrid + botao de importar
-   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
-   - Mobile: grid em cima, editor embaixo (responsivo)
-
-4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
-
-### Detalhes tecnicos
-
-- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
-- O estado de "questao atual" sera controlado por um index no PreviewStage
-- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
-- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
-- Nenhuma mudanca no banco de dados ou edge functions necessaria
+### Ordem
+1. Criar `renderMath` utility
+2. Integrar no `formatInline` do MarkdownText (fix global)
+3. Criar tipos
+4. Criar `EnemQuestionCard`
 
