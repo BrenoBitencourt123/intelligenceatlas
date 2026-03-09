@@ -441,7 +441,7 @@ export default function Founders() {
           viewport={{ once: true }}
           custom={0}
         >
-          <h2 className="text-xl sm:text-2xl font-bold">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#111827]">
             Pronto para estudar de forma inteligente?
           </h2>
           <p className="text-sm text-muted-foreground">
