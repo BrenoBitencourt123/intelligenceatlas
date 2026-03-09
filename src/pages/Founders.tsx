@@ -122,9 +122,12 @@ export default function Founders() {
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
         <div className="max-w-5xl mx-auto flex items-center justify-between px-5 h-14">
-          <span className="text-base font-bold tracking-tight text-foreground">
-            Atlas
-          </span>
+          <div className="flex items-center gap-2">
+            <img src="/favicon.ico" alt="Atlas" className="h-6 w-6" />
+            <span className="text-base font-bold tracking-tight text-foreground">
+              Atlas
+            </span>
+          </div>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{
