@@ -43,6 +43,11 @@ const Today = () => {
       <div className="container max-w-2xl mx-auto px-4 py-10">
         <div className="space-y-8">
 
+          {/* PWA Banners */}
+          <div className="space-y-3">
+            <InstallBanner />
+            <NotificationBanner />
+          </div>
           {/* Header — Greeting */}
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">{getGreeting()}</h1>
