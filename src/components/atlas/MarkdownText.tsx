@@ -107,6 +107,7 @@ function markdownToHtml(text: string): string {
 function formatInline(text: string): string {
   let result = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   result = result.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+  result = renderMath(result);
   return result;
 }
 
