@@ -156,7 +156,7 @@ export default function Founders() {
         <div className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-8">
           {/* Eyebrow */}
           <motion.p
-            className="text-[0.65rem] sm:text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground leading-relaxed"
+            className="text-xs sm:text-sm font-medium tracking-[0.15em] uppercase text-muted-foreground leading-relaxed"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
