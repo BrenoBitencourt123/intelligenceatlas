@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
 import { useStudySchedule } from '@/hooks/useStudySchedule';
 import { useStudySession } from '@/hooks/useStudySession';
 import { useStudyStats } from '@/hooks/useStudyStats';
