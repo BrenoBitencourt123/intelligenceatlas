@@ -231,7 +231,7 @@ export default function Founders() {
 
         {/* ─── Scroll Indicator ─── */}
         <motion.div
-          className="absolute bottom-20 sm:bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
+          className="absolute bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 sm:hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 - scrollProgress }}
           transition={{ duration: 0.3 }}
