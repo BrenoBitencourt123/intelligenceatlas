@@ -11,7 +11,6 @@ import {
 "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Progress } from "@/components/ui/progress";
 import {
   Accordion,
   AccordionContent,
@@ -96,7 +95,6 @@ export default function Founders() {
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (latest) => {
     setShowNavCTA(latest > 400);
-    // Fade out scroll indicator as user scrolls (0 to 150px)
     setScrollProgress(Math.min(latest / 150, 1));
   });
 
@@ -154,13 +152,35 @@ export default function Founders() {
         className="snap-start relative min-h-screen flex items-start sm:items-center justify-center px-5 pt-28 pb-24 sm:pt-0 sm:pb-0">
         
         <div className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-8">
+          {/* 🔴 Badge de urgência — Melhoria #1 */}
+          <motion.div
+            className="flex justify-center"
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            custom={0}>
+            {vagasRestantes > 0 ? (
+              <span className="inline-flex items-center gap-2 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-xs font-semibold text-destructive">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+                </span>
+                {vagasRestantes} {vagasRestantes === 1 ? "vaga restante" : "vagas restantes"}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2 rounded-full border border-muted bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                Vagas esgotadas
+              </span>
+            )}
+          </motion.div>
+
           {/* Eyebrow */}
           <motion.p
             className="text-xs sm:text-sm font-medium tracking-[0.15em] uppercase text-muted-foreground leading-relaxed"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            custom={0}>
+            custom={1}>
             Inteligência Atlas
             <br />
             Lançamento exclusivo
@@ -172,7 +192,7 @@ export default function Founders() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            custom={1}>
+            custom={2}>
             
             <span className="text-foreground">Seja um dos 20</span>
             <br />
@@ -185,7 +205,7 @@ export default function Founders() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            custom={2}>
+            custom={3}>
             
             50% de desconto — para sempre.</motion.p>
 
@@ -195,19 +215,19 @@ export default function Founders() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            custom={3}>
+            custom={4}>
             
             Um sistema que adapta o estudo às suas fraquezas — questões,
             redação e revisão, tudo com IA.
           </motion.p>
 
-          {/* CTA */}
+          {/* CTA — Melhoria #2: progress bar separada */}
           <motion.div
-            className="flex flex-col items-center gap-4"
+            className="flex flex-col items-center gap-3"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            custom={4}>
+            custom={5}>
             
             <Button
               size="lg"
@@ -217,17 +237,26 @@ export default function Founders() {
               Garantir minha vaga
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <p className="text-sm text-muted-foreground mt-1">
-              {vagasRestantes > 0 ?
-              <>
-                  <span className="font-semibold text-foreground">
-                    {vagasPreenchidas} de {VAGAS_TOTAL}
-                  </span>{" "}
-                  vagas preenchidas · Cancele quando quiser
-                </> :
 
-              "Todas as vagas foram preenchidas!"
-              }
+            {/* Mini progress bar */}
+            {vagasRestantes > 0 && (
+              <div className="w-48 sm:w-56 space-y-1.5 mt-1">
+                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-foreground rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressPct}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.5 }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  <span className="font-semibold text-foreground">{vagasPreenchidas}</span> de {VAGAS_TOTAL} vagas preenchidas
+                </p>
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              Cancele quando quiser · Sem fidelidade
             </p>
           </motion.div>
         </div>
@@ -256,7 +285,7 @@ export default function Founders() {
         </motion.div>
       </section>
 
-      {/* ─── Como funciona ─── */}
+      {/* ─── Como funciona — Melhoria #3: Stepper vertical mobile ─── */}
       <section className="snap-start min-h-screen flex flex-col justify-center px-5 py-10 sm:py-28">
         <div className="max-w-3xl mx-auto">
           <motion.h2
@@ -270,11 +299,12 @@ export default function Founders() {
             Como o Atlas funciona
           </motion.h2>
 
-          <div className="grid sm:grid-cols-3 gap-5 sm:gap-6">
+          {/* Desktop: grid normal */}
+          <div className="hidden sm:grid sm:grid-cols-3 gap-6">
             {PILLARS.map((p, i) =>
             <motion.div
               key={p.num}
-              className="space-y-2 sm:space-y-4"
+              className="space-y-4"
               variants={fadeUp}
               initial="hidden"
               whileInView="visible"
@@ -284,7 +314,7 @@ export default function Founders() {
                 <span className="text-xs font-mono font-bold text-muted-foreground/50 tracking-widest">
                   {p.num}
                 </span>
-                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-secondary flex items-center justify-center">
+                <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
                   <p.icon className="w-5 h-5 text-foreground" />
                 </div>
                 <h3 className="font-semibold text-foreground text-base">
@@ -296,10 +326,48 @@ export default function Founders() {
               </motion.div>
             )}
           </div>
+
+          {/* Mobile: stepper vertical */}
+          <div className="sm:hidden relative">
+            {/* Linha vertical do stepper */}
+            <div className="absolute left-[18px] top-4 bottom-4 w-px bg-border" />
+
+            <div className="space-y-6">
+              {PILLARS.map((p, i) => (
+                <motion.div
+                  key={p.num}
+                  className="relative flex gap-4"
+                  variants={fadeUp}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  custom={i}>
+                  
+                  {/* Ícone no eixo do stepper */}
+                  <div className="relative z-10 flex-shrink-0 w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
+                    <p.icon className="w-5 h-5 text-foreground" />
+                  </div>
+
+                  {/* Conteúdo */}
+                  <div className="pt-1 space-y-1 pb-2">
+                    <span className="text-xs font-mono font-bold text-muted-foreground/50 tracking-widest">
+                      {p.num}
+                    </span>
+                    <h3 className="font-semibold text-foreground text-base">
+                      {p.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {p.desc}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ─── Por que ser fundador — Dark section ─── */}
+      {/* ─── Por que ser fundador — Dark section — Melhoria #4: primeiro benefício destacado ─── */}
       <section className="snap-start min-h-screen flex flex-col justify-center bg-foreground text-background px-5 py-20 sm:py-28">
         <div className="max-w-2xl mx-auto space-y-12">
           <motion.div
@@ -319,16 +387,31 @@ export default function Founders() {
             </p>
           </motion.div>
 
-          {/* Benefits */}
-          <motion.ul
-            className="space-y-4 max-w-md mx-auto"
+          {/* Benefício principal destacado */}
+          <motion.div
+            className="max-w-md mx-auto"
             variants={fadeUp}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             custom={1}>
+            <div className="rounded-2xl border border-background/20 bg-background/10 px-5 py-4 text-center">
+              <p className="text-lg sm:text-xl font-bold text-background">
+                {FOUNDER_BENEFITS[0]}
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Demais benefícios */}
+          <motion.ul
+            className="space-y-3 max-w-md mx-auto"
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={2}>
             
-            {FOUNDER_BENEFITS.map((b) =>
+            {FOUNDER_BENEFITS.slice(1).map((b) =>
             <li key={b} className="flex items-start gap-3">
                 <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-background/15 flex items-center justify-center">
                   <Check className="w-3 h-3 text-background" />
@@ -347,7 +430,7 @@ export default function Founders() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            custom={2}>
+            custom={3}>
             
             <div className="flex justify-between text-sm font-medium">
               <span className="text-background/50">Vagas preenchidas</span>
@@ -378,7 +461,7 @@ export default function Founders() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            custom={3}>
+            custom={4}>
             
             <Button
               size="lg"
@@ -431,23 +514,50 @@ export default function Founders() {
         </div>
       </section>
 
-      {/* ─── CTA Final ─── */}
+      {/* ─── CTA Final — Melhoria #5: headline forte + barra de vagas ─── */}
       <section className="snap-start min-h-screen flex flex-col justify-center px-5 pb-20">
         <motion.div
-          className="max-w-lg mx-auto text-center space-y-5"
+          className="max-w-lg mx-auto text-center space-y-6"
           variants={fadeUp}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
           custom={0}>
           
-          <h2 className="text-xl sm:text-2xl font-bold">
-            Pronto para estudar de forma inteligente?
+          <h2 className="text-2xl sm:text-3xl font-bold">
+            Últimas vagas com 50% off
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Garanta seu lugar entre os 20 primeiros e pague metade — para
-            sempre.
+          <p className="text-sm sm:text-base text-muted-foreground max-w-sm mx-auto">
+            Depois das 20 vagas, o preço volta ao normal. Garanta seu lugar agora e pague metade — para sempre.
           </p>
+
+          {/* Re-exibir badge + progress */}
+          {vagasRestantes > 0 && (
+            <div className="flex flex-col items-center gap-3">
+              <span className="inline-flex items-center gap-2 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-xs font-semibold text-destructive">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+                </span>
+                {vagasRestantes} {vagasRestantes === 1 ? "vaga restante" : "vagas restantes"}
+              </span>
+              <div className="w-48 space-y-1.5">
+                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-foreground rounded-full"
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${progressPct}%` }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">{vagasPreenchidas}</span> de {VAGAS_TOTAL} preenchidas
+                </p>
+              </div>
+            </div>
+          )}
+
           <Button
             size="lg"
             className="h-14 px-10 text-lg font-bold rounded-full bg-foreground text-background hover:bg-foreground/90 shadow-lg active:scale-[0.98] transition-transform"
@@ -459,11 +569,20 @@ export default function Founders() {
         </motion.div>
       </section>
 
-      {/* ─── Footer ─── */}
-      <footer className="py-8 text-center border-t border-border">
+      {/* ─── Footer — Melhoria #6: links de confiança ─── */}
+      <footer className="py-8 text-center border-t border-border space-y-2">
         <p className="text-xs text-muted-foreground">
           Inteligência Atlas © {new Date().getFullYear()}
         </p>
+        <div className="flex justify-center gap-4">
+          <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Termos de uso
+          </a>
+          <span className="text-xs text-muted-foreground">·</span>
+          <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Política de privacidade
+          </a>
+        </div>
       </footer>
     </div>);
 
