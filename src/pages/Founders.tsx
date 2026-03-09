@@ -217,10 +217,10 @@ export default function Founders() {
               Garantir minha vaga
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-[#6B7280] mt-1">
               {vagasRestantes > 0 ? (
                 <>
-                  <span className="font-semibold text-foreground">
+                  <span className="font-semibold text-[#111827]">
                     {vagasPreenchidas} de {VAGAS_TOTAL}
                   </span>{" "}
                   vagas preenchidas · Cancele quando quiser
