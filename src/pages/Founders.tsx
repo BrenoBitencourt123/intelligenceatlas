@@ -421,7 +421,7 @@ export default function Founders() {
                   <AccordionTrigger className="text-sm font-medium text-[#111827] hover:no-underline py-4 text-left">
                     {item.q}
                   </AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground pb-4">
+                  <AccordionContent className="text-sm text-[#6B7280] pb-4">
                     {answer}
                   </AccordionContent>
                 </AccordionItem>
