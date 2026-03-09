@@ -231,24 +231,24 @@ export default function Founders() {
 
         {/* ─── Scroll Indicator ─── */}
         <motion.div
-          className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+          className="absolute bottom-20 sm:bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 - scrollProgress }}
           transition={{ duration: 0.3 }}
           style={{ pointerEvents: scrollProgress > 0.5 ? "none" : "auto" }}
         >
-          <span className="text-xs text-muted-foreground font-medium">
+          <span className="text-sm sm:text-base text-muted-foreground font-medium">
             Arraste para baixo
           </span>
           <motion.div
-            animate={{ y: [0, 6, 0] }}
+            animate={{ y: [0, 8, 0] }}
             transition={{
               duration: 1.5,
               repeat: Infinity,
               ease: "easeInOut",
             }}
           >
-            <ChevronDown className="w-5 h-5 text-muted-foreground" />
+            <ChevronDown className="w-6 h-6 sm:w-7 sm:h-7 text-muted-foreground" />
           </motion.div>
         </motion.div>
       </section>
