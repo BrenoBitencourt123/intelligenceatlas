@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowRight, ArrowLeft, Check, Clock, Languages, Target } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, Clock, Languages, Target, AlertTriangle, Brain, Crosshair } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AREAS = [
@@ -16,23 +16,15 @@ const AREAS = [
   { id: 'humanas', label: 'Ciências Humanas', icon: '🌍', desc: 'História, geografia, filosofia' },
 ];
 
-const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
-const DAY_LABELS: Record<string, string> = {
-  monday: 'Seg', tuesday: 'Ter', wednesday: 'Qua', thursday: 'Qui',
-  friday: 'Sex', saturday: 'Sáb', sunday: 'Dom',
-};
-
-type DaySchedule = Record<string, string[]>;
-
 const ALL_AREAS = AREAS.map((a) => a.id);
 const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
 
+type DaySchedule = Record<string, string[]>;
+
 function generateRecommendedSchedule(focusAreas: string[]): DaySchedule {
   const schedule: DaySchedule = {};
-  // Sáb e Dom são fixos (simulado / descanso) — sem áreas de estudo
   schedule['saturday'] = [];
   schedule['sunday'] = [];
-  // Distribui áreas de seg a sex, priorizando áreas de foco
   const weighted: string[] = [];
   for (const area of ALL_AREAS) {
     const weight = focusAreas.includes(area) ? 2 : 1;
@@ -47,7 +39,7 @@ function generateRecommendedSchedule(focusAreas: string[]): DaySchedule {
 const STEPS = [
   { icon: Languages, label: 'Língua', title: 'Língua Estrangeira' },
   { icon: Target, label: 'Foco', title: 'Áreas de Foco' },
-  { icon: Clock, label: 'Plano', title: 'Cronograma' },
+  { icon: Clock, label: 'Meta', title: 'Meta Diária' },
 ];
 
 const slideVariants = {
@@ -65,15 +57,10 @@ export default function Onboarding() {
   const [foreignLanguage, setForeignLanguage] = useState<string>('ingles');
   const [focusAreas, setFocusAreas] = useState<string[]>([]);
   const [dailyTarget, setDailyTarget] = useState('20');
-  const [daySchedule, setDaySchedule] = useState<DaySchedule>({});
-  const [customized, setCustomized] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const goTo = (next: number) => {
     setDirection(next > step ? 1 : -1);
-    if (next === 2 && (!customized || Object.keys(daySchedule).length === 0)) {
-      applyRecommended();
-    }
     setStep(next);
   };
 
@@ -81,22 +68,6 @@ export default function Onboarding() {
     setFocusAreas((prev) =>
       prev.includes(areaId) ? prev.filter((a) => a !== areaId) : [...prev, areaId]
     );
-  };
-
-  const toggleScheduleArea = (day: string, areaId: string) => {
-    setDaySchedule((prev) => {
-      const current = prev[day] ?? [];
-      const updated = current.includes(areaId)
-        ? current.filter((a) => a !== areaId)
-        : [...current, areaId];
-      return { ...prev, [day]: updated };
-    });
-    setCustomized(true);
-  };
-
-  const applyRecommended = () => {
-    setDaySchedule(generateRecommendedSchedule(focusAreas.length > 0 ? focusAreas : AREAS.map((a) => a.id)));
-    setCustomized(false);
   };
 
   const handleFinish = async () => {
@@ -109,13 +80,18 @@ export default function Onboarding() {
         .eq('id', user.id);
       if (profileError) throw profileError;
 
+      // Generate schedule automatically based on focus areas
+      const autoSchedule = generateRecommendedSchedule(
+        focusAreas.length > 0 ? focusAreas : ALL_AREAS
+      );
+
       const { error: prefError } = await supabase
         .from('user_preferences')
         .upsert({
           user_id: user.id,
           focus_areas: focusAreas,
           daily_questions_target: Number(dailyTarget),
-          day_schedule: daySchedule,
+          day_schedule: autoSchedule,
           foreign_language: foreignLanguage,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
@@ -357,21 +333,53 @@ export default function Onboarding() {
                     transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
                     className="text-6xl"
                   >
-                    📅
+                    📊
                   </motion.div>
-                  <h2 className="text-2xl font-bold tracking-tight">Seu cronograma</h2>
+                  <h2 className="text-2xl font-bold tracking-tight">Meta de estudo</h2>
                   <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                    Defina sua meta diária e organize as áreas por dia da semana.
+                    Defina quantas questões você quer resolver por dia.
                   </p>
                 </div>
 
+                {/* Info cards */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
+                  className="space-y-3"
+                >
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex gap-3 items-start">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Crosshair className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Só responda quando tiver certeza</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Chutar prejudica o algoritmo de aprendizado. Escolha "Não sei" quando não souber.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex gap-3 items-start">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Brain className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">O sistema adapta o cronograma</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Com base no seu desempenho, as áreas mais urgentes aparecem com mais frequência — automaticamente.
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
                   className="space-y-2"
                 >
-                  <Label className="text-sm font-medium">Meta diária</Label>
+                  <Label className="text-sm font-medium">Meta diária de questões</Label>
                   <Select value={dailyTarget} onValueChange={setDailyTarget}>
                     <SelectTrigger className="h-12 rounded-xl">
                       <SelectValue />
@@ -385,58 +393,27 @@ export default function Onboarding() {
                   </Select>
                 </motion.div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">Área por dia</Label>
-                    {customized && (
-                      <button
-                        className="text-xs text-primary underline underline-offset-2"
-                        onClick={applyRecommended}
-                      >
-                        Usar recomendado
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="bg-card rounded-2xl border border-border p-4 space-y-2.5">
-                    {DAYS.map((day) => (
-                      <div key={day} className="flex items-center gap-3">
-                        <span className="text-xs font-semibold w-8 text-muted-foreground shrink-0 uppercase tracking-wider">
-                          {DAY_LABELS[day]}
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {AREAS.map((area) => {
-                            const selected = (daySchedule[day] ?? []).includes(area.id);
-                            return (
-                              <button
-                                key={area.id}
-                                onClick={() => toggleScheduleArea(day, area.id)}
-                                className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
-                                  selected
-                                    ? 'border-primary bg-primary text-primary-foreground font-medium'
-                                    : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-muted/50'
-                                }`}
-                              >
-                                {area.icon} {area.label.split(' ')[0]}
-                              </button>
-                            );
-                          })}
+                {/* Warning for 40 questions */}
+                <AnimatePresence>
+                  {dailyTarget === '40' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-200 p-4 rounded-xl flex gap-3 items-start">
+                        <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">Cuidado com a intensidade</p>
+                          <p className="text-xs mt-1 opacity-90">
+                            40 questões por dia é muito intenso. O cansaço leva ao chute, que prejudica o algoritmo. Recomendamos começar com 20.
+                          </p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-
-                  {!customized && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      Cronograma gerado automaticamente com base nas suas áreas de foco
-                    </p>
+                    </motion.div>
                   )}
-                </motion.div>
+                </AnimatePresence>
 
                 <motion.div
                   initial={{ opacity: 0 }}
