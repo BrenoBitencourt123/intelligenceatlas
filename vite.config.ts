@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => ({
       manifest: false, // We use public/manifest.json
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/storage\.googleapis\.com\/.*/i,
@@ -30,7 +31,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "google-storage-cache",
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                maxAgeSeconds: 60 * 60 * 24 * 30,
               },
             },
           },
