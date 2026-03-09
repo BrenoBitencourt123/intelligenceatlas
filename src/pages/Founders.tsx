@@ -167,7 +167,7 @@ export default function Founders() {
 
           {/* Headline */}
           <motion.h1
-            className="text-[2.25rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]"
+            className="text-[clamp(1.95rem,8.5vw,2.2rem)] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]"
             variants={fadeUp}
             initial="hidden"
             animate="visible"
@@ -175,7 +175,7 @@ export default function Founders() {
             
             <span className="text-foreground">Seja um dos 20</span>
             <br />
-            <span className="text-muted-foreground">Membros Fundadores</span>
+            <span className="text-muted-foreground whitespace-nowrap">Membros&nbsp;Fundadores</span>
           </motion.h1>
 
           {/* Oferta em destaque */}

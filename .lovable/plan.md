@@ -1,29 +1,59 @@
 
-Objetivo: impedir que a headline quebre em 3 linhas no mobile, mantendo impacto visual.
 
-Diagnóstico rápido:
-- Em `src/pages/Founders.tsx`, a headline já força 2 linhas com `<br />`, mas o trecho “Membros Fundadores” ainda quebra internamente por falta de largura.
-- O tamanho atual (`text-[2.25rem]`) está grande para algumas larguras mobile (ex.: 360–390px), então o segundo bloco estoura e quebra.
+## Plano: Editor Visual de Questoes estilo Simulado
 
-Plano de ajuste:
-1) Travar “Membros Fundadores” na mesma linha
-- No segundo `<span>`, aplicar `inline-block whitespace-nowrap`.
-- Trocar o texto para `Membros&nbsp;Fundadores` para evitar quebra entre as palavras.
+O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
 
-2) Usar escala tipográfica fluida no mobile (sem perder destaque)
-- No `<motion.h1>`, substituir o tamanho fixo mobile por `text-[clamp(1.95rem,8.5vw,2.2rem)]` (mantendo `sm:text-5xl lg:text-6xl`).
-- Ajustar levemente `leading`/`tracking` para caber melhor sem “apertar” demais.
+### Arquitetura
 
-3) Garantir segurança para telas muito estreitas
-- Adicionar fallback para telas pequenas (ex.: `max-[360px]:text-[1.85rem]`) se necessário, evitando overflow horizontal.
+```text
+PreviewStage (refatorado)
+├── QuestionEditor (painel esquerdo — scrollavel)
+│   ├── Header: "Q.1 de 90" + badges (area, idioma)
+│   ├── Statement editor (textarea com suporte a {{IMG_N}})
+│   │   └── Inline image slots (drag/drop, paste, upload)
+│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
+│   ├── Metadados: area, resposta correta, lingua estrangeira
+│   └── Navegacao: < Anterior | Proxima >
+│
+└── Sidebar (painel direito — fixo)
+    ├── Status summary (OK / Com erro / Vazias)
+    ├── Grid de numeros (1-90 ou 91-180)
+    │   ├── Verde: questao OK (tem enunciado + gabarito)
+    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
+    │   ├── Vermelho: questao vazia / critica
+    │   ├── Borda: questao atual selecionada
+    │   └── Cinza: questao nao importada
+    └── Botao "Revisar e Importar"
+```
 
-4) Validação visual
-- Conferir a hero em 320, 360, 390 e 414px:
-  - headline em exatamente 2 linhas;
-  - sem quebra de “Membros Fundadores”;
-  - sem scroll horizontal;
-  - mantendo contraste e legibilidade do CTA/subheadline.
+### Tarefas de implementacao
 
-Detalhe técnico (arquivo único):
-- `src/pages/Founders.tsx`
-  - bloco Hero (`<motion.h1>` e segundo `<span>` da headline).
+1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
+   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
+   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
+   - 5 alternativas editaveis (texto + slot de imagem cada)
+   - Selects para area, resposta correta, lingua estrangeira
+   - Navegacao Anterior/Proxima
+
+2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
+   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
+   - Contadores no topo: "X completas, Y com erro, Z vazias"
+   - Click no numero navega para a questao
+
+3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
+   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
+   - Direita: QuestionGrid + botao de importar
+   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
+   - Mobile: grid em cima, editor embaixo (responsivo)
+
+4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
+
+### Detalhes tecnicos
+
+- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
+- O estado de "questao atual" sera controlado por um index no PreviewStage
+- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
+- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
+- Nenhuma mudanca no banco de dados ou edge functions necessaria
+
