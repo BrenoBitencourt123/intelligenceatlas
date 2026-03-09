@@ -1,59 +1,55 @@
 
+## Simplificar Step 3 do Onboarding — Meta + Explicações do sistema
 
-## Plano: Editor Visual de Questoes estilo Simulado
+**Diagnóstico completo do arquivo atual (477 linhas):**
 
-O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
+Itens a remover:
+- `DAYS`, `DAY_LABELS` constants (linhas 19–23)
+- `DaySchedule` type (linha 25)
+- `WEEKDAYS` const (linha 28) — mantém `ALL_AREAS` e `generateRecommendedSchedule` para uso interno no `handleFinish`
+- State `daySchedule` + `customized` (linhas 68–69)
+- Funções `toggleScheduleArea` e `applyRecommended` (linhas 86–100)
+- Na `goTo`: lógica que chama `applyRecommended` ao ir para step 2 (linha 74–76)
+- No step 2 JSX: bloco "Área por dia" inteiro (linhas 388–439)
+- Ajustar `handleFinish` para usar `generateRecommendedSchedule` direto (linha 118)
 
-### Arquitetura
+**Redesign do Step 3 — o que fica e o que entra:**
 
-```text
-PreviewStage (refatorado)
-├── QuestionEditor (painel esquerdo — scrollavel)
-│   ├── Header: "Q.1 de 90" + badges (area, idioma)
-│   ├── Statement editor (textarea com suporte a {{IMG_N}})
-│   │   └── Inline image slots (drag/drop, paste, upload)
-│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
-│   ├── Metadados: area, resposta correta, lingua estrangeira
-│   └── Navegacao: < Anterior | Proxima >
-│
-└── Sidebar (painel direito — fixo)
-    ├── Status summary (OK / Com erro / Vazias)
-    ├── Grid de numeros (1-90 ou 91-180)
-    │   ├── Verde: questao OK (tem enunciado + gabarito)
-    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
-    │   ├── Vermelho: questao vazia / critica
-    │   ├── Borda: questao atual selecionada
-    │   └── Cinza: questao nao importada
-    └── Botao "Revisar e Importar"
+```
+📊  Meta de estudo diária
+
+┌─ card informativo ──────────────────────────┐
+│ 🎯  Só responda quando tiver certeza        │
+│     Chutar prejudica o algoritmo de         │
+│     aprendizado. Escolha "Não sei" quando   │
+│     não tiver certeza.                      │
+└─────────────────────────────────────────────┘
+
+┌─ card informativo ──────────────────────────┐
+│ 🧠  O sistema adapta o cronograma           │
+│     Com base no seu desempenho, as áreas    │
+│     mais urgentes aparecem com mais         │
+│     frequência — automaticamente.           │
+└─────────────────────────────────────────────┘
+
+[ Select: 10 / 20 / 30 / 40 questões/dia ]
+
+⚠️  Banner laranja condicional (só se 40 selecionado):
+    "40 questões por dia é muito intenso. O cansaço
+     leva ao chute, que prejudica o algoritmo.
+     Recomendamos começar com 20."
+
+[ Voltar ]  [ Começar a estudar → ]
 ```
 
-### Tarefas de implementacao
+**Alterações em `src/pages/Onboarding.tsx`:**
 
-1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
-   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
-   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
-   - 5 alternativas editaveis (texto + slot de imagem cada)
-   - Selects para area, resposta correta, lingua estrangeira
-   - Navegacao Anterior/Proxima
+1. Remover imports e constants não mais usados: `DAYS`, `DAY_LABELS`, `DaySchedule`, `WEEKDAYS`
+2. Remover `daySchedule`, `customized` do state
+3. Remover `toggleScheduleArea`, `applyRecommended`
+4. Simplificar `goTo` (sem a chamada a `applyRecommended`)
+5. `handleFinish`: trocar `daySchedule` por `generateRecommendedSchedule(focusAreas.length > 0 ? focusAreas : ALL_AREAS)`
+6. Step 3 JSX: substituir o bloco da grade por dois info-cards + seletor de meta + banner condicional de aviso para 40 questões
+7. Adicionar `AlertTriangle` ao import de `lucide-react`
 
-2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
-   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
-   - Contadores no topo: "X completas, Y com erro, Z vazias"
-   - Click no numero navega para a questao
-
-3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
-   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
-   - Direita: QuestionGrid + botao de importar
-   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
-   - Mobile: grid em cima, editor embaixo (responsivo)
-
-4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
-
-### Detalhes tecnicos
-
-- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
-- O estado de "questao atual" sera controlado por um index no PreviewStage
-- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
-- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
-- Nenhuma mudanca no banco de dados ou edge functions necessaria
-
+**Nenhuma alteração em `useStudySchedule.ts`** — já consome corretamente.
