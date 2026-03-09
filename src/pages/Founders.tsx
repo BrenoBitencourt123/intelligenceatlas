@@ -114,56 +114,62 @@ export default function Founders() {
     <div className="h-screen overflow-y-auto snap-y snap-mandatory bg-background text-foreground scroll-smooth">
       {/* ─── Sticky Navbar ─── */}
       <motion.nav
-        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50"
+        className="fixed top-0 left-0 right-0 z-50"
         initial={{ y: -80 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}>
         
-        <div className="max-w-5xl mx-auto flex items-center justify-between px-5 h-14">
-          <div className="flex items-center gap-2">
-            <img src="/icon-192.png" alt="Atlas" className="h-6 w-6" />
-            <span className="text-base font-bold tracking-tight text-foreground">
-              Atlas
-            </span>
-            {vagasRestantes > 0 && (
-              <>
-                <span className="mx-1.5 h-4 w-px bg-border" />
-                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
-                  </span>
-                  {vagasRestantes} {vagasRestantes === 1 ? "vaga restante" : "vagas restantes"}
-                </span>
-              </>
-            )}
+        {/* Banner de urgência */}
+        {vagasRestantes > 0 && (
+          <div className="bg-foreground text-background">
+            <div className="max-w-5xl mx-auto flex items-center justify-center px-5 h-10 gap-2">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
+              </span>
+              <span className="text-xs sm:text-sm font-semibold tracking-wide uppercase">
+                🔥 Apenas {vagasRestantes} {vagasRestantes === 1 ? "vaga restante" : "vagas restantes"} — 50% off para sempre
+              </span>
+            </div>
           </div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{
-              opacity: showNavCTA ? 1 : 0,
-              scale: showNavCTA ? 1 : 0.9,
-              pointerEvents: showNavCTA ? "auto" as const : "none" as const
-            }}
-            transition={{ duration: 0.2 }}>
-            
-            <Button
-              size="sm"
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90 font-semibold text-xs px-4"
-              onClick={handleCTA}>
+        )}
+
+        {/* Navbar */}
+        <div className="backdrop-blur-xl bg-background/80 border-b border-border/50">
+          <div className="max-w-5xl mx-auto flex items-center justify-between px-5 h-12">
+            <div className="flex items-center gap-2">
+              <img src="/icon-192.png" alt="Atlas" className="h-6 w-6" />
+              <span className="text-base font-bold tracking-tight text-foreground">
+                Atlas
+              </span>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{
+                opacity: showNavCTA ? 1 : 0,
+                scale: showNavCTA ? 1 : 0.9,
+                pointerEvents: showNavCTA ? "auto" as const : "none" as const
+              }}
+              transition={{ duration: 0.2 }}>
               
-              Garantir vaga
-            </Button>
-          </motion.div>
+              <Button
+                size="sm"
+                className="rounded-full bg-foreground text-background hover:bg-foreground/90 font-semibold text-xs px-4"
+                onClick={handleCTA}>
+                
+                Garantir vaga
+              </Button>
+            </motion.div>
+          </div>
         </div>
       </motion.nav>
 
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="snap-start relative min-h-screen flex items-start sm:items-center justify-center px-5 pt-28 pb-24 sm:pt-0 sm:pb-0">
+        className="snap-start relative min-h-screen flex items-start sm:items-center justify-center px-5 pt-32 pb-24 sm:pt-0 sm:pb-0">
         
-        <div className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-8">
+        <div className="max-w-2xl mx-auto text-center space-y-4 sm:space-y-8">
 
           {/* Eyebrow */}
           <motion.p
