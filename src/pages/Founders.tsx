@@ -287,7 +287,7 @@ export default function Founders() {
                 <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
                   <p.icon className="w-5 h-5 text-[#111827]" />
                 </div>
-                <h3 className="font-semibold text-foreground text-base">
+                <h3 className="font-semibold text-[#111827] text-base">
                   {p.title}
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
