@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ProfileMenu } from './ProfileMenu';
 
 const navItems = [
-  { title: 'Hoje', path: '/', icon: CalendarCheck },
+  { title: 'Hoje', path: '/hoje', icon: CalendarCheck },
   { title: 'Objetivas', path: '/objetivas', icon: ListChecks },
   { title: 'Redação', path: '/redacao', icon: PenLine },
   { title: 'Desempenho', path: '/errors', icon: BarChart2 },
