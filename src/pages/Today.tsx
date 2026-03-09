@@ -10,6 +10,8 @@ import { useUserStats } from '@/hooks/useUserStats';
 import { useDailyTheme } from '@/hooks/useDailyTheme';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { ArrowRight, Flame } from 'lucide-react';
+import { InstallBanner } from '@/components/pwa/InstallBanner';
+import { NotificationBanner } from '@/components/pwa/NotificationBanner';
 
 const getGreeting = () => {
   const h = new Date().getHours();
