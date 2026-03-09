@@ -90,11 +90,14 @@ export default function Founders() {
   const navigate = useNavigate();
   const [vagasRestantes, setVagasRestantes] = useState(VAGAS_TOTAL);
   const [showNavCTA, setShowNavCTA] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
 
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (latest) => {
     setShowNavCTA(latest > 400);
+    // Fade out scroll indicator as user scrolls (0 to 150px)
+    setScrollProgress(Math.min(latest / 150, 1));
   });
 
   useEffect(() => {
