@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
@@ -10,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowRight, ArrowLeft, Check, Target, BookOpen, Clock, Phone, Languages } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, Target, Clock, Languages } from 'lucide-react';
 
 const AREAS = [
   { id: 'matematica', label: 'Matemática', icon: '📐' },
@@ -57,19 +56,15 @@ export default function Onboarding() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 3;
 
-  // Step 1: Name + Phone
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-
-  // Step 2: Foreign language preference
+  // Step 1: Foreign language preference
   const [foreignLanguage, setForeignLanguage] = useState<string>('ingles');
 
-  // Step 3: Focus areas
+  // Step 2: Focus areas
   const [focusAreas, setFocusAreas] = useState<string[]>([]);
 
-  // Step 4: Schedule
+  // Step 3: Schedule
   const [dailyTarget, setDailyTarget] = useState('20');
   const [daySchedule, setDaySchedule] = useState<DaySchedule>({});
   const [customized, setCustomized] = useState(false);
@@ -98,11 +93,11 @@ export default function Onboarding() {
     setCustomized(false);
   };
 
-  const goToStep4 = () => {
+  const goToStep3 = () => {
     if (!customized || Object.keys(daySchedule).length === 0) {
       applyRecommended();
     }
-    setStep(4);
+    setStep(3);
   };
 
   const handleFinish = async () => {
@@ -112,8 +107,6 @@ export default function Onboarding() {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          name: name.trim() || null,
-          phone: phone.trim() || null,
           onboarding_completed: true,
         })
         .eq('id', user.id);
@@ -155,58 +148,8 @@ export default function Onboarding() {
         {/* Progress bar */}
         <Progress value={(step / totalSteps) * 100} className="h-1.5" />
 
-        {/* Step 1: Name + Phone */}
+        {/* Step 1: Foreign Language */}
         {step === 1 && (
-          <Card>
-            <CardContent className="p-6 space-y-5">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-primary mb-3">
-                  <BookOpen className="h-5 w-5" />
-                  <span className="text-sm font-medium uppercase tracking-wider">Bem-vindo</span>
-                </div>
-                <h2 className="text-xl font-semibold">Vamos começar!</h2>
-                <p className="text-sm text-muted-foreground">Precisamos de algumas informações básicas</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Seu nome</Label>
-                <Input
-                  id="name"
-                  placeholder="Ex: João Silva"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5" />
-                  Telefone / WhatsApp
-                  <span className="text-muted-foreground text-xs">(opcional)</span>
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="(11) 99999-9999"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">Usado apenas para suporte e novidades</p>
-              </div>
-              <Button
-                className="w-full gap-2"
-                onClick={() => {
-                  setStep(2);
-                }}
-              >
-                Continuar
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 2: Foreign Language */}
-        {step === 2 && (
           <Card>
             <CardContent className="p-6 space-y-5">
               <div className="space-y-1">
@@ -243,22 +186,16 @@ export default function Onboarding() {
                   );
                 })}
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Voltar
-                </Button>
-                <Button className="flex-1 gap-2" onClick={() => setStep(3)}>
-                  Continuar
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
+              <Button className="w-full gap-2" onClick={() => setStep(2)}>
+                Continuar
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Step 3: Focus areas */}
-        {step === 3 && (
+        {/* Step 2: Focus areas */}
+        {step === 2 && (
           <Card>
             <CardContent className="p-6 space-y-5">
               <div className="space-y-1">
@@ -295,11 +232,11 @@ export default function Onboarding() {
                 </p>
               )}
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>
+                <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Voltar
                 </Button>
-                <Button className="flex-1 gap-2" onClick={goToStep4}>
+                <Button className="flex-1 gap-2" onClick={goToStep3}>
                   Continuar
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -308,8 +245,8 @@ export default function Onboarding() {
           </Card>
         )}
 
-        {/* Step 4: Schedule */}
-        {step === 4 && (
+        {/* Step 3: Schedule */}
+        {step === 3 && (
           <Card>
             <CardContent className="p-6 space-y-5">
               <div className="space-y-1">
@@ -385,7 +322,7 @@ export default function Onboarding() {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep(3)}>
+                <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Voltar
                 </Button>
@@ -405,13 +342,10 @@ export default function Onboarding() {
         {/* Summary chips */}
         {step > 1 && (
           <div className="flex flex-wrap gap-2 justify-center">
-            {name && <Badge variant="secondary">{name}</Badge>}
-            {step >= 2 && (
-              <Badge variant="secondary">
-                {foreignLanguage === 'ingles' ? '🇬🇧 Inglês' : '🇪🇸 Espanhol'}
-              </Badge>
-            )}
-            {focusAreas.length > 0 && step >= 3 && (
+            <Badge variant="secondary">
+              {foreignLanguage === 'ingles' ? '🇬🇧 Inglês' : '🇪🇸 Espanhol'}
+            </Badge>
+            {focusAreas.length > 0 && step >= 2 && (
               <Badge variant="secondary">
                 {focusAreas.map((a) => AREAS.find((x) => x.id === a)?.icon).join(' ')} foco
               </Badge>
