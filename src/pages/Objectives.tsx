@@ -674,19 +674,29 @@ const Objectives = () => {
               {/* Weak topics */}
               {!stats.isLoading && weakTopics.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    Tópicos para reforçar
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-muted-foreground" />
+                      Tópicos para reforçar
+                    </h3>
+                    <button
+                      onClick={() => navigate('/errors')}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    >
+                      Ver mapa completo
+                      <ChevronRight className="h-3 w-3" />
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     {weakTopics.map((t: any, i: number) => {
                       const topicLabel = t.topic?.includes('__')
                         ? t.topic.split('__').pop()
                         : t.topic;
                       return (
-                        <div
+                        <button
                           key={i}
-                          className="flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
+                          onClick={() => navigate('/errors')}
+                          className="w-full flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors text-left"
                         >
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{topicLabel}</p>
@@ -699,19 +709,15 @@ const Objectives = () => {
                                 style={{ width: `${Math.round(t.priority * 100)}%` }}
                               />
                             </div>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
                 </div>
               )}
-            </TabsContent>
-
-            <TabsContent value="desempenho" className="mt-4">
-              {user && <TopicMap userId={user.id} />}
-            </TabsContent>
-          </Tabs>
+          </div>
         </div>
       </div>
     </MainLayout>

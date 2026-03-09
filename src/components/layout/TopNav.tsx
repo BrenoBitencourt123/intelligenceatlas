@@ -8,7 +8,6 @@ const navItems = [
   { title: 'Hoje', path: '/hoje', icon: CalendarCheck },
   { title: 'Objetivas', path: '/objetivas', icon: ListChecks },
   { title: 'Redação', path: '/redacao', icon: PenLine },
-  { title: 'Desempenho', path: '/errors', icon: BarChart2 },
 ];
 
 export const TopNav = () => {
