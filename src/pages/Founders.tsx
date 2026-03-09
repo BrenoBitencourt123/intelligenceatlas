@@ -461,7 +461,7 @@ export default function Founders() {
 
       {/* ─── Footer ─── */}
       <footer className="py-8 text-center border-t border-border">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-[#9CA3AF]">
           Inteligência Atlas © {new Date().getFullYear()}
         </p>
       </footer>
