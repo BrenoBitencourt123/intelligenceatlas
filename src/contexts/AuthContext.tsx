@@ -62,7 +62,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Listener for ongoing auth changes — defer Supabase calls to avoid deadlock
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'INITIAL_SESSION') return;
@@ -79,7 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Initial session load
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
