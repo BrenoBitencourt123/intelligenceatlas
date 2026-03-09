@@ -1,59 +1,50 @@
 
 
-## Plano: Editor Visual de Questoes estilo Simulado
+## Plano: Header como banner de urgência + corrigir hero cortado
 
-O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
+### Problemas identificados
+1. **Header sem destaque** — o "20 vagas restantes" está discreto, em texto pequeno cinza ao lado do logo. Não comunica urgência.
+2. **Hero cortado** — no notebook a seção hero não cabe na viewport, cortando conteúdo embaixo.
 
-### Arquitetura
+### Solução
 
-```text
-PreviewStage (refatorado)
-├── QuestionEditor (painel esquerdo — scrollavel)
-│   ├── Header: "Q.1 de 90" + badges (area, idioma)
-│   ├── Statement editor (textarea com suporte a {{IMG_N}})
-│   │   └── Inline image slots (drag/drop, paste, upload)
-│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
-│   ├── Metadados: area, resposta correta, lingua estrangeira
-│   └── Navegacao: < Anterior | Proxima >
-│
-└── Sidebar (painel direito — fixo)
-    ├── Status summary (OK / Com erro / Vazias)
-    ├── Grid de numeros (1-90 ou 91-180)
-    │   ├── Verde: questao OK (tem enunciado + gabarito)
-    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
-    │   ├── Vermelho: questao vazia / critica
-    │   ├── Borda: questao atual selecionada
-    │   └── Cinza: questao nao importada
-    └── Botao "Revisar e Importar"
+#### 1. Transformar o header num banner de escassez (full-width, com cor de fundo)
+
+Substituir o navbar atual por um **banner compacto de urgência** com fundo escuro (foreground) e texto claro, full-width, estilo top-bar:
+
+```tsx
+<motion.nav className="fixed top-0 left-0 right-0 z-50">
+  {/* Banner de urgência — fundo escuro, full-width */}
+  <div className="bg-foreground text-background">
+    <div className="max-w-5xl mx-auto flex items-center justify-center px-5 h-10 gap-2">
+      <span className="relative flex h-1.5 w-1.5">
+        <span className="animate-ping absolute ... bg-red-400 opacity-75" />
+        <span className="relative ... bg-red-400" />
+      </span>
+      <span className="text-xs sm:text-sm font-semibold tracking-wide">
+        🔥 Apenas {vagasRestantes} vagas restantes — 50% off para sempre
+      </span>
+    </div>
+  </div>
+  {/* Navbar normal abaixo */}
+  <div className="backdrop-blur-xl bg-background/80 border-b border-border/50">
+    <div className="max-w-5xl mx-auto flex items-center justify-between px-5 h-12">
+      <div className="flex items-center gap-2">
+        <img ... /> <span>Atlas</span>
+      </div>
+      {/* Botão CTA aparece ao scrollar */}
+      ...
+    </div>
+  </div>
+</motion.nav>
 ```
 
-### Tarefas de implementacao
+Isso cria um **banner preto no topo** com a mensagem de escassez centralizada, impossível de ignorar. Abaixo dele, o navbar normal com logo + botão CTA no scroll.
 
-1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
-   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
-   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
-   - 5 alternativas editaveis (texto + slot de imagem cada)
-   - Selects para area, resposta correta, lingua estrangeira
-   - Navegacao Anterior/Proxima
+#### 2. Ajustar padding do hero para não cortar
 
-2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
-   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
-   - Contadores no topo: "X completas, Y com erro, Z vazias"
-   - Click no numero navega para a questao
+O hero tem `pt-28` no mobile mas o header agora é mais alto (~h-10 + h-12 = ~5.5rem). Ajustar para `pt-24 sm:pt-0` e usar `min-h-[calc(100vh-5.5rem)]` ou simplesmente `min-h-screen` com o conteúdo tendo `space-y-4 sm:space-y-8` (reduzir gaps no mobile/laptop).
 
-3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
-   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
-   - Direita: QuestionGrid + botao de importar
-   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
-   - Mobile: grid em cima, editor embaixo (responsivo)
-
-4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
-
-### Detalhes tecnicos
-
-- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
-- O estado de "questao atual" sera controlado por um index no PreviewStage
-- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
-- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
-- Nenhuma mudanca no banco de dados ou edge functions necessaria
+### Arquivo editado
+- `src/pages/Founders.tsx`
 
