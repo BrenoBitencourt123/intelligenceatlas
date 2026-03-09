@@ -1,48 +1,28 @@
 
+## Problema Identificado
 
-## Análise do Problema
+Na screenshot, o título ainda está com problemas:
+- "Seja um dos 20" na primeira linha
+- "Membros Fundadores" na segunda linha, mas encostando nas bordas da tela
+- `text-4xl` (36px) + `whitespace-nowrap` = muito largo para mobile
 
-Comparando as screenshots:
-- **Desktop (image-179)**: Layout perfeito, título em duas linhas equilibradas
-- **Mobile (image-178)**: O texto "20 Membros Fundadores" está vazando para fora da tela (cortado à direita)
+## Correções Necessárias
 
-**Causa raiz**: O `text-4xl` (36px) combinado com `whitespace-nowrap` em "Membros Fundadores" é muito grande para telas de 320-375px.
-
----
-
-## Plano de Correção
-
-### 1. Reduzir tamanho do título no mobile
-**Linha 164**: Mudar de `text-4xl` para `text-2xl` ou `text-3xl`
-
+### 1. Reduzir fonte no mobile
+**Linha 164**: Trocar `text-4xl` por `text-3xl`
 ```tsx
-// De:
-className="text-4xl sm:text-5xl lg:text-6xl ..."
-
-// Para:
-className="text-3xl sm:text-5xl lg:text-6xl ..."
+className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]"
 ```
 
-### 2. Tornar o `whitespace-nowrap` responsivo
-**Linha 172**: Aplicar `whitespace-nowrap` apenas em telas maiores
-
+### 2. Remover whitespace-nowrap no mobile
+**Linha 172**: Aplicar apenas em telas maiores
 ```tsx
-// De:
-<span className="whitespace-nowrap"> Membros Fundadores</span>
-
-// Para:
 <span className="sm:whitespace-nowrap"> Membros Fundadores</span>
 ```
 
-Isso permite que o texto quebre naturalmente no mobile, evitando overflow.
-
-### 3. Alternativa mais agressiva (se necessário)
-Se ainda vazar, reduzir para `text-2xl` no mobile e ajustar leading.
-
----
+### 3. Alternativa mais agressiva (se ainda não couber)
+Usar `text-2xl` (24px) no mobile, que garantidamente cabe em telas de 320px.
 
 ## Resultado Esperado
-
-- **Mobile**: Título quebra naturalmente em 2-3 linhas sem overflow
-- **Desktop**: Mantém o layout elegante atual com "Membros Fundadores" numa única linha
-
+- Mobile: Título com fonte menor que quebra naturalmente sem encostar nas bordas
+- Desktop: Mantém o layout atual elegante
