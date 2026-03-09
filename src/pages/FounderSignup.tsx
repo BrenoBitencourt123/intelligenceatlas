@@ -211,7 +211,7 @@ export default function FounderSignup() {
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                   <button
-                    onClick={() => navigate("/")}
+                    onClick={() => navigate("/hoje")}}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
                   >
                     Ir para o Atlas

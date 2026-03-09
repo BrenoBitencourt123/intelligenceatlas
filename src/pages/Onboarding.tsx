@@ -135,7 +135,7 @@ export default function Onboarding() {
 
       await refreshProfile();
       toast.success('Configuração salva! Bom estudo!');
-      navigate('/');
+      navigate('/hoje');
     } catch (err: any) {
       toast.error(err.message || 'Erro ao salvar configurações.');
     } finally {
