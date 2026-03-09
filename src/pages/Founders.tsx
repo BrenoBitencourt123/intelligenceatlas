@@ -7,8 +7,8 @@ import {
   BookOpen,
   PenLine,
   Brain,
-  ChevronDown,
-} from "lucide-react";
+  ChevronDown } from
+"lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
@@ -16,64 +16,64 @@ import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  AccordionTrigger } from
+"@/components/ui/accordion";
 
 /* ─── Config ─── */
 const VAGAS_TOTAL = 20;
 
 /* ─── Data ─── */
 const PILLARS = [
-  {
-    num: "01",
-    icon: BookOpen,
-    title: "Questões inteligentes",
-    desc: "Resolva questões reais do ENEM e o sistema identifica seus pontos fracos para focar onde você mais precisa.",
-  },
-  {
-    num: "02",
-    icon: PenLine,
-    title: "Redação com IA",
-    desc: "Receba análise por competência e uma versão nota 1.000 baseada no seu próprio raciocínio.",
-  },
-  {
-    num: "03",
-    icon: Brain,
-    title: "Flashcards espaçados",
-    desc: "Memorize conteúdos com revisão inteligente que se adapta ao seu ritmo de aprendizado.",
-  },
-];
+{
+  num: "01",
+  icon: BookOpen,
+  title: "Questões inteligentes",
+  desc: "Resolva questões reais do ENEM e o sistema identifica seus pontos fracos para focar onde você mais precisa."
+},
+{
+  num: "02",
+  icon: PenLine,
+  title: "Redação com IA",
+  desc: "Receba análise por competência e uma versão nota 1.000 baseada no seu próprio raciocínio."
+},
+{
+  num: "03",
+  icon: Brain,
+  title: "Flashcards espaçados",
+  desc: "Memorize conteúdos com revisão inteligente que se adapta ao seu ritmo de aprendizado."
+}];
+
 
 const FOUNDER_BENEFITS = [
-  "50% de desconto — para sempre",
-  "Acesso antecipado a cada novo recurso",
-  "Canal direto com os desenvolvedores",
-  "Todas as funcionalidades premium desde o dia 1",
-  "Influência nas próximas features do produto",
-];
+"50% de desconto — para sempre",
+"Acesso antecipado a cada novo recurso",
+"Canal direto com os desenvolvedores",
+"Todas as funcionalidades premium desde o dia 1",
+"Influência nas próximas features do produto"];
+
 
 const FAQ_ITEMS = [
-  {
-    q: "O que é o programa de membros fundadores?",
-    a: "É uma oferta limitada a 20 vagas com 50% de desconto vitalício para os primeiros apoiadores do Atlas. Você paga metade do preço — para sempre.",
-  },
-  {
-    q: "O desconto é realmente vitalício?",
-    a: "Sim! Sua assinatura sempre terá o desconto de fundador, independente de reajustes futuros.",
-  },
-  {
-    q: "Quantas vagas restam?",
-    a: "",
-  },
-  {
-    q: "Posso cancelar a qualquer momento?",
-    a: "Sim, sem multa ou fidelidade. Cancele quando quiser.",
-  },
-  {
-    q: "O Atlas já está funcionando?",
-    a: "Sim! O Atlas já conta com questões objetivas, redação com IA, flashcards e plano de estudo personalizado. Novos recursos são lançados semanalmente.",
-  },
-];
+{
+  q: "O que é o programa de membros fundadores?",
+  a: "É uma oferta limitada a 20 vagas com 50% de desconto vitalício para os primeiros apoiadores do Atlas. Você paga metade do preço — para sempre."
+},
+{
+  q: "O desconto é realmente vitalício?",
+  a: "Sim! Sua assinatura sempre terá o desconto de fundador, independente de reajustes futuros."
+},
+{
+  q: "Quantas vagas restam?",
+  a: ""
+},
+{
+  q: "Posso cancelar a qualquer momento?",
+  a: "Sim, sem multa ou fidelidade. Cancele quando quiser."
+},
+{
+  q: "O Atlas já está funcionando?",
+  a: "Sim! O Atlas já conta com questões objetivas, redação com IA, flashcards e plano de estudo personalizado. Novos recursos são lançados semanalmente."
+}];
+
 
 /* ─── Animation ─── */
 const fadeUp: Variants = {
@@ -81,8 +81,8 @@ const fadeUp: Variants = {
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, delay: i * 0.1 },
-  }),
+    transition: { duration: 0.5, delay: i * 0.1 }
+  })
 };
 
 /* ─── Component ─── */
@@ -109,7 +109,7 @@ export default function Founders() {
   }, []);
 
   const vagasPreenchidas = VAGAS_TOTAL - vagasRestantes;
-  const progressPct = (vagasPreenchidas / VAGAS_TOTAL) * 100;
+  const progressPct = vagasPreenchidas / VAGAS_TOTAL * 100;
   const handleCTA = () => navigate("/fundadores/cadastro");
 
   return (
@@ -119,8 +119,8 @@ export default function Founders() {
         className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50"
         initial={{ y: -80 }}
         animate={{ y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-      >
+        transition={{ duration: 0.4, ease: "easeOut" }}>
+        
         <div className="max-w-5xl mx-auto flex items-center justify-between px-5 h-14">
           <div className="flex items-center gap-2">
             <img src="/icon-192.png" alt="Atlas" className="h-6 w-6" />
@@ -133,15 +133,15 @@ export default function Founders() {
             animate={{
               opacity: showNavCTA ? 1 : 0,
               scale: showNavCTA ? 1 : 0.9,
-              pointerEvents: showNavCTA ? "auto" as const : "none" as const,
+              pointerEvents: showNavCTA ? "auto" as const : "none" as const
             }}
-            transition={{ duration: 0.2 }}
-          >
+            transition={{ duration: 0.2 }}>
+            
             <Button
               size="sm"
               className="rounded-full bg-foreground text-background hover:bg-foreground/90 font-semibold text-xs px-4"
-              onClick={handleCTA}
-            >
+              onClick={handleCTA}>
+              
               Garantir vaga
             </Button>
           </motion.div>
@@ -151,8 +151,8 @@ export default function Founders() {
       {/* ─── Hero ─── */}
       <section
         ref={heroRef}
-        className="relative min-h-[100svh] flex items-start sm:items-center justify-center px-5 pt-28 pb-24 sm:pt-0 sm:pb-0"
-      >
+        className="relative min-h-[100svh] flex items-start sm:items-center justify-center px-5 pt-28 pb-24 sm:pt-0 sm:pb-0">
+        
         <div className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-8">
           {/* Eyebrow */}
           <motion.p
@@ -160,8 +160,8 @@ export default function Founders() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            custom={0}
-          >
+            custom={0}>
+            
             Inteligência Atlas · Lançamento exclusivo
           </motion.p>
 
@@ -171,11 +171,11 @@ export default function Founders() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            custom={1}
-          >
+            custom={1}>
+            
             <span style={{ color: '#111827' }}>Seja um dos 20</span>
             <br />
-            <span style={{ color: '#737373' }}>membros fundadores</span>
+            <span style={{ color: '#737373' }}>Membros Fundadores</span>
           </motion.h1>
 
           {/* Oferta em destaque */}
@@ -184,8 +184,8 @@ export default function Founders() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            custom={2}
-          >
+            custom={2}>
+            
             50% de desconto — para sempre.
           </motion.p>
 
@@ -195,8 +195,8 @@ export default function Founders() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            custom={3}
-          >
+            custom={3}>
+            
             Um sistema que adapta o estudo às suas fraquezas — questões,
             redação e revisão, tudo com IA.
           </motion.p>
@@ -207,27 +207,27 @@ export default function Founders() {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            custom={4}
-          >
+            custom={4}>
+            
             <Button
               size="lg"
               className="h-12 px-8 text-base sm:h-14 sm:px-10 sm:text-lg font-bold rounded-full bg-foreground text-background hover:bg-foreground/90 shadow-lg active:scale-[0.98] transition-transform"
-              onClick={handleCTA}
-            >
+              onClick={handleCTA}>
+              
               Garantir minha vaga
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             <p className="text-sm text-muted-foreground mt-1">
-              {vagasRestantes > 0 ? (
-                <>
+              {vagasRestantes > 0 ?
+              <>
                   <span className="font-semibold text-foreground">
                     {vagasPreenchidas} de {VAGAS_TOTAL}
                   </span>{" "}
                   vagas preenchidas · Cancele quando quiser
-                </>
-              ) : (
-                "Todas as vagas foram preenchidas!"
-              )}
+                </> :
+
+              "Todas as vagas foram preenchidas!"
+              }
             </p>
           </motion.div>
         </div>
@@ -238,8 +238,8 @@ export default function Founders() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 - scrollProgress }}
           transition={{ duration: 0.3 }}
-          style={{ pointerEvents: scrollProgress > 0.5 ? "none" : "auto" }}
-        >
+          style={{ pointerEvents: scrollProgress > 0.5 ? "none" : "auto" }}>
+          
           <span className="text-sm sm:text-base text-muted-foreground font-medium">
             Arraste para baixo
           </span>
@@ -248,9 +248,9 @@ export default function Founders() {
             transition={{
               duration: 1.5,
               repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          >
+              ease: "easeInOut"
+            }}>
+            
             <ChevronDown className="w-6 h-6 sm:w-7 sm:h-7 text-muted-foreground" />
           </motion.div>
         </motion.div>
@@ -265,22 +265,22 @@ export default function Founders() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            custom={0}
-          >
+            custom={0}>
+            
             Como o Atlas funciona
           </motion.h2>
 
           <div className="grid sm:grid-cols-3 gap-8 sm:gap-6">
-            {PILLARS.map((p, i) => (
-              <motion.div
-                key={p.num}
-                className="space-y-4"
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i}
-              >
+            {PILLARS.map((p, i) =>
+            <motion.div
+              key={p.num}
+              className="space-y-4"
+              variants={fadeUp}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              custom={i}>
+              
                 <span className="text-xs font-mono font-bold text-muted-foreground/50 tracking-widest">
                   {p.num}
                 </span>
@@ -294,7 +294,7 @@ export default function Founders() {
                   {p.desc}
                 </p>
               </motion.div>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -308,8 +308,8 @@ export default function Founders() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            custom={0}
-          >
+            custom={0}>
+            
             <h2 className="text-2xl sm:text-3xl font-bold">
               Por que ser um dos 20?
             </h2>
@@ -326,10 +326,10 @@ export default function Founders() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            custom={1}
-          >
-            {FOUNDER_BENEFITS.map((b) => (
-              <li key={b} className="flex items-start gap-3">
+            custom={1}>
+            
+            {FOUNDER_BENEFITS.map((b) =>
+            <li key={b} className="flex items-start gap-3">
                 <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-background/15 flex items-center justify-center">
                   <Check className="w-3 h-3 text-background" />
                 </span>
@@ -337,7 +337,7 @@ export default function Founders() {
                   {b}
                 </span>
               </li>
-            ))}
+            )}
           </motion.ul>
 
           {/* Progress */}
@@ -347,8 +347,8 @@ export default function Founders() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            custom={2}
-          >
+            custom={2}>
+            
             <div className="flex justify-between text-sm font-medium">
               <span className="text-background/50">Vagas preenchidas</span>
               <span className="text-background font-bold">
@@ -361,13 +361,13 @@ export default function Founders() {
                 initial={{ width: 0 }}
                 whileInView={{ width: `${progressPct}%` }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
-              />
+                transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }} />
+              
             </div>
             <p className="text-center text-xs text-background/40">
-              {vagasRestantes > 0
-                ? `Restam ${vagasRestantes} vagas com desconto de fundador`
-                : "Esgotado"}
+              {vagasRestantes > 0 ?
+              `Restam ${vagasRestantes} vagas com desconto de fundador` :
+              "Esgotado"}
             </p>
           </motion.div>
 
@@ -378,13 +378,13 @@ export default function Founders() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            custom={3}
-          >
+            custom={3}>
+            
             <Button
               size="lg"
               className="h-14 px-10 text-lg font-bold rounded-full bg-background text-foreground hover:bg-background/90 shadow-lg active:scale-[0.98] transition-transform"
-              onClick={handleCTA}
-            >
+              onClick={handleCTA}>
+              
               Garantir minha vaga
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
@@ -401,31 +401,31 @@ export default function Founders() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            custom={0}
-          >
+            custom={0}>
+            
             Perguntas frequentes
           </motion.h2>
 
           <Accordion type="single" collapsible className="space-y-2">
             {FAQ_ITEMS.map((item, i) => {
               const answer =
-                i === 2
-                  ? `Atualmente restam ${vagasRestantes} de ${VAGAS_TOTAL} vagas. Quando acabarem, o preço será o valor cheio sem desconto.`
-                  : item.a;
+              i === 2 ?
+              `Atualmente restam ${vagasRestantes} de ${VAGAS_TOTAL} vagas. Quando acabarem, o preço será o valor cheio sem desconto.` :
+              item.a;
               return (
                 <AccordionItem
                   key={i}
                   value={`faq-${i}`}
-                  className="rounded-xl border border-border bg-card px-5"
-                >
+                  className="rounded-xl border border-border bg-card px-5">
+                  
                   <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-4 text-left">
                     {item.q}
                   </AccordionTrigger>
                   <AccordionContent className="text-sm text-muted-foreground pb-4">
                     {answer}
                   </AccordionContent>
-                </AccordionItem>
-              );
+                </AccordionItem>);
+
             })}
           </Accordion>
         </div>
@@ -439,8 +439,8 @@ export default function Founders() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          custom={0}
-        >
+          custom={0}>
+          
           <h2 className="text-xl sm:text-2xl font-bold">
             Pronto para estudar de forma inteligente?
           </h2>
@@ -451,8 +451,8 @@ export default function Founders() {
           <Button
             size="lg"
             className="h-14 px-10 text-lg font-bold rounded-full bg-foreground text-background hover:bg-foreground/90 shadow-lg active:scale-[0.98] transition-transform"
-            onClick={handleCTA}
-          >
+            onClick={handleCTA}>
+            
             Garantir minha vaga
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
@@ -465,6 +465,6 @@ export default function Founders() {
           Inteligência Atlas © {new Date().getFullYear()}
         </p>
       </footer>
-    </div>
-  );
+    </div>);
+
 }
