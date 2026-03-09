@@ -7,10 +7,10 @@ const corsHeaders = {
 };
 
 const DISCIPLINE_MAP: Record<string, string> = {
-  linguagens: "Linguagens",
-  "ciencias-humanas": "Ciências Humanas",
-  "ciencias-natureza": "Ciências da Natureza",
-  matematica: "Matemática",
+  linguagens: "linguagens",
+  "ciencias-humanas": "humanas",
+  "ciencias-natureza": "natureza",
+  matematica: "matematica",
 };
 
 interface EnemAlternative {
