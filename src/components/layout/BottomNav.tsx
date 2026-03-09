@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { useStudyStats } from '@/hooks/useStudyStats';
 
 const navItems = [
-  { title: 'Hoje', path: '/', icon: CalendarCheck, badgeKey: null },
+  { title: 'Hoje', path: '/hoje', icon: CalendarCheck, badgeKey: null },
   { title: 'Objetivas', path: '/objetivas', icon: ListChecks, badgeKey: null },
   { title: 'Redação', path: '/redacao', icon: PenLine, badgeKey: null },
   { title: 'Desempenho', path: '/errors', icon: BarChart2, badgeKey: 'overdue' as const },
@@ -26,7 +26,7 @@ export const BottomNav = () => {
             <NavLink
               key={item.path}
               to={item.path}
-              end={item.path === '/'}
+              end={item.path === '/hoje'}
               className={cn(
                 'flex flex-col items-center justify-center gap-1 px-4 py-2 text-muted-foreground transition-colors relative'
               )}

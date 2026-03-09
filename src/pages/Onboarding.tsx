@@ -135,7 +135,7 @@ export default function Onboarding() {
 
       await refreshProfile();
       toast.success('Configuração salva! Bom estudo!');
-      navigate('/');
+      navigate('/hoje');
     } catch (err: any) {
       toast.error(err.message || 'Erro ao salvar configurações.');
     } finally {
@@ -181,7 +181,7 @@ export default function Onboarding() {
                 <Label htmlFor="phone" className="flex items-center gap-1.5">
                   <Phone className="h-3.5 w-3.5" />
                   Telefone / WhatsApp
-                  <span className="text-destructive">*</span>
+                  <span className="text-muted-foreground text-xs">(opcional)</span>
                 </Label>
                 <Input
                   id="phone"
@@ -195,10 +195,6 @@ export default function Onboarding() {
               <Button
                 className="w-full gap-2"
                 onClick={() => {
-                  if (!phone.trim()) {
-                    toast.error('Informe seu telefone para continuar.');
-                    return;
-                  }
                   setStep(2);
                 }}
               >
