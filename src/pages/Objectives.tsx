@@ -4,13 +4,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
 import { useStudySchedule } from '@/hooks/useStudySchedule';
 import { useStudySession } from '@/hooks/useStudySession';
 import { useStudyStats } from '@/hooks/useStudyStats';
 import { useExamPdf } from '@/hooks/useExamPdf';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
-import { ArrowRight, BookOpen, Brain, Check, Crown, FileText, HelpCircle, RotateCcw, Target, X, ChevronRight } from 'lucide-react';
+import { ArrowRight, BookOpen, Brain, Check, ChevronRight, Crown, FileText, HelpCircle, RotateCcw, Target, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import MarkdownText from '@/components/atlas/MarkdownText';
 import { useQuestionPedagogy } from '@/hooks/useQuestionPedagogy';
@@ -19,7 +19,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QuestionImageGallery } from '@/components/study/QuestionImageGallery';
 import { InlineStatementRenderer } from '@/components/study/InlineStatementRenderer';
 import { useAuth } from '@/contexts/AuthContext';
-import { TopicMap } from '@/components/objectives/TopicMap';
 
 const AREA_LABELS: Record<string, string> = {
   matematica: 'Matemática',
@@ -568,13 +567,7 @@ const Objectives = () => {
             )}
           </div>
 
-          <Tabs defaultValue="estudar" className="w-full">
-            <TabsList className="w-full">
-              <TabsTrigger value="estudar" className="flex-1">Estudar</TabsTrigger>
-              <TabsTrigger value="desempenho" className="flex-1">Desempenho</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="estudar" className="space-y-6 mt-4">
+          <div className="space-y-6 mt-4">
               {/* Daily progress card */}
               {!stats.isLoading && (
                 <div className="rounded-xl border border-border bg-card p-4 space-y-3">
@@ -681,19 +674,29 @@ const Objectives = () => {
               {/* Weak topics */}
               {!stats.isLoading && weakTopics.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    Tópicos para reforçar
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-muted-foreground" />
+                      Tópicos para reforçar
+                    </h3>
+                    <button
+                      onClick={() => navigate('/errors')}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    >
+                      Ver mapa completo
+                      <ChevronRight className="h-3 w-3" />
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     {weakTopics.map((t: any, i: number) => {
                       const topicLabel = t.topic?.includes('__')
                         ? t.topic.split('__').pop()
                         : t.topic;
                       return (
-                        <div
+                        <button
                           key={i}
-                          className="flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
+                          onClick={() => navigate('/errors')}
+                          className="w-full flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors text-left"
                         >
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{topicLabel}</p>
@@ -706,19 +709,15 @@ const Objectives = () => {
                                 style={{ width: `${Math.round(t.priority * 100)}%` }}
                               />
                             </div>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
                 </div>
               )}
-            </TabsContent>
-
-            <TabsContent value="desempenho" className="mt-4">
-              {user && <TopicMap userId={user.id} />}
-            </TabsContent>
-          </Tabs>
+          </div>
         </div>
       </div>
     </MainLayout>
