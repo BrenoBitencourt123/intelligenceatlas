@@ -181,7 +181,7 @@ export default function Onboarding() {
                 <Label htmlFor="phone" className="flex items-center gap-1.5">
                   <Phone className="h-3.5 w-3.5" />
                   Telefone / WhatsApp
-                  <span className="text-destructive">*</span>
+                  <span className="text-muted-foreground text-xs">(opcional)</span>
                 </Label>
                 <Input
                   id="phone"
