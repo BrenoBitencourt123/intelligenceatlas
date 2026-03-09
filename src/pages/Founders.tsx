@@ -444,7 +444,7 @@ export default function Founders() {
           <h2 className="text-xl sm:text-2xl font-bold text-[#111827]">
             Pronto para estudar de forma inteligente?
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-[#6B7280]">
             Garanta seu lugar entre os 20 primeiros e pague metade — para
             sempre.
           </p>
