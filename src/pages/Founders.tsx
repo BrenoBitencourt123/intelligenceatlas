@@ -274,7 +274,7 @@ export default function Founders() {
             {PILLARS.map((p, i) =>
             <motion.div
               key={p.num}
-              className="space-y-4"
+              className="space-y-2 sm:space-y-4"
               variants={fadeUp}
               initial="hidden"
               whileInView="visible"
