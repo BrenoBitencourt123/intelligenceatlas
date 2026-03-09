@@ -19,7 +19,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QuestionImageGallery } from '@/components/study/QuestionImageGallery';
 import { InlineStatementRenderer } from '@/components/study/InlineStatementRenderer';
 import { useAuth } from '@/contexts/AuthContext';
-import { TopicMap } from '@/components/objectives/TopicMap';
 
 const AREA_LABELS: Record<string, string> = {
   matematica: 'Matemática',
