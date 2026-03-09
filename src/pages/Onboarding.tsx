@@ -29,8 +29,10 @@ const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as con
 
 function generateRecommendedSchedule(focusAreas: string[]): DaySchedule {
   const schedule: DaySchedule = {};
+  // Sáb e Dom são fixos (simulado / descanso) — sem áreas de estudo
   schedule['saturday'] = [];
   schedule['sunday'] = [];
+  // Distribui áreas de seg a sex, priorizando áreas de foco
   const weighted: string[] = [];
   for (const area of ALL_AREAS) {
     const weight = focusAreas.includes(area) ? 2 : 1;
