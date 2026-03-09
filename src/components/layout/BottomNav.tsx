@@ -1,14 +1,12 @@
-import { CalendarCheck, ListChecks, PenLine, BarChart2, User } from 'lucide-react';
+import { CalendarCheck, ListChecks, PenLine, User } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
-import { useStudyStats } from '@/hooks/useStudyStats';
 
 const navItems = [
-  { title: 'Hoje', path: '/hoje', icon: CalendarCheck, badgeKey: null },
-  { title: 'Objetivas', path: '/objetivas', icon: ListChecks, badgeKey: null },
-  { title: 'Redação', path: '/redacao', icon: PenLine, badgeKey: null },
-  { title: 'Desempenho', path: '/errors', icon: BarChart2, badgeKey: 'overdue' as const },
-  { title: 'Perfil', path: '/perfil', icon: User, badgeKey: null },
+  { title: 'Hoje', path: '/hoje', icon: CalendarCheck },
+  { title: 'Objetivas', path: '/objetivas', icon: ListChecks },
+  { title: 'Redação', path: '/redacao', icon: PenLine },
+  { title: 'Perfil', path: '/perfil', icon: User },
 ];
 
 export const BottomNav = () => {
