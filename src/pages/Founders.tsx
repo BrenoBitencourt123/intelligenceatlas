@@ -284,7 +284,7 @@ export default function Founders() {
                 <span className="text-xs font-mono font-bold text-muted-foreground/50 tracking-widest">
                   {p.num}
                 </span>
-                <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-secondary flex items-center justify-center">
                   <p.icon className="w-5 h-5 text-foreground" />
                 </div>
                 <h3 className="font-semibold text-foreground text-base">
