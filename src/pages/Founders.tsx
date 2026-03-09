@@ -124,8 +124,8 @@ export default function Founders() {
           <div className="bg-foreground text-background">
             <div className="max-w-5xl mx-auto flex items-center justify-center px-5 h-10 gap-2">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-400" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
               </span>
               <span className="text-xs sm:text-sm font-semibold tracking-wide uppercase">
                 🔥 Apenas {vagasRestantes} {vagasRestantes === 1 ? "vaga restante" : "vagas restantes"} — 50% off para sempre
