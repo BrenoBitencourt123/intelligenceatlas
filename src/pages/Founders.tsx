@@ -135,8 +135,9 @@ export default function Founders() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
                 </span>
-                <span className="text-xs sm:text-sm font-semibold tracking-wide uppercase truncate">
-                  🔥 Apenas {vagasRestantes} {vagasRestantes === 1 ? "vaga restante" : "vagas restantes"} — 50% off para sempre
+                <span className="text-[10px] sm:text-sm font-semibold tracking-wide uppercase whitespace-normal sm:whitespace-nowrap text-center sm:text-left leading-tight">
+                  <span className="sm:hidden">🔥 {vagasRestantes} {vagasRestantes === 1 ? "vaga" : "vagas"} · 50% off sempre</span>
+                  <span className="hidden sm:inline">🔥 Apenas {vagasRestantes} {vagasRestantes === 1 ? "vaga restante" : "vagas restantes"} — 50% off para sempre</span>
                 </span>
               </div>
             )}
