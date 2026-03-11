@@ -639,7 +639,7 @@ export function useStudySession() {
   const _warmSz = Math.max(1, Math.round(totalQuestions * 0.25));
   const _consSz = Math.max(1, Math.round(totalQuestions * 0.25));
   const currentBlock = currentIndex < _warmSz ? 0 : currentIndex < totalQuestions - _consSz ? 1 : 2;
-  const blockLabels = ["Aquecimento", "Aprendizado", "ConsolidaÃ§Ã£o"];
+  const blockLabels = ["Aquecimento", "Aprendizado", "Consolidação"];
   const progress =
     totalQuestions > 0 ? Math.round(((currentIndex + (showFeedback ? 1 : 0)) / totalQuestions) * 100) : 0;
 
