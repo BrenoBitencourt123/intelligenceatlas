@@ -72,7 +72,9 @@ const Plan = () => {
   }, [searchParams, setSearchParams, checkSubscription]);
 
   const handleUpgrade = (targetPlan: 'pro') => {
-    setCheckoutCouponId(useEnemDiscount && discountTier ? discountTier.id : undefined);
+    // Priority: promo code > ENEM discount > none
+    const coupon = promoCode.trim() || (useEnemDiscount && discountTier ? discountTier.id : undefined);
+    setCheckoutCouponId(coupon || undefined);
     setCheckoutPlan(targetPlan);
   };
 
