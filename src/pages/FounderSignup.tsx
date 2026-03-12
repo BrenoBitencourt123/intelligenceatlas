@@ -58,12 +58,8 @@ export default function FounderSignup() {
           <ArrowLeft className="w-4 h-4" />
           Voltar
         </button>
-        <span className="text-sm font-bold tracking-tight text-foreground">
-          Atlas
-        </span>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {step}/2
-        </span>
+        <span className="text-sm font-bold tracking-tight text-foreground">Atlas</span>
+        <span className="text-xs text-muted-foreground tabular-nums">{step}/2</span>
       </header>
 
       {/* ─── Progress ─── */}
@@ -96,21 +92,16 @@ export default function FounderSignup() {
                   <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card text-xs font-medium text-muted-foreground">
                     Membro Fundador · 50% off vitalício
                   </span>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
-                    Garanta sua vaga
-                  </h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">Garanta sua vaga</h1>
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Preencha seus dados para receber o cupom exclusivo de 50%
-                    de desconto vitalício no Atlas.
+                    Preencha seus dados para receber o cupom exclusivo de 50% de desconto vitalício no Atlas.
                   </p>
                 </div>
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">
-                      Nome completo
-                    </label>
+                    <label className="text-sm font-medium text-foreground">Nome completo</label>
                     <Input
                       placeholder="Seu nome"
                       value={name}
@@ -122,9 +113,7 @@ export default function FounderSignup() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">
-                      E-mail
-                    </label>
+                    <label className="text-sm font-medium text-foreground">E-mail</label>
                     <Input
                       type="email"
                       placeholder="seu@email.com"
@@ -137,9 +126,7 @@ export default function FounderSignup() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">
-                      WhatsApp
-                    </label>
+                    <label className="text-sm font-medium text-foreground">WhatsApp</label>
                     <Input
                       type="tel"
                       placeholder="(11) 99999-9999"
@@ -182,16 +169,11 @@ export default function FounderSignup() {
 
                 {/* Text */}
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-                    Inscrição confirmada!
-                  </h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Inscrição confirmada!</h1>
                   <p className="text-muted-foreground leading-relaxed max-w-sm mx-auto">
-                    Agora entre no nosso grupo exclusivo no WhatsApp para
-                    receber seu cupom de{" "}
-                    <span className="font-semibold text-foreground">
-                      50% vitalício
-                    </span>{" "}
-                    e todas as novidades em primeira mão.
+                    Agora entre no nosso grupo exclusivo no WhatsApp para receber seu cupom de{" "}
+                    <span className="font-semibold text-foreground">50% vitalício</span> e todas as novidades em
+                    primeira mão.
                   </p>
                 </div>
 
@@ -201,10 +183,7 @@ export default function FounderSignup() {
                     size="lg"
                     className="w-full h-12 text-base font-bold rounded-xl bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98] transition-transform"
                     onClick={() =>
-                      window.open(
-                        "https://chat.whatsapp.com/LINK_DO_GRUPO_VIP",
-                        "_blank"
-                      )
+                      window.open("https://wa.me/5517991652264?text=Como%20posso%20usar%20o%20Atlas%3F", "_blank")
                     }
                   >
                     Entrar no grupo VIP
