@@ -24,6 +24,7 @@ const Plan = () => {
   const [checkoutPlan, setCheckoutPlan] = useState<'pro' | null>(null);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [useEnemDiscount, setUseEnemDiscount] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
 
   const monthsUntilEnem = useMemo(() => getMonthsUntilEnem(), []);
   const discountTier = useMemo(() => getDiscountTier(monthsUntilEnem), [monthsUntilEnem]);
