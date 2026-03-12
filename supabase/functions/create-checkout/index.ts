@@ -76,9 +76,6 @@ serve(async (req) => {
     if (coupon_id) {
       sessionParams.discounts = [{ coupon: coupon_id }];
       logStep("Applying coupon", { coupon_id });
-    } else {
-      sessionParams.allow_promotion_codes = true;
-      logStep("Promotion codes enabled");
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);

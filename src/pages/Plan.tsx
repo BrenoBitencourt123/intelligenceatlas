@@ -1,8 +1,9 @@
-import { Check, Crown, Loader2, Settings, Star, Clock } from 'lucide-react';
+import { Check, Crown, Loader2, Settings, Star, Clock, Tag } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { PlanSkeleton } from '@/components/skeletons/PlanSkeleton';
@@ -24,6 +25,7 @@ const Plan = () => {
   const [checkoutPlan, setCheckoutPlan] = useState<'pro' | null>(null);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [useEnemDiscount, setUseEnemDiscount] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
 
   const monthsUntilEnem = useMemo(() => getMonthsUntilEnem(), []);
   const discountTier = useMemo(() => getDiscountTier(monthsUntilEnem), [monthsUntilEnem]);
@@ -71,7 +73,9 @@ const Plan = () => {
   }, [searchParams, setSearchParams, checkSubscription]);
 
   const handleUpgrade = (targetPlan: 'pro') => {
-    setCheckoutCouponId(useEnemDiscount && discountTier ? discountTier.id : undefined);
+    // Priority: promo code > ENEM discount > none
+    const coupon = promoCode.trim() || (useEnemDiscount && discountTier ? discountTier.id : undefined);
+    setCheckoutCouponId(coupon || undefined);
     setCheckoutPlan(targetPlan);
   };
 
@@ -307,6 +311,24 @@ const Plan = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Promo code input for free users */}
+          {isFree && (
+            <div className="max-w-3xl mx-auto w-full">
+              <div className="flex items-center gap-3">
+                <Tag className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Input
+                  placeholder="Código promocional"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  className="max-w-[200px] h-9 text-sm uppercase"
+                />
+                {promoCode && (
+                  <span className="text-xs text-muted-foreground">Será aplicado no checkout</span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Free user usage info */}
           {isFree && (
