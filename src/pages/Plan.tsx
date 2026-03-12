@@ -1,4 +1,4 @@
-import { Check, Crown, Loader2, Settings, Star, Clock } from 'lucide-react';
+import { Check, Crown, Loader2, Settings, Star, Clock, Tag } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
