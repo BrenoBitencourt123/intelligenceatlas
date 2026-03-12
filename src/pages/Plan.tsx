@@ -267,7 +267,7 @@ const Plan = () => {
                         R$ {getDiscountedPrice(STRIPE_PLANS.pro.price).toFixed(2).replace('.', ',')}
                       </p>
                       <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                        -{discountTier.percent}% por {monthsUntilEnem} meses
+                        -{discountTier.percent}% · Total: R$ {(getDiscountedPrice(STRIPE_PLANS.pro.price) * monthsUntilEnem).toFixed(2).replace('.', ',')} por {monthsUntilEnem} meses
                       </p>
                     </div>
                   ) : (
