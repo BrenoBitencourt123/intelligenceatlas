@@ -149,7 +149,34 @@ const Plan = () => {
             <p className="text-muted-foreground max-w-lg mx-auto">
               Prepare-se para o ENEM com a melhor plataforma de correção de redações do Brasil
             </p>
-          </div>
+           </div>
+
+          {/* Promo code — prominent placement */}
+          {isFree && (
+            <Card className="border-2 border-primary/30 bg-primary/5 max-w-md mx-auto w-full">
+              <CardContent className="py-4">
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-semibold text-foreground">Tem um código promocional?</p>
+                  </div>
+                  <div className="flex items-center gap-2 w-full max-w-[280px]">
+                    <Input
+                      placeholder="Digite seu código"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      className="h-10 text-center text-sm uppercase font-semibold tracking-wider"
+                    />
+                  </div>
+                  {promoCode && (
+                    <p className="text-xs text-primary font-medium">
+                      ✓ Código "{promoCode}" será aplicado no checkout
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Discount toggle */}
           {isFree && discountTier && monthsUntilEnem >= 3 && (
@@ -312,23 +339,7 @@ const Plan = () => {
             </Card>
           </div>
 
-          {/* Promo code input for free users */}
-          {isFree && (
-            <div className="max-w-3xl mx-auto w-full">
-              <div className="flex items-center gap-3">
-                <Tag className="h-4 w-4 text-muted-foreground shrink-0" />
-                <Input
-                  placeholder="Código promocional"
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                  className="max-w-[200px] h-9 text-sm uppercase"
-                />
-                {promoCode && (
-                  <span className="text-xs text-muted-foreground">Será aplicado no checkout</span>
-                )}
-              </div>
-            </div>
-          )}
+
 
           {/* Free user usage info */}
           {isFree && (
