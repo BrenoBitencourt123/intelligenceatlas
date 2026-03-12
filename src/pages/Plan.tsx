@@ -311,6 +311,24 @@ const Plan = () => {
             </Card>
           </div>
 
+          {/* Promo code input for free users */}
+          {isFree && (
+            <div className="max-w-3xl mx-auto w-full">
+              <div className="flex items-center gap-3">
+                <Tag className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Input
+                  placeholder="Código promocional"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  className="max-w-[200px] h-9 text-sm uppercase"
+                />
+                {promoCode && (
+                  <span className="text-xs text-muted-foreground">Será aplicado no checkout</span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Free user usage info */}
           {isFree && (
             <Card className="border bg-muted/30">
