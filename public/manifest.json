@@ -2,7 +2,7 @@
   "name": "Atlas Intelligence",
   "short_name": "Atlas",
   "description": "Plataforma de redação com inteligência artificial",
-  "start_url": "/",
+  "start_url": "/hoje",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
