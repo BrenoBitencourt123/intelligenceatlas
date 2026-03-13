@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Camera, LogOut, Mail, User, Key, Crown, Loader2, Fingerprint, Trash2, Zap, History } from 'lucide-react';
+import { WeeklyScheduleEditor } from '@/components/profile/WeeklyScheduleEditor';
 import { ProfileSkeleton } from '@/components/skeletons/ProfileSkeleton';
 import { usePasskey } from '@/hooks/usePasskey';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
@@ -428,6 +429,9 @@ export default function Profile() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Weekly Schedule Editor */}
+        <WeeklyScheduleEditor />
 
         {/* Quota Settings - Only for paying users */}
         {!isFree && (
