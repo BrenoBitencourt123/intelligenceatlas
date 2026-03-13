@@ -430,6 +430,9 @@ export default function Profile() {
           </CardContent>
         </Card>
 
+        {/* Weekly Schedule Editor */}
+        <WeeklyScheduleEditor />
+
         {/* Quota Settings - Only for paying users */}
         {!isFree && (
           <Card className="mb-6" ref={quotaSectionRef} id="quota">
