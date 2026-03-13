@@ -31,7 +31,7 @@ const queryClient = new QueryClient();
 function HomeRoute() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  return user ? <Navigate to="/hoje" replace /> : <Landing />;
+  return user ? <Navigate to="/hoje" replace /> : <Navigate to="/fundadores" replace />;
 }
 
 const App = () => (
