@@ -1,59 +1,88 @@
 
 
-## Plano: Editor Visual de Questoes estilo Simulado
+## Análise: O que pode quebrar para o usuário hoje
 
-O objetivo e substituir o PreviewStage atual (lista compacta de cards) por um editor visual de questao unica, semelhante ao layout do simulado nas imagens de referencia: questao principal a esquerda com enunciado, imagens inline e alternativas editaveis, e um grid de navegacao a direita com indicadores de status.
+Fiz uma varredura no código, edge functions e fluxo de pagamento. Existem **3 problemas que vão impactar o usuário** e um problema que **trava o deploy de Edge Functions**. Nada catastrófico, mas dois deles confundem o usuário no momento do pagamento.
 
-### Arquitetura
+---
 
-```text
-PreviewStage (refatorado)
-├── QuestionEditor (painel esquerdo — scrollavel)
-│   ├── Header: "Q.1 de 90" + badges (area, idioma)
-│   ├── Statement editor (textarea com suporte a {{IMG_N}})
-│   │   └── Inline image slots (drag/drop, paste, upload)
-│   ├── Alternatives editor (A-E, cada uma com texto + imagem)
-│   ├── Metadados: area, resposta correta, lingua estrangeira
-│   └── Navegacao: < Anterior | Proxima >
-│
-└── Sidebar (painel direito — fixo)
-    ├── Status summary (OK / Com erro / Vazias)
-    ├── Grid de numeros (1-90 ou 91-180)
-    │   ├── Verde: questao OK (tem enunciado + gabarito)
-    │   ├── Amarelo: questao com problema (sem gabarito, sem enunciado)
-    │   ├── Vermelho: questao vazia / critica
-    │   ├── Borda: questao atual selecionada
-    │   └── Cinza: questao nao importada
-    └── Botao "Revisar e Importar"
+### 🔴 1. Edge Functions não compilam (build falhando)
+O build de TypeScript das Edge Functions está falhando em **2 funções**:
+
+- **`send-push/index.ts`** (8 erros de TS): incompatibilidade de tipos `Uint8Array<ArrayBufferLike>` com `BufferSource` da WebCrypto / `fetch`. É um problema de TS estrito do Deno mais novo — o código funciona em runtime, mas o type check bloqueia deploy.
+- **`clear-storage-bucket/index.ts`** (1 erro): `err` é `unknown` no catch e acessa `.message` direto.
+
+**Impacto real**: notificações push e a função admin de limpar storage podem não conseguir ser **redeployadas** se forem editadas. As versões já em produção continuam rodando.
+
+**Correção**: cast de `Uint8Array` para `BufferSource as any` / `new Uint8Array(buf).buffer` nas chamadas de `crypto.subtle.*` e `fetch`, e `err instanceof Error ? err.message : String(err)` no catch.
+
+---
+
+### 🔴 2. Página `/plano` mostra info contraditória sobre o free
+Os limites do free foram atualizados na landing (10 questões/dia + 1 redação/semana), mas a página `/plano` (que o usuário vê quando clica para fazer upgrade) ainda mostra:
+
+```
+Plano Grátis:
+- "5 questões por área (one-time)"   ← ERRADO
+- "1 redação gratuita"                ← ERRADO (na real é 1/semana)
 ```
 
-### Tarefas de implementacao
+E mais embaixo: *"Sua redação gratuita — Você tem 1 redação gratuita"* + barra `usedEssays/1`.
 
-1. **Criar componente QuestionEditor** — Renderiza uma unica questao em formato visual completo (similar ao simulado). Inclui:
-   - Textarea para enunciado com preview de imagens inline ({{IMG_N}})
-   - Botoes para adicionar/remover imagens no enunciado (upload, paste, reordenar)
-   - 5 alternativas editaveis (texto + slot de imagem cada)
-   - Selects para area, resposta correta, lingua estrangeira
-   - Navegacao Anterior/Proxima
+**Impacto**: usuário compara landing (10/dia + 1/semana) com /plano (5 total + 1 na vida) e fica confuso sobre o que realmente recebe. Pior: quem já fez 1 redação vê "Você já usou sua redação gratuita" mesmo tendo direito a outra na semana.
 
-2. **Criar componente QuestionGrid (sidebar)** — Grid numerico com cores de status:
-   - Calcular status de cada questao: `ok` (tem statement + correct_answer), `warning` (falta gabarito ou enunciado curto), `empty` (sem dados), `error` (anulada ou critica)
-   - Contadores no topo: "X completas, Y com erro, Z vazias"
-   - Click no numero navega para a questao
+**Correção**: alinhar `freeFeatures` em `Plan.tsx` com a landing, e trocar o card de "redação usada" por um card semanal.
 
-3. **Refatorar PreviewStage** — Substituir o layout de lista por um layout de 2 colunas:
-   - Esquerda: QuestionEditor mostrando a questao selecionada (navegavel)
-   - Direita: QuestionGrid + botao de importar
-   - Manter funcionalidades existentes (toggle selecao, add manual, avisos de missing)
-   - Mobile: grid em cima, editor embaixo (responsivo)
+---
 
-4. **Logica de insercao de imagem inline** — Ao adicionar imagem no editor, inserir automaticamente `{{IMG_N}}` na posicao do cursor no textarea do enunciado, para que o usuario controle onde a imagem aparece no texto.
+### 🟡 3. `useFreeAreaQuota.isAreaLocked` ignora o plano Pro
+```ts
+// useFreeAreaQuota.ts linha 19-21
+const isAreaLocked = (_area: string) =>
+  questionsUsedToday >= FREE_DAILY_QUESTIONS;
+```
+Não checa `isFree`. Em teoria, um Pro que respondeu 10 questões hoje seria marcado como "área bloqueada". Hoje, `usePlanFeatures` ainda usa `isAreaLocked` direto sem cruzar com `isPro`.
 
-### Detalhes tecnicos
+**Impacto**: depende de cada componente que consome — em `Objectives.tsx` o gate visual pode aparecer pra Pro também. Risco médio.
 
-- O `QuestionEditDialog` atual sera eliminado — a edicao passa a ser inline no editor principal
-- O estado de "questao atual" sera controlado por um index no PreviewStage
-- As funcoes `onAddImages`, `onRemoveImage`, `onAddAlternativeImage`, `onRemoveAlternativeImage`, `onUpdateQuestion` do hook ja existem e serao reutilizadas
-- O grid de navegacao usa a mesma logica de `DAY_RANGES` para determinar quais numeros mostrar
-- Nenhuma mudanca no banco de dados ou edge functions necessaria
+**Correção**: `isAreaLocked = (_area) => isFree && questionsUsedToday >= FREE_DAILY_QUESTIONS`.
+
+---
+
+### 🟡 4. Texto hardcoded "5 questões · ~10 min" em `Today.tsx`
+Linha 159 diz "5 questões" no card de revisão diária, mas o limite agora é 10. Inconsistência cosmética com o restante do produto.
+
+---
+
+### ✅ Fluxo de pagamento (Stripe) — auditoria
+
+Verifiquei `create-checkout`, `check-subscription`, `customer-portal`, `EmbeddedCheckoutModal`, `Plan.tsx`, `Founders.tsx` e `Landing.tsx`. **O fluxo está sólido**:
+
+| Item | Status |
+|---|---|
+| Stripe publishable key (live) hardcoded no front | ✅ correto, é chave pública |
+| Edge `create-checkout` usa `STRIPE_SECRET_KEY` + cria session embedded | ✅ ok |
+| `ui_mode: 'embedded'` + `return_url` + `clientSecret` | ✅ ok |
+| Cupom passado via `discounts: [{coupon}]` | ✅ ok |
+| `check-subscription` valida sub ativo e retorna `product_id` | ✅ ok |
+| `customer-portal` com fallback para "no customer found" | ✅ ok, com mensagem amigável |
+| Fluxo `intent → signup → /plano?checkout=pro` (landing/founders) | ✅ funciona |
+| Cupom `FUNDADOR` (50% lifetime, max 20) | ✅ existe no Stripe e na lib |
+| Auto-checkout ao chegar com `?checkout=pro&coupon=...` | ✅ funciona |
+| Após sucesso: `?success=true` chama `check-subscription` + reload | ✅ ok |
+| Webhook do Stripe | ⚠️ não tem (intencional pelo template Lovable) — `check-subscription` é chamado periodicamente. **Risco**: se usuário cancelar via Stripe Portal, só reflete no app na próxima chamada de `check-subscription`. Aceitável. |
+
+**Único ponto de atenção real no pagamento**: o `STRIPE_SECRET_KEY2` existe nas secrets além do `STRIPE_SECRET_KEY`. Pode ser uma chave antiga/duplicada. Vale conferir e remover se não usar — não quebra nada, mas é higiene.
+
+---
+
+### Resumo do que precisa virar fix (próxima mensagem em modo build)
+
+1. **Corrigir TS errors** em `send-push/index.ts` e `clear-storage-bucket/index.ts` (desbloqueia deploy)
+2. **Atualizar copy do free em `Plan.tsx`** (10/dia + 1/semana, em vez de 5 total + 1 na vida)
+3. **Trocar card "Sua redação gratuita"** em `Plan.tsx` por um card semanal correto
+4. **Adicionar gate `isFree`** em `useFreeAreaQuota.isAreaLocked`
+5. **Atualizar texto "5 questões"** em `Today.tsx` linha 159
+
+Pagamento em si: **nada quebrado, fluxo funciona**.
 
