@@ -368,7 +368,7 @@ const Essay = () => {
                 <Alert className="border-accent bg-accent/10">
                   <AlertCircle className="h-4 w-4 text-accent-foreground" />
                   <AlertDescription className="text-foreground">
-                    Você atingiu o limite de {dailyLimit} {dailyLimit === 1 ? 'correção' : 'correções'} por dia. 
+                    Você atingiu o limite de correções por dia. 
                     Volte amanhã para continuar praticando!
                   </AlertDescription>
                 </Alert>
