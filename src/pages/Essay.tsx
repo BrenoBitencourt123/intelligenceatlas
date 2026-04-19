@@ -14,7 +14,8 @@ import { QuotaExceededModal } from '@/components/atlas/QuotaExceededModal';
 import { analyzeEssay, generateImprovedVersion } from '@/lib/ai';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Clock } from 'lucide-react';
+import { Clock, Crown, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,8 +27,9 @@ import { useAuth } from '@/contexts/AuthContext';
 const Essay = () => {
   const { user } = useAuth();
   const { theme: dailyTheme, isLoading: isThemeLoading } = useDailyTheme();
-  const { planType, hasPedagogicalAccess, hasImprovedVersionAccess, hasSourcesAccess } = usePlanFeatures();
-  const { canAnalyze: hasQuota, reason: quotaReason, isLoading: isQuotaLoading, dailyUsed, dailyLimit } = useQuotaCheck();
+  const navigate = useNavigate();
+  const { planType, hasPedagogicalAccess, hasImprovedVersionAccess, hasSourcesAccess, isFree, weeklyEssayLimit } = usePlanFeatures();
+  const { canAnalyze: hasQuota, reason: quotaReason, isLoading: isQuotaLoading, weeklyUsed, weeklyLimit, isWelcomeBonus } = useQuotaCheck();
   const { hasWrittenToday, isLoading: isStatsLoading } = useUserStats();
   const [redoOverride, setRedoOverride] = useState(false);
   const effectiveHasWrittenToday = hasWrittenToday && !redoOverride;
@@ -388,7 +390,7 @@ const Essay = () => {
             
             {/* Right column - Results (desktop) */}
             <div className="hidden lg:block lg:w-[38%]">
-              <div className="sticky top-24">
+              <div className="sticky top-24 space-y-4">
                 <ResultPanel
                   state={state}
                   analyzedCount={analyzedBlockCount}
@@ -400,6 +402,35 @@ const Essay = () => {
                   isGenerating={isGeneratingImproved}
                   hasImprovedVersionAccess={hasImprovedVersionAccess}
                 />
+
+                {/* Banner PRO pós-correção — aparece quando free termina de analisar */}
+                {isFree && state.totalScore !== null && (
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Crown className="h-4 w-4 text-amber-500 shrink-0" />
+                      <p className="text-sm font-semibold text-foreground">
+                        {weeklyUsed >= weeklyLimit
+                          ? 'Próxima correção em 7 dias'
+                          : isWelcomeBonus
+                            ? `Bônus de boas-vindas: ${weeklyLimit - weeklyUsed} correção restante`
+                            : 'Gostou da análise?'}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {weeklyUsed >= weeklyLimit
+                        ? 'No PRO você corrige toda semana, todo dia — sem esperar.'
+                        : 'No PRO: 60 correções por mês, versão melhorada ilimitada e flashcards automáticos ao errar.'}
+                    </p>
+                    <Button
+                      size="sm"
+                      className="w-full gap-2"
+                      onClick={() => navigate('/plano')}
+                    >
+                      Ver plano PRO
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

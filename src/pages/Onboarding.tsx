@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 import { ArrowRight, ArrowLeft, Check, Clock, Languages, Target, AlertTriangle, Brain, Crosshair } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  seedLevelFromSelfAssessment,
   computePriorityScore,
   nextReviewDateForLevel,
 } from '@/lib/adaptiveStudy';
@@ -25,13 +24,6 @@ const AREAS = [
 const ALL_AREAS = AREAS.map((a) => a.id);
 const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
 
-/* ─── Opções de autoavaliação ─── */
-const ASSESSMENT_OPTIONS = [
-  { label: 'Fraco',   value: 2, color: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800' },
-  { label: 'Regular', value: 5, color: 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800' },
-  { label: 'Bom',     value: 7, color: 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800' },
-  { label: 'Ótimo',   value: 9, color: 'bg-green-100 text-green-700 border-green-300 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800' },
-];
 
 type DaySchedule = Record<string, string[]>;
 
@@ -52,10 +44,10 @@ function generateRecommendedSchedule(focusAreas: string[]): DaySchedule {
 
 /* ─── Steps ─── */
 const STEPS = [
-  { icon: Languages, label: 'Língua',  title: 'Língua Estrangeira' },
-  { icon: Target,    label: 'Foco',    title: 'Áreas de Foco' },
-  { icon: Clock,     label: 'Meta',    title: 'Meta Diária' },
-  { icon: Brain,     label: 'Nível',   title: 'Seu Nível Atual' },
+  { icon: Languages, label: 'Língua',      title: 'Língua Estrangeira' },
+  { icon: Target,    label: 'Foco',        title: 'Áreas de Foco' },
+  { icon: Clock,     label: 'Meta',        title: 'Meta Diária' },
+  { icon: Brain,     label: 'Diagnóstico', title: 'Calibrar Perfil' },
 ];
 
 const slideVariants = {
@@ -74,12 +66,6 @@ export default function Onboarding() {
   const [foreignLanguage, setForeignLanguage] = useState<string>('ingles');
   const [focusAreas, setFocusAreas]           = useState<string[]>([]);
   const [dailyTarget, setDailyTarget]         = useState('20');
-  const [selfAssessment, setSelfAssessment]   = useState<Record<string, number>>({
-    matematica: 5,
-    linguagens: 5,
-    natureza:   5,
-    humanas:    5,
-  });
   const [saving, setSaving] = useState(false);
 
   const goTo = (next: number) => {
@@ -91,10 +77,6 @@ export default function Onboarding() {
     setFocusAreas((prev) =>
       prev.includes(areaId) ? prev.filter((a) => a !== areaId) : [...prev, areaId]
     );
-  };
-
-  const setAreaAssessment = (areaId: string, value: number) => {
-    setSelfAssessment((prev) => ({ ...prev, [areaId]: value }));
   };
 
   const handleFinish = async () => {
@@ -125,29 +107,29 @@ export default function Onboarding() {
         }, { onConflict: 'user_id' });
       if (prefError) throw prefError;
 
-      /* ── 3. Pre-semear perfil de tópicos com a autoavaliação ──
-         Isso faz o algoritmo começar calibrado ao invés de do zero.
-         seedLevelFromSelfAssessment converte 0-10 → nível 0-3 do sistema. */
+      /* ── 3. Pre-semear perfil com nível neutro (1) ──
+         O diagnóstico logo a seguir vai calibrar isso com dados reais.
+         Usamos nível 1 como ponto de partida neutro para todas as áreas. */
       const nowIso = new Date().toISOString();
-      const seedUpserts = Object.entries(selfAssessment).map(([area, value]) => {
-        const level = seedLevelFromSelfAssessment(value);
+      const seedUpserts = ['matematica', 'linguagens', 'natureza', 'humanas'].map((area) => {
+        const level = 1;
         const priorityScore = computePriorityScore({ attempts: 0, correct: 0, level });
         return supabase.from('user_topic_profile').upsert(
           {
-            user_id:          user.id,
+            user_id:        user.id,
             area,
-            topic:            'Geral',
-            subtopic:         '',
+            topic:          'Geral',
+            subtopic:       '',
             level,
-            attempts:         0,
-            correct:          0,
-            wrong:            0,
-            dont_know:        0,
-            correct_streak:   0,
-            priority_score:   priorityScore,
-            next_review_at:   nextReviewDateForLevel(level),
-            last_attempt_at:  null,
-            updated_at:       nowIso,
+            attempts:       0,
+            correct:        0,
+            wrong:          0,
+            dont_know:      0,
+            correct_streak: 0,
+            priority_score: priorityScore,
+            next_review_at: nextReviewDateForLevel(level),
+            last_attempt_at: null,
+            updated_at:     nowIso,
           },
           { onConflict: 'user_id,area,topic,subtopic' }
         );
@@ -155,7 +137,6 @@ export default function Onboarding() {
       await Promise.all(seedUpserts);
 
       await refreshProfile();
-      toast.success('Tudo pronto! Bora estudar 🚀');
 
       /* ── 4. Verifica intenção de compra preservada ── */
       const rawIntent = localStorage.getItem('atlas_purchase_intent');
@@ -168,10 +149,10 @@ export default function Onboarding() {
           navigate(`/plano?${params.toString()}`);
         } catch {
           localStorage.removeItem('atlas_purchase_intent');
-          navigate('/bem-vindo');
+          navigate('/diagnostico');
         }
       } else {
-        navigate('/bem-vindo');
+        navigate('/diagnostico');
       }
     } catch (err: any) {
       toast.error(err.message || 'Erro ao salvar configurações.');
@@ -504,7 +485,7 @@ export default function Onboarding() {
               </motion.div>
             )}
 
-            {/* ── Step 3: Autoavaliação por área ── */}
+            {/* ── Step 3: Diagnóstico intro ── */}
             {step === 3 && (
               <motion.div
                 key="step-3"
@@ -523,11 +504,11 @@ export default function Onboarding() {
                     transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
                     className="text-6xl"
                   >
-                    🧠
+                    🔬
                   </motion.div>
-                  <h2 className="text-2xl font-bold tracking-tight">Como você está em cada matéria?</h2>
+                  <h2 className="text-2xl font-bold tracking-tight">Vamos calibrar seu perfil</h2>
                   <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                    Seja honesto — isso calibra seu plano antes da primeira questão.
+                    12 questões rápidas — 3 por área — para o Atlas entender seu nível real antes da primeira sessão.
                   </p>
                 </div>
 
@@ -535,58 +516,30 @@ export default function Onboarding() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="space-y-3"
+                  className="bg-card border border-border rounded-2xl p-5 space-y-3"
                 >
-                  {AREAS.map((area, i) => (
+                  {[
+                    { icon: '⏱', text: 'Leva cerca de 8 minutos' },
+                    { icon: '🎯', text: 'Sem pressão — não é prova, é calibração' },
+                    { icon: '📐', text: 'Ajusta o cronograma antes do primeiro dia' },
+                  ].map((item, i) => (
                     <motion.div
-                      key={area.id}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 + i * 0.07 }}
-                      className="bg-card border border-border rounded-2xl p-4 space-y-3"
+                      key={i}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.25 + i * 0.08 }}
+                      className="flex items-center gap-3"
                     >
-                      {/* Área */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{area.icon}</span>
-                        <span className="text-sm font-semibold text-foreground">{area.label}</span>
-                      </div>
-
-                      {/* Opções */}
-                      <div className="grid grid-cols-4 gap-2">
-                        {ASSESSMENT_OPTIONS.map((opt) => {
-                          const selected = selfAssessment[area.id] === opt.value;
-                          return (
-                            <button
-                              key={opt.value}
-                              onClick={() => setAreaAssessment(area.id, opt.value)}
-                              className={`py-2 px-1 rounded-xl border-2 text-xs font-semibold transition-all ${
-                                selected
-                                  ? opt.color + ' border-current shadow-sm scale-105'
-                                  : 'border-border bg-background text-muted-foreground hover:border-primary/30 hover:bg-muted/50'
-                              }`}
-                            >
-                              {opt.label}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <span className="text-lg">{item.icon}</span>
+                      <span className="text-sm text-foreground">{item.text}</span>
                     </motion.div>
                   ))}
                 </motion.div>
 
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="text-xs text-center text-muted-foreground"
-                >
-                  Não se preocupe — o sistema vai ajustar conforme você pratica.
-                </motion.p>
-
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.55 }}
+                  transition={{ delay: 0.5 }}
                   className="flex gap-3"
                 >
                   <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => goTo(2)}>
@@ -606,7 +559,7 @@ export default function Onboarding() {
                       />
                     ) : (
                       <>
-                        Começar a estudar
+                        Fazer diagnóstico
                         <ArrowRight className="h-4 w-4" />
                       </>
                     )}

@@ -1,47 +1,54 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserStats } from './useUserStats';
 import { useFreeAreaQuota } from './useFreeAreaQuota';
+import { useFreemiumUsage, FREE_DAILY_QUESTIONS } from './useFreemiumUsage';
 
 export const usePlanFeatures = () => {
   const { profile } = useAuth();
-  const { totalEssays } = useUserStats();
-  const { isAreaLocked } = useFreeAreaQuota();
-  // Treat legacy 'basic' accounts as 'pro' to avoid breaking existing users
+  const { weeklyEssays } = useUserStats();
+  const { isAreaLocked, questionsUsedToday, questionsRemainingToday } = useFreeAreaQuota();
+  const { weeklyEssayLimit, isWelcomeBonus, canSubmitEssay } = useFreemiumUsage();
+
+  // Tratar legacy 'basic' como 'pro'
   const rawPlan = profile?.plan_type || 'free';
   const planType = rawPlan === 'basic' ? 'pro' : rawPlan as 'free' | 'pro';
 
   const isFree = planType === 'free';
   const isPro = planType === 'pro';
 
-  // Free users get Pro-like essay experience on their first (and only) essay
-  const freeHasQuota = isFree && totalEssays < 1;
+  // Free com cota semanal disponível (inclui bônus de boas-vindas)
+  const freeHasQuota = isFree && canSubmitEssay;
 
   return {
     planType,
     isFree,
     isPro,
-    // Tema do dia: Pro OU Free com cota disponível (trial)
+    // Tema do dia: Pro OU Free com cota semanal
     hasThemeAccess: isPro || freeHasQuota,
-    // Pedagógico (contexto, perguntas, estrutura): Pro OU Free com cota (trial)
+    // Pedagógico: Pro OU Free com cota semanal
     hasPedagogicalAccess: isPro || freeHasQuota,
-    // Versão melhorada: Pro OU Free com cota (trial)
+    // Versão melhorada: Pro OU Free com cota semanal
     hasImprovedVersionAccess: isPro || freeHasQuota,
-    // Fontes de dados: apenas Pro
+    // Fontes: apenas Pro
     hasSourcesAccess: isPro,
     // Limites de redação
-    monthlyLimit: isPro ? 60 : 1,
+    monthlyLimit: isPro ? 60 : weeklyEssayLimit,
     dailyLimit: isPro ? 2 : 1,
-    // Para UI saber se está no modo "degustação"
-    isFreeTrial: freeHasQuota,
-    // Objetivas: sessão completa (20 questões) apenas Pro; Free usa limite por área
+    weeklyEssayLimit,
+    // Free trial: primeira semana com bônus
+    isFreeTrial: isWelcomeBonus && isFree,
+    // Sessão completa (20 questões): apenas Pro
     hasFullSessionAccess: isPro,
-    // Flashcards automáticos (gerados em erro): apenas Pro
+    // Flashcards automáticos ao errar: apenas Pro
     hasAutoFlashcards: isPro,
-    // Cápsulas de conhecimento (explicação após resposta): apenas Pro
+    // Cápsulas de conhecimento: apenas Pro
     hasKnowledgeCapsules: isPro,
-    // Limite de questões por área para Free (5 one-time por área)
-    freeQuestionLimit: 5,
-    // Verificar se área está bloqueada para Free
+    // Limite diário de questões para free (10/dia com reset diário)
+    freeQuestionLimit: FREE_DAILY_QUESTIONS,
+    // Questões usadas/restantes hoje
+    questionsUsedToday,
+    questionsRemainingToday,
+    // Verificar se área está bloqueada (limite diário atingido)
     isAreaLocked,
   };
 };

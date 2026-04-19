@@ -1,126 +1,159 @@
 import { useUserStats } from './useUserStats';
 import { usePlanFeatures } from './usePlanFeatures';
+import { useFreemiumUsage } from './useFreemiumUsage';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type QuotaReason = 'limit_reached' | 'monthly_limit' | 'daily_limit' | null;
+export type QuotaReason = 'weekly_limit' | 'monthly_limit' | 'daily_limit' | null;
 
 interface QuotaCheckResult {
   canAnalyze: boolean;
   reason: QuotaReason;
   remaining: number;
   isLoading: boolean;
+  weeklyUsed: number;
+  weeklyLimit: number;
   monthlyUsed: number;
   monthlyLimit: number;
   dailyUsed: number;
   dailyLimit: number;
   isFlexibleMode: boolean;
+  isWelcomeBonus: boolean;
 }
 
 export const useQuotaCheck = (): QuotaCheckResult => {
   const { profile } = useAuth();
-  const { totalEssays, monthlyEssays, todayAnalyzedCount, isLoading } = useUserStats();
+  const { monthlyEssays, todayAnalyzedCount, isLoading: isStatsLoading } = useUserStats();
   const { isFree, monthlyLimit, dailyLimit } = usePlanFeatures();
-  
-  const isFlexibleMode = profile?.flexible_quota ?? false;
+  const {
+    essaysUsedThisWeek,
+    weeklyEssayLimit,
+    essaysRemainingThisWeek,
+    isWelcomeBonus,
+    isLoading: isFreemiumLoading,
+  } = useFreemiumUsage();
 
-  // While loading, allow analyze (will be validated on backend)
+  const isFlexibleMode = profile?.flexible_quota ?? false;
+  const isLoading = isStatsLoading || isFreemiumLoading;
+
+  // While loading, allow analyze (validated no backend)
   if (isLoading) {
     return {
       canAnalyze: true,
       reason: null,
-      remaining: monthlyLimit,
+      remaining: isFree ? weeklyEssayLimit : monthlyLimit,
       isLoading: true,
+      weeklyUsed: 0,
+      weeklyLimit: weeklyEssayLimit,
       monthlyUsed: 0,
       monthlyLimit,
       dailyUsed: 0,
       dailyLimit,
       isFlexibleMode,
+      isWelcomeBonus,
     };
   }
 
-  // Free plan: blocked after 1 TOTAL analysis (permanent, not monthly)
+  // Plano free: limite semanal (1/semana, ou 2 na semana de boas-vindas)
   if (isFree) {
-    if (totalEssays >= 1) {
+    if (essaysUsedThisWeek >= weeklyEssayLimit) {
       return {
         canAnalyze: false,
-        reason: 'limit_reached',
+        reason: 'weekly_limit',
         remaining: 0,
         isLoading: false,
-        monthlyUsed: totalEssays,
-        monthlyLimit: 1,
+        weeklyUsed: essaysUsedThisWeek,
+        weeklyLimit: weeklyEssayLimit,
+        monthlyUsed: monthlyEssays,
+        monthlyLimit: weeklyEssayLimit,
         dailyUsed: todayAnalyzedCount,
         dailyLimit: 1,
         isFlexibleMode: false,
+        isWelcomeBonus,
       };
     }
     return {
       canAnalyze: true,
       reason: null,
-      remaining: 1 - totalEssays,
+      remaining: essaysRemainingThisWeek,
       isLoading: false,
-      monthlyUsed: totalEssays,
-      monthlyLimit: 1,
+      weeklyUsed: essaysUsedThisWeek,
+      weeklyLimit: weeklyEssayLimit,
+      monthlyUsed: monthlyEssays,
+      monthlyLimit: weeklyEssayLimit,
       dailyUsed: todayAnalyzedCount,
       dailyLimit: 1,
       isFlexibleMode: false,
+      isWelcomeBonus,
     };
   }
 
-  // Basic/Pro: check monthly limit first
+  // Pro: checar limite mensal
   if (monthlyEssays >= monthlyLimit) {
     return {
       canAnalyze: false,
       reason: 'monthly_limit',
       remaining: 0,
       isLoading: false,
+      weeklyUsed: essaysUsedThisWeek,
+      weeklyLimit: weeklyEssayLimit,
       monthlyUsed: monthlyEssays,
       monthlyLimit,
       dailyUsed: todayAnalyzedCount,
       dailyLimit,
       isFlexibleMode,
+      isWelcomeBonus,
     };
   }
 
-  // If flexible mode is ON, skip daily limit check
+  // Pro com flexible mode: sem limite diário
   if (isFlexibleMode) {
     return {
       canAnalyze: true,
       reason: null,
       remaining: monthlyLimit - monthlyEssays,
       isLoading: false,
+      weeklyUsed: essaysUsedThisWeek,
+      weeklyLimit: weeklyEssayLimit,
       monthlyUsed: monthlyEssays,
       monthlyLimit,
       dailyUsed: todayAnalyzedCount,
       dailyLimit,
       isFlexibleMode,
+      isWelcomeBonus,
     };
   }
 
-  // Basic/Pro with daily limit: check daily limit
+  // Pro: checar limite diário
   if (todayAnalyzedCount >= dailyLimit) {
     return {
       canAnalyze: false,
       reason: 'daily_limit',
       remaining: monthlyLimit - monthlyEssays,
       isLoading: false,
+      weeklyUsed: essaysUsedThisWeek,
+      weeklyLimit: weeklyEssayLimit,
       monthlyUsed: monthlyEssays,
       monthlyLimit,
       dailyUsed: todayAnalyzedCount,
       dailyLimit,
       isFlexibleMode,
+      isWelcomeBonus,
     };
   }
 
-  // All checks passed
+  // Tudo ok
   return {
     canAnalyze: true,
     reason: null,
     remaining: monthlyLimit - monthlyEssays,
     isLoading: false,
+    weeklyUsed: essaysUsedThisWeek,
+    weeklyLimit: weeklyEssayLimit,
     monthlyUsed: monthlyEssays,
     monthlyLimit,
     dailyUsed: todayAnalyzedCount,
     dailyLimit,
     isFlexibleMode,
+    isWelcomeBonus,
   };
 };

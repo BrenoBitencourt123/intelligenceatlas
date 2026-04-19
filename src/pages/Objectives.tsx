@@ -32,6 +32,8 @@ const Objectives = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const previewQuestionId = searchParams.get('previewQuestionId');
   const areaOverride = searchParams.get('area');
+  const countParam = searchParams.get('count');
+  const isReviewMode = Boolean(areaOverride && countParam);
   const schedule = useStudySchedule();
   const effectiveArea = areaOverride || schedule.area;
   const stats = useStudyStats();
@@ -43,6 +45,8 @@ const Objectives = () => {
     isFree,
     isPro,
     isAreaLocked,
+    questionsUsedToday,
+    questionsRemainingToday,
   } = usePlanFeatures();
   const {
     state,
@@ -302,8 +306,18 @@ const Objectives = () => {
               </div>
             </div>
 
-            {/* Minimal stepper — dots */}
-            {totalQuestions > 1 && (
+            {/* Simple progress bar for review mode */}
+            {isReviewMode && totalQuestions > 1 && (
+              <div className="space-y-1">
+                <Progress value={progress} className="h-1" />
+                <p className="text-xs text-muted-foreground text-right tabular-nums">
+                  {currentIndex + (showFeedback ? 1 : 0)}/{totalQuestions}
+                </p>
+              </div>
+            )}
+
+            {/* Minimal stepper — dots (hidden for short review sessions) */}
+            {totalQuestions > 1 && !isReviewMode && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   {[0, 1, 2].map((i) => (
@@ -545,7 +559,12 @@ const Objectives = () => {
   }
 
   // ── Idle dashboard ─────────────────────────────────────────────
-  const questionLimit = hasFullSessionAccess ? schedule.questionCount : freeQuestionLimit;
+  // If a ?count=N param is present (e.g. from review session), use that as the limit.
+  // For free users, cap at freeQuestionLimit.
+  const urlCount = countParam ? parseInt(countParam, 10) : null;
+  const questionLimit = urlCount
+    ? (hasFullSessionAccess ? urlCount : Math.min(urlCount, freeQuestionLimit))
+    : (hasFullSessionAccess ? schedule.questionCount : freeQuestionLimit);
   const dailyTarget = 20;
   const dailyPct = Math.min(100, Math.round((stats.questionsToday / dailyTarget) * 100));
 
@@ -596,36 +615,49 @@ const Objectives = () => {
                 ) : (
                   <div className="space-y-1">
                     <h2 className="text-lg font-semibold text-foreground">
-                      {areaOverride ? `Revisão: ${AREA_LABELS[areaOverride] ?? areaOverride}` : schedule.label}
+                      {isReviewMode
+                        ? `Revisão Rápida · ${AREA_LABELS[areaOverride!] ?? areaOverride}`
+                        : (areaOverride ? `${AREA_LABELS[areaOverride] ?? areaOverride}` : schedule.label)}
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                      {hasFullSessionAccess
-                        ? `${schedule.questionCount} questões · 3 blocos`
-                        : `${freeQuestionLimit} questões (degustação)`}
+                      {isReviewMode
+                        ? `${questionLimit} questões · manutenção`
+                        : (hasFullSessionAccess
+                          ? `${schedule.questionCount} questões · 3 blocos`
+                          : `${freeQuestionLimit} questões (degustação)`)}
                     </p>
                   </div>
                 )}
 
-                {/* Free area locked paywall */}
+                {/* Free: limite diário de questões atingido */}
                 {isFree && isAreaLocked(effectiveArea) ? (
-                  <div className="rounded-lg border border-border p-4 space-y-3 text-center">
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 space-y-3 text-center">
                     <Crown className="h-5 w-5 text-amber-500 mx-auto" />
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Degustação encerrada</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        Você usou suas {questionsUsedToday} questões de hoje
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Assine o PRO para continuar sem limites.
+                        Sua cota renova à meia-noite. No PRO, estude sem parar.
                       </p>
                     </div>
                     <Button className="w-full gap-2" onClick={() => navigate('/plano')}>
                       <Crown className="h-4 w-4" />
                       Ver plano PRO
                     </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Ou volte amanhã — {questionsRemainingToday === 0 ? 10 : questionsRemainingToday} questões te esperam
+                    </p>
                   </div>
                 ) : (
                   <>
                     {!hasFullSessionAccess && (
                       <div className="rounded-lg border border-border p-3 text-center space-y-2">
-                        <p className="text-xs text-muted-foreground">Sessões completas de 20 questões</p>
+                        <p className="text-xs text-muted-foreground">
+                          {questionsUsedToday > 0
+                            ? `${questionsRemainingToday} questões restantes hoje · PRO tem sessões ilimitadas`
+                            : 'Sessões completas de 20 questões no PRO'}
+                        </p>
                         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/plano')}>
                           <Crown className="h-3.5 w-3.5 text-amber-500" />
                           Ver planos

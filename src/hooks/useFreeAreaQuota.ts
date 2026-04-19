@@ -1,40 +1,29 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useFreemiumUsage, FREE_DAILY_QUESTIONS } from './useFreemiumUsage';
 import { useAuth } from '@/contexts/AuthContext';
 
-const FREE_QUESTION_LIMIT = 5;
-
 interface FreeAreaQuota {
-  totalAttempts: number;
+  questionsUsedToday: number;
+  questionsRemainingToday: number;
   isAreaLocked: (area: string) => boolean;
   loading: boolean;
 }
 
 export function useFreeAreaQuota(): FreeAreaQuota {
-  const { user } = useAuth();
-  const [totalAttempts, setTotalAttempts] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const { profile } = useAuth();
+  const { questionsUsedToday, questionsRemainingToday, isLoading } = useFreemiumUsage();
 
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+  const isFree = (profile?.plan_type ?? 'free') === 'free' || profile?.plan_type === 'basic'
+    ? profile?.plan_type === 'free'
+    : false;
 
-    supabase
-      .from('user_topic_profile')
-      .select('attempts')
-      .eq('user_id', user.id)
-      .then(({ data }) => {
-        if (!data) { setLoading(false); return; }
-        const total = data.reduce((sum, row) => sum + (row.attempts ?? 0), 0);
-        setTotalAttempts(total);
-        setLoading(false);
-      }, () => setLoading(false));
-  }, [user]);
+  // Área bloqueada quando o usuário atingiu o limite diário de questões
+  const isAreaLocked = (_area: string) =>
+    questionsUsedToday >= FREE_DAILY_QUESTIONS;
 
-  // Any area is locked once the user has used 5 questions TOTAL
-  const isAreaLocked = (_area: string) => totalAttempts >= FREE_QUESTION_LIMIT;
-
-  return { totalAttempts, isAreaLocked, loading };
+  return {
+    questionsUsedToday,
+    questionsRemainingToday,
+    isAreaLocked,
+    loading: isLoading,
+  };
 }

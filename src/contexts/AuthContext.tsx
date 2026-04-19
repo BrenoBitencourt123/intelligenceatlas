@@ -109,7 +109,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        // Redireciona para o mesmo domínio de onde o cadastro foi feito,
+        // direto para o onboarding — assim o usuário continua o fluxo sem perder contexto.
+        emailRedirectTo: `${window.location.origin}/onboarding`,
       },
     });
     return { error, data };

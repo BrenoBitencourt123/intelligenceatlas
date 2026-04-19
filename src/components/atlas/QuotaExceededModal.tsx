@@ -8,9 +8,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Lock, Calendar, Zap, ArrowRight } from 'lucide-react';
+import { Lock, Calendar, Zap, ArrowRight, RefreshCcw } from 'lucide-react';
 import { QuotaReason } from '@/hooks/useQuotaCheck';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
+import { useFreemiumUsage } from '@/hooks/useFreemiumUsage';
 
 interface QuotaExceededModalProps {
   open: boolean;
@@ -25,6 +26,7 @@ export const QuotaExceededModal = ({
 }: QuotaExceededModalProps) => {
   const navigate = useNavigate();
   const { planType, isFree } = usePlanFeatures();
+  const { isWelcomeBonus } = useFreemiumUsage();
 
   const handleUpgrade = () => {
     onOpenChange(false);
@@ -32,12 +34,22 @@ export const QuotaExceededModal = ({
   };
 
   const getContent = () => {
-    if (reason === 'limit_reached' && isFree) {
+    // Free: limite semanal atingido
+    if (reason === 'weekly_limit' && isFree) {
+      if (isWelcomeBonus) {
+        return {
+          icon: RefreshCcw,
+          title: 'Bônus de boas-vindas usado',
+          description: 'Você usou suas 2 correções gratuitas da primeira semana. No plano grátis você tem 1 correção por semana — ou assine o PRO para corrigir todos os dias.',
+          cta: 'Ver plano PRO',
+          showUpgrade: true,
+        };
+      }
       return {
         icon: Lock,
-        title: 'Você usou sua redação gratuita',
-        description: 'O plano gratuito inclui 1 correção para você experimentar. Assine um plano para continuar praticando e melhorar sua nota!',
-        cta: 'Ver planos',
+        title: 'Correção semanal usada',
+        description: 'Você já usou sua correção gratuita desta semana. Sua cota renova em 7 dias — ou assine o PRO para corrigir redações todos os dias, sem esperar.',
+        cta: 'Ver plano PRO',
         showUpgrade: true,
       };
     }
@@ -46,14 +58,13 @@ export const QuotaExceededModal = ({
       return {
         icon: Calendar,
         title: 'Limite diário atingido',
-        description: `Você atingiu o limite de correções de hoje. Volte amanhã para continuar praticando!${planType === 'free' ? ' O plano Pro oferece 2 correções por dia.' : ''}`,
-        cta: planType === 'free' ? 'Fazer upgrade para Pro' : 'Entendi',
+        description: `Você atingiu o limite de correções de hoje. Volte amanhã para continuar praticando!${planType === 'free' ? ' O plano PRO oferece até 2 correções por dia.' : ''}`,
+        cta: planType === 'free' ? 'Ver plano PRO' : 'Entendi',
         showUpgrade: planType === 'free',
       };
     }
 
     if (reason === 'monthly_limit') {
-      // Calculate days until next month
       const now = new Date();
       const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
       const daysUntilReset = Math.ceil((nextMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -61,9 +72,9 @@ export const QuotaExceededModal = ({
       return {
         icon: Zap,
         title: 'Limite mensal atingido',
-        description: `Você usou todas as suas correções do mês. Sua cota renova em ${daysUntilReset} dia${daysUntilReset > 1 ? 's' : ''}.${planType === 'free' ? ' O plano Pro oferece 60 correções por mês!' : ''}`,
-        cta: planType === 'free' ? 'Fazer upgrade para Pro' : 'Entendi',
-        showUpgrade: planType === 'free',
+        description: `Você usou todas as suas correções do mês. Sua cota renova em ${daysUntilReset} dia${daysUntilReset > 1 ? 's' : ''}.`,
+        cta: 'Entendi',
+        showUpgrade: false,
       };
     }
 
@@ -71,7 +82,7 @@ export const QuotaExceededModal = ({
       icon: Lock,
       title: 'Limite atingido',
       description: 'Você atingiu seu limite de correções.',
-      cta: 'Ver planos',
+      cta: 'Ver plano PRO',
       showUpgrade: true,
     };
   };

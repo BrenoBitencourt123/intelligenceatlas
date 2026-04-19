@@ -90,10 +90,14 @@ const STEPS = [
 ];
 
 const FREE_FEATURES = [
-  '5 questões por área — sem pagar nada',
-  '1 redação com análise completa por IA',
-  'Feedback por competência',
+  '10 questões por dia em todas as áreas',
+  '1 redação por semana com análise por IA',
+  'Análise das 5 competências ENEM',
+  'Versão melhorada da redação',
+  'Tema do dia automático',
+  'Feedback detalhado por competência',
   'Editor de redação no celular',
+  'Histórico de desempenho',
 ];
 
 const PRO_FEATURES = [
@@ -141,11 +145,15 @@ export default function Landing() {
             <Link to="/login">
               <Button variant="ghost" size="sm" className="text-sm">Entrar</Button>
             </Link>
-            <Link to="/cadastro">
-              <Button size="sm" className="text-sm font-bold rounded-full px-4">
-                Criar conta grátis
-              </Button>
-            </Link>
+            <Button
+              size="sm"
+              className="text-sm font-bold rounded-full px-4"
+              onClick={() => {
+                document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              Criar conta grátis
+            </Button>
           </div>
         </div>
       </nav>
@@ -198,15 +206,14 @@ export default function Landing() {
             variants={fadeUp}
             custom={3}
           >
-            <Link to="/cadastro">
-              <Button
-                size="lg"
-                className="h-13 px-8 text-base font-bold rounded-full shadow-lg active:scale-[0.98] transition-transform"
-              >
-                Criar conta grátis
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              className="h-13 px-8 text-base font-bold rounded-full shadow-lg active:scale-[0.98] transition-transform"
+              onClick={() => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              Criar conta grátis
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
             <p className="text-xs text-muted-foreground mt-3">
               Sem cartão de crédito · Funciona no celular e computador
             </p>
@@ -360,22 +367,21 @@ export default function Landing() {
             custom={4}
             className="text-center mt-14"
           >
-            <Link to="/cadastro">
-              <Button
-                size="lg"
-                variant="secondary"
-                className="h-12 px-8 text-base font-bold rounded-full"
-              >
-                Criar conta grátis
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              variant="secondary"
+              className="h-12 px-8 text-base font-bold rounded-full"
+              onClick={() => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              Criar conta grátis
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </motion.div>
         </div>
       </section>
 
       {/* ─── Preços ─── */}
-      <section className="py-24 px-5">
+      <section id="planos" className="py-24 px-5">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial="hidden"
@@ -518,15 +524,14 @@ export default function Landing() {
             e veja onde você realmente está.
           </p>
           <div>
-            <Link to="/cadastro">
-              <Button
-                size="lg"
-                className="h-12 px-8 text-base font-bold rounded-full shadow-lg active:scale-[0.98] transition-transform"
-              >
-                Criar conta grátis
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              className="h-12 px-8 text-base font-bold rounded-full shadow-lg active:scale-[0.98] transition-transform"
+              onClick={() => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              Criar conta grátis
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
             <p className="text-xs text-muted-foreground mt-3">
               Sem cartão de crédito · Funciona no celular
             </p>

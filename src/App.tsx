@@ -23,6 +23,7 @@ import Founders from "./pages/Founders";
 import FounderSignup from "./pages/FounderSignup";
 import Landing from "./pages/Landing";
 import Welcome from "./pages/Welcome";
+import Diagnostico from "./pages/Diagnostico";
 import ResetPassword from "./pages/ResetPassword";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -136,6 +137,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Welcome />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/diagnostico"
+              element={
+                <ProtectedRoute>
+                  <Diagnostico />
                 </ProtectedRoute>
               }
             />

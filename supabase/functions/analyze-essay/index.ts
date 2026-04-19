@@ -187,65 +187,72 @@ serve(async (req) => {
     const planType = rawPlan === 'basic' ? 'pro' : rawPlan;
     const isFlexibleMode = profile.flexible_quota === true;
     
-    // Define limits per plan (only free and pro)
-    const limits: Record<string, { monthly: number; daily: number }> = {
-      free: { monthly: 1, daily: 1 },
-      pro: { monthly: 60, daily: 2 },
-    };
-
-    const userLimits = limits[planType] || limits.free;
-
-    // Calculate start of month and start of today
+    // Datas de referência
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // Count monthly analyzed essays
-    const { count: monthlyCount, error: monthlyError } = await supabaseClient
-      .from('essays')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .not('analyzed_at', 'is', null)
-      .gte('analyzed_at', startOfMonth.toISOString());
-
-    if (monthlyError) {
-      console.error("Failed to count monthly essays:", monthlyError);
-    }
-
-    // For free plan, check total (not monthly)
     if (planType === 'free') {
-      const { count: totalCount } = await supabaseClient
+      // Bônus de boas-vindas: 2 redações na primeira semana, depois 1/semana
+      const { data: profileData } = await supabaseClient
+        .from('profiles')
+        .select('created_at')
+        .eq('id', user.id)
+        .single();
+
+      const isWelcomeBonus = profileData?.created_at
+        ? new Date(profileData.created_at) >= sevenDaysAgo
+        : false;
+
+      const weeklyLimit = isWelcomeBonus ? 2 : 1;
+
+      const { count: weeklyCount } = await supabaseClient
         .from('essays')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .not('analyzed_at', 'is', null);
+        .not('analyzed_at', 'is', null)
+        .gte('analyzed_at', sevenDaysAgo.toISOString());
 
-      if ((totalCount ?? 0) >= userLimits.monthly) {
+      if ((weeklyCount ?? 0) >= weeklyLimit) {
+        const resetMessage = isWelcomeBonus
+          ? 'Você usou suas 2 correções de boas-vindas. Sua cota renova em 7 dias.'
+          : 'Você usou sua correção gratuita desta semana. Assine o PRO para corrigir sem parar!';
         return new Response(
-          JSON.stringify({ 
-            error: 'Você usou sua redação gratuita. Assine para continuar.',
+          JSON.stringify({
+            error: resetMessage,
             code: 'QUOTA_EXCEEDED',
-            limit_type: 'total'
+            limit_type: 'weekly',
           }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     } else {
-      // Check monthly limit for basic/pro
-      if ((monthlyCount ?? 0) >= userLimits.monthly) {
+      // Pro: checar limite mensal (60/mês)
+      const { count: monthlyCount, error: monthlyError } = await supabaseClient
+        .from('essays')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .not('analyzed_at', 'is', null)
+        .gte('analyzed_at', startOfMonth.toISOString());
+
+      if (monthlyError) {
+        console.error("Failed to count monthly essays:", monthlyError);
+      }
+
+      if ((monthlyCount ?? 0) >= 60) {
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: 'Limite de correções do mês atingido.',
             code: 'QUOTA_EXCEEDED',
-            limit_type: 'monthly'
+            limit_type: 'monthly',
           }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Only check daily limit if flexible mode is NOT enabled
+      // Limite diário (2/dia, ignorado se flexible_quota ativo)
       if (!isFlexibleMode) {
-        // Count today's analyzed essays
         const { count: todayCount, error: todayError } = await supabaseClient
           .from('essays')
           .select('*', { count: 'exact', head: true })
@@ -257,13 +264,12 @@ serve(async (req) => {
           console.error("Failed to count today's essays:", todayError);
         }
 
-        // Check daily limit
-        if ((todayCount ?? 0) >= userLimits.daily) {
+        if ((todayCount ?? 0) >= 2) {
           return new Response(
-            JSON.stringify({ 
+            JSON.stringify({
               error: 'Limite diário de correções atingido. Volte amanhã!',
               code: 'QUOTA_EXCEEDED',
-              limit_type: 'daily'
+              limit_type: 'daily',
             }),
             { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );

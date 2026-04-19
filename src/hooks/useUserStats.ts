@@ -7,6 +7,7 @@ interface UserStats {
   lastScore: number | null;
   monthlyAverage: number | null;
   monthlyEssays: number;
+  weeklyEssays: number;
   hasWrittenToday: boolean;
   todayAnalyzedCount: number;
   isLoading: boolean;
@@ -19,6 +20,7 @@ export const useUserStats = (): UserStats => {
     lastScore: null,
     monthlyAverage: null,
     monthlyEssays: 0,
+    weeklyEssays: 0,
     hasWrittenToday: false,
     todayAnalyzedCount: 0,
     isLoading: true,
@@ -48,6 +50,7 @@ export const useUserStats = (): UserStats => {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
         // Calculate stats
         const totalEssays = essays?.length || 0;
@@ -84,11 +87,19 @@ export const useUserStats = (): UserStats => {
           return analyzedDate >= startOfToday;
         }).length || 0;
 
+        // Count essays analyzed in the last 7 days
+        const weeklyEssays = essays?.filter(e => {
+          if (!e.analyzed_at) return false;
+          const analyzedDate = new Date(e.analyzed_at);
+          return analyzedDate >= sevenDaysAgo;
+        }).length || 0;
+
         setStats({
           totalEssays,
           lastScore,
           monthlyAverage,
           monthlyEssays: monthlyEssaysCount,
+          weeklyEssays,
           hasWrittenToday,
           todayAnalyzedCount,
           isLoading: false,
