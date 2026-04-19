@@ -136,8 +136,8 @@ const Plan = () => {
 
   // Features reais de cada plano
   const freeFeatures = [
-    '5 questões por área (one-time)',
-    '1 redação gratuita',
+    '10 questões por dia (reset diário)',
+    '1 redação por semana',
     'Editor completo',
     'Feedback resumido',
   ];

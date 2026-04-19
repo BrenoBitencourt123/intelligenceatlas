@@ -27,7 +27,7 @@ export const DailyThemeCard = ({
   const navigate = useNavigate();
   const isPro = planType === 'pro';
   
-  const isBlocked = quotaReason === 'daily_limit' || quotaReason === 'monthly_limit' || quotaReason === 'limit_reached';
+  const isBlocked = quotaReason === 'daily_limit' || quotaReason === 'monthly_limit' || quotaReason === 'weekly_limit';
 
   const getWarningMessage = () => {
     switch (quotaReason) {
@@ -35,8 +35,8 @@ export const DailyThemeCard = ({
         return `Você atingiu o limite de ${dailyLimit} ${dailyLimit === 1 ? 'análise' : 'análises'} por dia.`;
       case 'monthly_limit':
         return 'Limite mensal atingido. Faça upgrade para continuar praticando.';
-      case 'limit_reached':
-        return 'Você já usou sua correção gratuita. Faça upgrade para continuar.';
+      case 'weekly_limit':
+        return 'Você já usou sua redação desta semana. Volte na próxima ou faça upgrade.';
       default:
         return null;
     }

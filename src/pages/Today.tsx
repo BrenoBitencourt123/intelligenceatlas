@@ -156,14 +156,14 @@ const Today = () => {
                   <p className="text-sm font-semibold text-foreground truncate">
                     {dayPlan.reviewAreaLabel}
                   </p>
-                  <p className="text-xs text-muted-foreground">5 questões · ~10 min</p>
+                  <p className="text-xs text-muted-foreground">10 questões · ~15 min</p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   className="shrink-0 gap-1.5"
                   onClick={() =>
-                    navigate(`/objetivas?area=${dayPlan.reviewArea}&count=5`)
+                    navigate(`/objetivas?area=${dayPlan.reviewArea}&count=10`)
                   }
                 >
                   Revisar
