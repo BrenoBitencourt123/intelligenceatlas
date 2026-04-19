@@ -22,6 +22,7 @@ import NotFound from "./pages/NotFound";
 import Founders from "./pages/Founders";
 import FounderSignup from "./pages/FounderSignup";
 import Landing from "./pages/Landing";
+import Welcome from "./pages/Welcome";
 import ResetPassword from "./pages/ResetPassword";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -31,7 +32,8 @@ const queryClient = new QueryClient();
 function HomeRoute() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  return user ? <Navigate to="/hoje" replace /> : <Navigate to="/fundadores" replace />;
+  if (user) return <Navigate to="/hoje" replace />;
+  return <Landing />;
 }
 
 const App = () => (
@@ -126,6 +128,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Admin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bem-vindo"
+              element={
+                <ProtectedRoute>
+                  <Welcome />
                 </ProtectedRoute>
               }
             />

@@ -11,7 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmbeddedCheckoutModal } from '@/components/checkout/EmbeddedCheckoutModal';
 import { useUserStats } from '@/hooks/useUserStats';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
-import { useMemo, useEffect, useState, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,12 +21,14 @@ import { STRIPE_PLANS, getMonthsUntilEnem, getDiscountTier } from '@/lib/stripe'
 const Plan = () => {
   const { planType, isFree, isPro, monthlyLimit } = usePlanFeatures();
   const { monthlyEssays, totalEssays, isLoading } = useUserStats();
+  const { loading: authLoading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<'pro' | null>(null);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [useEnemDiscount, setUseEnemDiscount] = useState(false);
   const [promoCode, setPromoCode] = useState('');
+  const autoCheckoutHandled = useRef(false);
 
   const monthsUntilEnem = useMemo(() => getMonthsUntilEnem(), []);
   const discountTier = useMemo(() => getDiscountTier(monthsUntilEnem), [monthsUntilEnem]);
@@ -71,6 +74,25 @@ const Plan = () => {
       checkSubscription();
     }
   }, [searchParams, setSearchParams, checkSubscription]);
+
+  // Abre checkout automaticamente quando redirecionado com ?checkout=pro
+  // (ex: vindo da landing "Começar com PRO" ou do fluxo de fundadores)
+  useEffect(() => {
+    if (authLoading || autoCheckoutHandled.current) return;
+    const checkout = searchParams.get('checkout');
+    const coupon = searchParams.get('coupon');
+    if (checkout === 'pro' && isFree) {
+      autoCheckoutHandled.current = true;
+      if (coupon) setPromoCode(coupon.toUpperCase());
+      setCheckoutCouponId(coupon?.toUpperCase() || undefined);
+      setCheckoutPlan('pro');
+      setSearchParams({}, { replace: true });
+    } else if (checkout === 'pro' && !isFree) {
+      // Usuário já é PRO — só limpa a URL
+      autoCheckoutHandled.current = true;
+      setSearchParams({}, { replace: true });
+    }
+  }, [authLoading, isFree]);
 
   const handleUpgrade = (targetPlan: 'pro') => {
     // Priority: promo code > ENEM discount > none

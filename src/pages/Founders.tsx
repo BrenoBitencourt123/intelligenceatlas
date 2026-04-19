@@ -108,7 +108,13 @@ export default function Founders() {
 
   const vagasPreenchidas = VAGAS_TOTAL - vagasRestantes;
   const progressPct = vagasPreenchidas / VAGAS_TOTAL * 100;
-  const handleCTA = () => navigate("/fundadores/cadastro");
+  const handleCTA = () => {
+    localStorage.setItem(
+      'atlas_purchase_intent',
+      JSON.stringify({ plan: 'pro', coupon: 'FUNDADOR' })
+    );
+    navigate("/cadastro");
+  };
 
   return (
     <div className="h-screen overflow-y-auto snap-y snap-mandatory bg-background text-foreground scroll-smooth">

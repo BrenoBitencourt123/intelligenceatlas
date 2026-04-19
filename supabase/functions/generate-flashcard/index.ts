@@ -37,7 +37,7 @@ serve(async (req) => {
       });
     }
 
-    const { statement, alternatives, correctAnswer, explanation, area } = await req.json();
+    const { questionId, statement, alternatives, correctAnswer, explanation, area } = await req.json();
 
     if (!statement || !correctAnswer) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -45,6 +45,24 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // ── Cache check ──────────────────────────────────────────────────────────
+    // If we have a questionId, check if flashcard content was already generated
+    // for this question. Same pattern as question_pedagogy cache.
+    if (questionId) {
+      const { data: cached } = await supabase
+        .from('question_flashcard_cache')
+        .select('front, back')
+        .eq('question_id', questionId)
+        .maybeSingle();
+
+      if (cached) {
+        return new Response(JSON.stringify({ front: cached.front, back: cached.back, cached: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     const alternativesText = alternatives
       ?.map((a: { letter: string; text: string }) => `${a.letter}) ${a.text}`)
@@ -114,7 +132,23 @@ Responda EXATAMENTE neste formato JSON:
 
     const flashcard = JSON.parse(jsonMatch[0]);
 
-    return new Response(JSON.stringify({ front: flashcard.front, back: flashcard.back }), {
+    // ── Save to cache ─────────────────────────────────────────────────────────
+    // Persist so future users who get this question wrong reuse the same content
+    if (questionId) {
+      const serviceClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      );
+      await serviceClient
+        .from('question_flashcard_cache')
+        .upsert(
+          { question_id: questionId, front: flashcard.front, back: flashcard.back },
+          { onConflict: 'question_id' }
+        );
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    return new Response(JSON.stringify({ front: flashcard.front, back: flashcard.back, cached: false }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

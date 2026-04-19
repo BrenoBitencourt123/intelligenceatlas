@@ -161,7 +161,7 @@ type ProfileRow = {
   priority_score: number;
 };
 
-const DIAGNOSTIC_QUESTIONS_PER_AREA = 60;
+const DIAGNOSTIC_QUESTIONS_PER_AREA = 20;
 
 function buildExplorationSelection(input: Question[], limit: number): Question[] {
   if (input.length <= limit) return shuffleArray(input);
@@ -868,6 +868,7 @@ export function useStudySession() {
         try {
           const { data, error } = await supabase.functions.invoke("generate-flashcard", {
             body: {
+              questionId: question.id,
               statement: question.statement,
               alternatives: question.alternatives,
               correctAnswer: question.correct_answer,
