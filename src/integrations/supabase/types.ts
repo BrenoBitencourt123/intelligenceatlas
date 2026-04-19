@@ -319,6 +319,38 @@ export type Database = {
           },
         ]
       }
+      question_flashcard_cache: {
+        Row: {
+          back: string
+          created_at: string
+          front: string
+          id: string
+          question_id: string
+        }
+        Insert: {
+          back: string
+          created_at?: string
+          front: string
+          id?: string
+          question_id: string
+        }
+        Update: {
+          back?: string
+          created_at?: string
+          front?: string
+          id?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_flashcard_cache_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       question_pedagogy: {
         Row: {
           cognitive_pattern: string | null
