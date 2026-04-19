@@ -12,13 +12,11 @@ export function useFreeAreaQuota(): FreeAreaQuota {
   const { profile } = useAuth();
   const { questionsUsedToday, questionsRemainingToday, isLoading } = useFreemiumUsage();
 
-  const isFree = (profile?.plan_type ?? 'free') === 'free' || profile?.plan_type === 'basic'
-    ? profile?.plan_type === 'free'
-    : false;
+  const isFree = (profile?.plan_type ?? 'free') === 'free';
 
-  // Área bloqueada quando o usuário atingiu o limite diário de questões
+  // Área bloqueada apenas para usuários free que atingiram o limite diário
   const isAreaLocked = (_area: string) =>
-    questionsUsedToday >= FREE_DAILY_QUESTIONS;
+    isFree && questionsUsedToday >= FREE_DAILY_QUESTIONS;
 
   return {
     questionsUsedToday,
