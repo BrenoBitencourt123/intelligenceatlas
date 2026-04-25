@@ -10,7 +10,7 @@ import { useStudySession } from '@/hooks/useStudySession';
 import { useStudyStats } from '@/hooks/useStudyStats';
 import { useExamPdf } from '@/hooks/useExamPdf';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
-import { ArrowRight, BookOpen, Brain, Check, ChevronRight, Crown, FileText, HelpCircle, RotateCcw, Target, X } from 'lucide-react';
+import { ArrowRight, BookOpen, Brain, Check, ChevronRight, Crown, FileText, HelpCircle, Lock, RotateCcw, Sparkles, Target, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import MarkdownText from '@/components/atlas/MarkdownText';
 import { useQuestionPedagogy } from '@/hooks/useQuestionPedagogy';
@@ -60,6 +60,9 @@ const Objectives = () => {
     answers,
     result,
     hasSavedSession,
+    extraSession,
+    extraArea,
+    loadingMoreExtra,
     startSession,
     resumeSession,
     exitSessionView,
@@ -68,8 +71,12 @@ const Objectives = () => {
     confirmAnswer,
     nextQuestion,
     resetSession,
+    startExtraSession,
+    loadMoreExtra,
+    endExtraSession,
   } = useStudySession();
   const [pendingGuessAnswer, setPendingGuessAnswer] = useState<string | null>(null);
+  const [extraPickerOpen, setExtraPickerOpen] = useState(false);
   const { available: pdfAvailable, openPdf, loading: pdfLoading } = useExamPdf(currentQuestion?.year);
   const { pedagogy, loading: pedagogyLoading } = useQuestionPedagogy(
     currentQuestion ? {
