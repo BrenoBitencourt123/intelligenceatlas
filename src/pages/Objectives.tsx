@@ -111,6 +111,27 @@ const Objectives = () => {
     });
   }, [previewQuestionId, state, startPreviewQuestion, searchParams, setSearchParams]);
 
+  // Auto-preload more questions during an extra session as we approach the end of the batch.
+  useEffect(() => {
+    if (state !== 'active' || !extraSession) return;
+    if (totalQuestions - (currentIndex + 1) <= 3) {
+      loadMoreExtra();
+    }
+  }, [state, extraSession, currentIndex, totalQuestions, loadMoreExtra]);
+
+  const EXTRA_AREAS: Array<{ id: string | null; label: string; sub: string }> = [
+    { id: 'geral', label: 'Geral', sub: 'Questões de todas as áreas' },
+    { id: 'linguagens', label: 'Linguagens', sub: 'Português, literatura, língua estrangeira' },
+    { id: 'humanas', label: 'Humanas', sub: 'História, geografia, filosofia, sociologia' },
+    { id: 'natureza', label: 'Natureza', sub: 'Biologia, química, física' },
+    { id: 'matematica', label: 'Matemática', sub: 'Cálculo, geometria, estatística' },
+  ];
+
+  const handleStartExtra = (areaId: string | null) => {
+    setExtraPickerOpen(false);
+    startExtraSession(areaId);
+  };
+
   // Loading state
   if (state === 'loading') {
     return (
