@@ -25,15 +25,15 @@ function mathHtml(text: string): string {
 
 function ContentText({ block }: { block: EnemContentBlock }) {
   const isMuted = block.format?.color === 'muted';
-  const isBold = block.format?.bold;
   const align = block.format?.align ?? 'left';
 
   return (
     <div
       className={cn(
-        'whitespace-pre-wrap leading-relaxed',
-        isMuted ? 'text-muted-foreground text-xs' : 'text-foreground text-sm',
-        isBold && 'font-semibold',
+        'whitespace-pre-wrap leading-relaxed font-normal',
+        isMuted
+          ? 'text-muted-foreground text-xs'
+          : 'text-muted-foreground text-sm',
         align === 'center' && 'text-center',
         align === 'right' && 'text-right',
       )}
@@ -161,7 +161,7 @@ export default function EnemQuestionCard({
       {question.command && (
         <div className="px-5 pb-5">
           <p
-            className="text-sm font-semibold text-foreground leading-relaxed"
+            className="text-base font-bold text-foreground leading-relaxed"
             dangerouslySetInnerHTML={{ __html: mathHtml(question.command) }}
           />
         </div>
