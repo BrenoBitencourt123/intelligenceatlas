@@ -299,6 +299,11 @@ const Objectives = () => {
       ? Math.round((currentBlockAnswered / currentBlockTotal) * 100) : 0;
 
     const handleNext = () => {
+      // In extra session, never trigger block-transition. Just advance.
+      if (extraSession) {
+        nextQuestion();
+        return;
+      }
       const lastIndexOfBlock = blockBounds[currentBlock + 1] - 1;
       if (currentIndex === lastIndexOfBlock && currentBlock < 2) {
         const blockAnswers = Object.entries(answers)
