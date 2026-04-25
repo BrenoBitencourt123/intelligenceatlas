@@ -954,6 +954,7 @@ export function useStudySession() {
         startTime,
         flashcardsGenerated,
         area: questions[0]?.area ?? null,
+        extraSession,
       });
 
       // Record attempt
@@ -967,6 +968,7 @@ export function useStudySession() {
             is_correct: isCorrect,
             response_time_ms: timeSpentSec * 1000,
             session_date: new Date().toISOString().split("T")[0],
+            extra_session: extraSession,
           })
           .then(() => {});
 
