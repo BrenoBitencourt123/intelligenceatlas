@@ -396,6 +396,9 @@ export function useStudySession() {
   const [startTime, setStartTime] = useState<number>(0);
   const [questionStartedAt, setQuestionStartedAt] = useState<number>(0);
   const [flashcardsGenerated, setFlashcardsGenerated] = useState(0);
+  const [extraSession, setExtraSession] = useState(false);
+  const [extraArea, setExtraArea] = useState<string | null>(null);
+  const [loadingMoreExtra, setLoadingMoreExtra] = useState(false);
 
   const mapQuestion = useCallback(
     (q: any): Question => ({
