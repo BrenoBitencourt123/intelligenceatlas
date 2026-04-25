@@ -153,6 +153,7 @@ export default function EnemQuestionCard({
           <React.Fragment key={idx}>
             {block.type === 'text' && <ContentText block={block} />}
             {block.type === 'image' && <ContentImage block={block} />}
+            {block.type === 'table' && <ContentTable block={block} />}
           </React.Fragment>
         ))}
       </div>
