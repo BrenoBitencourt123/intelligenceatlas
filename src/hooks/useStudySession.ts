@@ -45,6 +45,7 @@ interface PersistedSession {
   startTime: number;
   flashcardsGenerated: number;
   area: string | null;
+  extraSession?: boolean;
 }
 
 interface PersistedDailyPlan {
@@ -64,12 +65,15 @@ const EXTRA_PRELOAD_THRESHOLD = 3;
 
 function saveToStorage(data: PersistedSession) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const key = data.extraSession ? EXTRA_STORAGE_KEY : STORAGE_KEY;
+    localStorage.setItem(key, JSON.stringify(data));
   } catch {}
 }
 
 function loadFromStorage(): PersistedSession | null {
   try {
+    const rawExtra = localStorage.getItem(EXTRA_STORAGE_KEY);
+    if (rawExtra) return JSON.parse(rawExtra);
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
@@ -78,8 +82,12 @@ function loadFromStorage(): PersistedSession | null {
   }
 }
 
-function clearStorage() {
-  localStorage.removeItem(STORAGE_KEY);
+function clearStorage(extra = false) {
+  if (extra) {
+    localStorage.removeItem(EXTRA_STORAGE_KEY);
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
 }
 
 function todayDateKey() {
