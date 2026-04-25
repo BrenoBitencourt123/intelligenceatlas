@@ -1012,6 +1012,29 @@ export function useStudySession() {
   );
 
   const nextQuestion = useCallback(async () => {
+    // Extra session: never auto-complete by count. Just advance; loadMoreExtra is triggered by the page when nearing the end.
+    if (extraSession) {
+      const nextIndex = currentIndex + 1;
+      if (nextIndex >= totalQuestions) {
+        // Out of preloaded questions; stay on current and let UI show a "Carregando próxima…" state via loadingMoreExtra.
+        // The UI is responsible for invoking loadMoreExtra in advance.
+        return;
+      }
+      setCurrentIndex(nextIndex);
+      setShowFeedback(false);
+      setQuestionStartedAt(Date.now());
+      saveToStorage({
+        questions,
+        currentIndex: nextIndex,
+        answers,
+        startTime,
+        flashcardsGenerated,
+        area: extraArea,
+        extraSession: true,
+      });
+      return;
+    }
+
     if (currentIndex + 1 >= totalQuestions) {
       // Session complete
       const durationMinutes = Math.round((Date.now() - startTime) / 60000);
@@ -1089,6 +1112,8 @@ export function useStudySession() {
     currentQuestion,
     showFeedback,
     questions,
+    extraSession,
+    extraArea,
   ]);
 
   const resetSession = useCallback(() => {
