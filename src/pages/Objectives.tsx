@@ -385,11 +385,25 @@ const Objectives = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="text-sm font-semibold text-foreground">
-                  {currentIndex + 1}/{totalQuestions}
-                </span>
-                {totalQuestions === 1 && (
-                  <Badge variant="outline" className="text-xs">Preview</Badge>
+                {extraSession ? (
+                  <>
+                    <span className="text-sm font-semibold text-foreground tabular-nums">
+                      {currentIndex + 1}
+                    </span>
+                    <Badge variant="outline" className="gap-1 text-xs">
+                      <Sparkles className="h-3 w-3" />
+                      Sessão extra
+                    </Badge>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-sm font-semibold text-foreground">
+                      {currentIndex + 1}/{totalQuestions}
+                    </span>
+                    {totalQuestions === 1 && (
+                      <Badge variant="outline" className="text-xs">Preview</Badge>
+                    )}
+                  </>
                 )}
               </div>
               <div className="flex items-center gap-1">
@@ -405,14 +419,26 @@ const Objectives = () => {
                     PDF
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={exitSessionView}
-                  title="Voltar"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                {extraSession ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground"
+                    onClick={endExtraSession}
+                    title="Encerrar sessão extra"
+                  >
+                    Encerrar
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={exitSessionView}
+                    title="Voltar"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -426,8 +452,8 @@ const Objectives = () => {
               </div>
             )}
 
-            {/* Minimal stepper — dots (hidden for short review sessions) */}
-            {totalQuestions > 1 && !isReviewMode && (
+            {/* Minimal stepper — dots (hidden for short review sessions and for extra sessions) */}
+            {totalQuestions > 1 && !isReviewMode && !extraSession && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   {[0, 1, 2].map((i) => (
