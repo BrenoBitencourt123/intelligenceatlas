@@ -1000,6 +1000,7 @@ export function useStudySession() {
       startTime,
       syncTopicProfile,
       user,
+      extraSession,
     ],
   );
 
