@@ -134,11 +134,11 @@ const Today = () => {
                   <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Simulado
                   </p>
-                  <h2 className="text-xl font-bold text-foreground">Prova Mista</h2>
-                  <p className="text-sm text-muted-foreground">{dayPlan.questionCount} questões · todas as áreas</p>
+                  <h2 className="text-xl font-bold text-foreground">Simulado ENEM</h2>
+                  <p className="text-sm text-muted-foreground">Escolha o ano e o dia · 90 questões na ordem oficial</p>
                 </div>
-                <Button onClick={() => navigate('/objetivas')} className="w-full gap-2">
-                  Começar Simulado
+                <Button onClick={() => navigate('/simulado')} className="w-full gap-2">
+                  Escolher simulado
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </CardContent>
