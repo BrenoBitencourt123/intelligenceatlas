@@ -56,7 +56,11 @@ interface PersistedDailyPlan {
 type SessionState = "idle" | "loading" | "active" | "result";
 
 const STORAGE_KEY = "atlas_study_session";
+const EXTRA_STORAGE_KEY = "atlas_extra_session";
 const DAILY_PLAN_KEY = "atlas_study_daily_plan";
+
+const EXTRA_BATCH_SIZE = 20;
+const EXTRA_PRELOAD_THRESHOLD = 3;
 
 function saveToStorage(data: PersistedSession) {
   try {
