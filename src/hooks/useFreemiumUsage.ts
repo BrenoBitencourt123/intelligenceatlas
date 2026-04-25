@@ -34,12 +34,13 @@ export function useFreemiumUsage(): FreemiumUsage {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     Promise.all([
-      // Questões respondidas hoje
+      // Questões respondidas hoje (sessão extra do Pro não conta para a cota)
       supabase
         .from('question_attempts')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .eq('session_date', today),
+        .eq('session_date', today)
+        .eq('extra_session', false),
 
       // Redações analisadas nos últimos 7 dias
       supabase

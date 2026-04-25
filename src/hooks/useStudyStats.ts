@@ -13,12 +13,13 @@ export function useStudyStats() {
     queryFn: async () => {
       if (!user) return null;
 
-      // Today's attempts
+      // Today's attempts (exclude extra-session attempts so they don't affect daily metrics)
       const { data: attempts } = await supabase
         .from('question_attempts')
         .select('is_correct')
         .eq('user_id', user.id)
-        .eq('session_date', today);
+        .eq('session_date', today)
+        .eq('extra_session', false);
 
       const questionsToday = attempts?.length ?? 0;
       const correctToday = attempts?.filter(a => a.is_correct).length ?? 0;
@@ -39,11 +40,12 @@ export function useStudyStats() {
         .gte('reviewed_at', `${today}T00:00:00`)
         .lt('reviewed_at', `${today}T23:59:59`);
 
-      // Streak: count consecutive days with any study activity
+      // Streak: count consecutive days with any study activity (ignore extra sessions)
       const { data: sessions } = await supabase
         .from('study_sessions')
         .select('session_date')
         .eq('user_id', user.id)
+        .eq('is_extra', false)
         .order('session_date', { ascending: false })
         .limit(60);
 

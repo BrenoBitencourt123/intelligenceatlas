@@ -45,6 +45,7 @@ interface PersistedSession {
   startTime: number;
   flashcardsGenerated: number;
   area: string | null;
+  extraSession?: boolean;
 }
 
 interface PersistedDailyPlan {
@@ -56,16 +57,23 @@ interface PersistedDailyPlan {
 type SessionState = "idle" | "loading" | "active" | "result";
 
 const STORAGE_KEY = "atlas_study_session";
+const EXTRA_STORAGE_KEY = "atlas_extra_session";
 const DAILY_PLAN_KEY = "atlas_study_daily_plan";
+
+const EXTRA_BATCH_SIZE = 20;
+const EXTRA_PRELOAD_THRESHOLD = 3;
 
 function saveToStorage(data: PersistedSession) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const key = data.extraSession ? EXTRA_STORAGE_KEY : STORAGE_KEY;
+    localStorage.setItem(key, JSON.stringify(data));
   } catch {}
 }
 
 function loadFromStorage(): PersistedSession | null {
   try {
+    const rawExtra = localStorage.getItem(EXTRA_STORAGE_KEY);
+    if (rawExtra) return JSON.parse(rawExtra);
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
@@ -74,8 +82,12 @@ function loadFromStorage(): PersistedSession | null {
   }
 }
 
-function clearStorage() {
-  localStorage.removeItem(STORAGE_KEY);
+function clearStorage(extra = false) {
+  if (extra) {
+    localStorage.removeItem(EXTRA_STORAGE_KEY);
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
 }
 
 function todayDateKey() {
@@ -384,6 +396,9 @@ export function useStudySession() {
   const [startTime, setStartTime] = useState<number>(0);
   const [questionStartedAt, setQuestionStartedAt] = useState<number>(0);
   const [flashcardsGenerated, setFlashcardsGenerated] = useState(0);
+  const [extraSession, setExtraSession] = useState(false);
+  const [extraArea, setExtraArea] = useState<string | null>(null);
+  const [loadingMoreExtra, setLoadingMoreExtra] = useState(false);
 
   const mapQuestion = useCallback(
     (q: any): Question => ({
@@ -580,10 +595,11 @@ export function useStudySession() {
         startTime,
         flashcardsGenerated,
         area: questions[0]?.area ?? null,
+        extraSession,
       });
       setHasSavedSession(true);
     }
-  }, [state, questions, currentIndex, answers, startTime, flashcardsGenerated]);
+  }, [state, questions, currentIndex, answers, startTime, flashcardsGenerated, extraSession]);
 
   const resumeSession = useCallback(() => {
     const saved = loadFromStorage();
@@ -600,6 +616,8 @@ export function useStudySession() {
     setFlashcardsGenerated(saved.flashcardsGenerated);
     setShowFeedback(false);
     setResult(null);
+    setExtraSession(Boolean(saved.extraSession));
+    setExtraArea(saved.extraSession ? saved.area : null);
     setState("active");
     setHasSavedSession(true);
     return true;
@@ -936,6 +954,7 @@ export function useStudySession() {
         startTime,
         flashcardsGenerated,
         area: questions[0]?.area ?? null,
+        extraSession,
       });
 
       // Record attempt
@@ -949,6 +968,7 @@ export function useStudySession() {
             is_correct: isCorrect,
             response_time_ms: timeSpentSec * 1000,
             session_date: new Date().toISOString().split("T")[0],
+            extra_session: extraSession,
           })
           .then(() => {});
 
@@ -980,6 +1000,7 @@ export function useStudySession() {
       startTime,
       syncTopicProfile,
       user,
+      extraSession,
     ],
   );
 
@@ -991,6 +1012,29 @@ export function useStudySession() {
   );
 
   const nextQuestion = useCallback(async () => {
+    // Extra session: never auto-complete by count. Just advance; loadMoreExtra is triggered by the page when nearing the end.
+    if (extraSession) {
+      const nextIndex = currentIndex + 1;
+      if (nextIndex >= totalQuestions) {
+        // Out of preloaded questions; stay on current and let UI show a "Carregando próxima…" state via loadingMoreExtra.
+        // The UI is responsible for invoking loadMoreExtra in advance.
+        return;
+      }
+      setCurrentIndex(nextIndex);
+      setShowFeedback(false);
+      setQuestionStartedAt(Date.now());
+      saveToStorage({
+        questions,
+        currentIndex: nextIndex,
+        answers,
+        startTime,
+        flashcardsGenerated,
+        area: extraArea,
+        extraSession: true,
+      });
+      return;
+    }
+
     if (currentIndex + 1 >= totalQuestions) {
       // Session complete
       const durationMinutes = Math.round((Date.now() - startTime) / 60000);
@@ -1068,6 +1112,8 @@ export function useStudySession() {
     currentQuestion,
     showFeedback,
     questions,
+    extraSession,
+    extraArea,
   ]);
 
   const resetSession = useCallback(() => {
@@ -1079,9 +1125,153 @@ export function useStudySession() {
     setResult(null);
     setFlashcardsGenerated(0);
     setQuestionStartedAt(0);
+    setExtraSession(false);
+    setExtraArea(null);
     clearStorage();
+    clearStorage(true);
     setHasSavedSession(false);
   }, []);
+
+  // ─── EXTRA SESSION (Pro) ────────────────────────────────────────
+  // Fetches a batch of fresh questions, optionally filtered by area, excluding
+  // questions the user has already answered (in any session). Does not affect
+  // daily metrics — `extra_session=true` is propagated to question_attempts.
+
+  const fetchExtraQuestions = useCallback(
+    async (area: string | null, excludeIds: Set<string>): Promise<Question[]> => {
+      if (!user) return [];
+
+      // Get user's already-answered question IDs to avoid repetition.
+      const { data: history } = await supabase
+        .from("user_question_history")
+        .select("question_id")
+        .eq("user_id", user.id);
+      const answeredIds = new Set<string>((history ?? []).map((h: any) => h.question_id));
+      excludeIds.forEach((id) => answeredIds.add(id));
+
+      // Foreign-language preference filter.
+      const { data: prefs } = await supabase
+        .from("user_preferences")
+        .select("foreign_language")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const userLang = (prefs?.foreign_language as string) || "ingles";
+      const oppositeLanguage = userLang === "ingles" ? "espanhol" : "ingles";
+
+      let query = supabase.from("questions").select("*");
+      if (area && area !== "geral") {
+        query = query.eq("area", area);
+      }
+      const { data, error } = await query.limit(1500);
+      if (error) throw error;
+      if (!data) return [];
+
+      const filtered = data.filter((q: any) => {
+        if (answeredIds.has(q.id)) return false;
+        if (q.foreign_language && q.foreign_language === oppositeLanguage) return false;
+        return true;
+      });
+
+      return shuffleArray(filtered).slice(0, EXTRA_BATCH_SIZE).map(mapQuestion);
+    },
+    [user, mapQuestion],
+  );
+
+  const startExtraSession = useCallback(
+    async (area: string | null) => {
+      if (!user) return;
+      setState("loading");
+      try {
+        const batch = await fetchExtraQuestions(area, new Set());
+        if (batch.length === 0) {
+          toast.error("Nenhuma questão nova disponível para este modo");
+          setState("idle");
+          return;
+        }
+        const now = Date.now();
+        // Clear any prior extra-session storage; do NOT touch the daily session storage.
+        clearStorage(true);
+        setQuestions(batch);
+        setCurrentIndex(0);
+        setAnswers({});
+        setShowFeedback(false);
+        setResult(null);
+        setFlashcardsGenerated(0);
+        setStartTime(now);
+        setQuestionStartedAt(now);
+        setExtraSession(true);
+        setExtraArea(area);
+        setState("active");
+        saveToStorage({
+          questions: batch,
+          currentIndex: 0,
+          answers: {},
+          startTime: now,
+          flashcardsGenerated: 0,
+          area,
+          extraSession: true,
+        });
+      } catch (err) {
+        console.error("Error starting extra session:", err);
+        toast.error("Erro ao iniciar sessão extra");
+        setState("idle");
+      }
+    },
+    [user, fetchExtraQuestions],
+  );
+
+  const loadMoreExtra = useCallback(async () => {
+    if (!extraSession || loadingMoreExtra) return;
+    // Only preload when we are within EXTRA_PRELOAD_THRESHOLD of the end.
+    if (questions.length - (currentIndex + 1) > EXTRA_PRELOAD_THRESHOLD) return;
+    setLoadingMoreExtra(true);
+    try {
+      const existing = new Set(questions.map((q) => q.id));
+      const more = await fetchExtraQuestions(extraArea, existing);
+      if (more.length > 0) {
+        setQuestions((prev) => [...prev, ...more]);
+      }
+    } catch (err) {
+      console.error("Error loading more extra questions:", err);
+    } finally {
+      setLoadingMoreExtra(false);
+    }
+  }, [extraSession, loadingMoreExtra, questions, currentIndex, extraArea, fetchExtraQuestions]);
+
+  const endExtraSession = useCallback(() => {
+    const answered = Object.keys(answers).length;
+    const totalCorrect = Object.values(answers).filter((a) => a.correct).length;
+    const durationMinutes = Math.max(1, Math.round((Date.now() - startTime) / 60000));
+
+    const sessionResult: SessionResult = {
+      total: answered,
+      correct: totalCorrect,
+      blocks: [{ correct: totalCorrect, total: answered }],
+      flashcardsGenerated,
+      durationMinutes,
+    };
+
+    setResult(sessionResult);
+    setState("result");
+    clearStorage(true);
+    setHasSavedSession(false);
+
+    if (user && answered > 0) {
+      supabase
+        .from("study_sessions")
+        .insert({
+          user_id: user.id,
+          area: extraArea ?? "mista",
+          questions_answered: answered,
+          correct_answers: totalCorrect,
+          flashcards_reviewed: 0,
+          duration_minutes: durationMinutes,
+          session_date: new Date().toISOString().split("T")[0],
+          is_extra: true,
+        })
+        .then(() => {});
+    }
+  }, [answers, startTime, flashcardsGenerated, user, extraArea]);
 
   return {
     state,
@@ -1095,6 +1285,9 @@ export function useStudySession() {
     answers,
     result,
     hasSavedSession,
+    extraSession,
+    extraArea,
+    loadingMoreExtra,
     startSession,
     resumeSession,
     exitSessionView,
@@ -1103,5 +1296,8 @@ export function useStudySession() {
     confirmAnswer,
     nextQuestion,
     resetSession,
+    startExtraSession,
+    loadMoreExtra,
+    endExtraSession,
   };
 }
