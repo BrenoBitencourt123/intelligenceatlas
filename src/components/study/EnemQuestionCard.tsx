@@ -61,6 +61,56 @@ function ContentImage({ block }: { block: EnemContentBlock }) {
   );
 }
 
+function ContentTable({ block }: { block: EnemContentBlock }) {
+  const headers = block.headers ?? [];
+  const rows = block.rows ?? [];
+  if (headers.length === 0 && rows.length === 0) return null;
+
+  return (
+    <figure className="flex flex-col gap-1.5">
+      <div className="overflow-x-auto rounded-lg border border-border">
+        <table className="w-full text-sm border-collapse">
+          {headers.length > 0 && (
+            <thead className="bg-muted/40">
+              <tr>
+                {headers.map((h, i) => (
+                  <th
+                    key={i}
+                    scope="col"
+                    className="px-3 py-2 text-left font-semibold text-foreground border-b border-border"
+                    dangerouslySetInnerHTML={{ __html: mathHtml(h) }}
+                  />
+                ))}
+              </tr>
+            </thead>
+          )}
+          <tbody>
+            {rows.map((row, ri) => (
+              <tr
+                key={ri}
+                className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
+              >
+                {row.map((cell, ci) => (
+                  <td
+                    key={ci}
+                    className="px-3 py-2 text-foreground align-top"
+                    dangerouslySetInnerHTML={{ __html: mathHtml(cell) }}
+                  />
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {block.caption && (
+        <figcaption className="text-[11px] text-muted-foreground italic text-center">
+          {block.caption}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
+
 function Alternative({
   letter,
   alt,
@@ -153,6 +203,7 @@ export default function EnemQuestionCard({
           <React.Fragment key={idx}>
             {block.type === 'text' && <ContentText block={block} />}
             {block.type === 'image' && <ContentImage block={block} />}
+            {block.type === 'table' && <ContentTable block={block} />}
           </React.Fragment>
         ))}
       </div>
