@@ -595,10 +595,11 @@ export function useStudySession() {
         startTime,
         flashcardsGenerated,
         area: questions[0]?.area ?? null,
+        extraSession,
       });
       setHasSavedSession(true);
     }
-  }, [state, questions, currentIndex, answers, startTime, flashcardsGenerated]);
+  }, [state, questions, currentIndex, answers, startTime, flashcardsGenerated, extraSession]);
 
   const resumeSession = useCallback(() => {
     const saved = loadFromStorage();
@@ -615,6 +616,8 @@ export function useStudySession() {
     setFlashcardsGenerated(saved.flashcardsGenerated);
     setShowFeedback(false);
     setResult(null);
+    setExtraSession(Boolean(saved.extraSession));
+    setExtraArea(saved.extraSession ? saved.area : null);
     setState("active");
     setHasSavedSession(true);
     return true;
