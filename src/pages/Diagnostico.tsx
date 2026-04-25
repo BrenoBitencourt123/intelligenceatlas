@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { computePriorityScore, nextReviewDateForLevel } from '@/lib/adaptiveStudy';
 import { InlineStatementRenderer } from '@/components/study/InlineStatementRenderer';
 import { ArrowRight, Check, X } from 'lucide-react';
-import { QuestionImage } from '@/lib/questionImages';
+import { QuestionImage, normalizeQuestionImages } from '@/lib/questionImages';
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 interface DiagQuestion {
@@ -53,22 +53,7 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
 }
 
-function normalizeImages(images: unknown, imageUrl: string | null): QuestionImage[] {
-  if (Array.isArray(images)) {
-    const parsed = (images as any[])
-      .map((img, idx) => {
-        if (typeof img === 'string' && img.trim()) return { url: img.trim(), order: idx };
-        if (!img || typeof img !== 'object') return null;
-        const v = img as Record<string, unknown>;
-        if (typeof v.url !== 'string' || !v.url.trim()) return null;
-        return { url: v.url.trim(), caption: typeof v.caption === 'string' ? v.caption : undefined, order: typeof v.order === 'number' ? v.order : idx };
-      })
-      .filter(Boolean) as QuestionImage[];
-    if (parsed.length > 0) return parsed;
-  }
-  if (imageUrl) return [{ url: imageUrl, order: 0 }];
-  return [];
-}
+// normalizeImages local foi substituída por normalizeQuestionImages de @/lib/questionImages.
 
 function mapQuestion(q: any): DiagQuestion {
   return {
@@ -82,7 +67,7 @@ function mapQuestion(q: any): DiagQuestion {
     alternatives: q.alternatives as any,
     correct_answer: q.correct_answer,
     explanation: q.explanation ?? null,
-    images: normalizeImages(q.images, q.image_url),
+    images: normalizeQuestionImages(q.images, q.image_url),
     year: q.year,
   };
 }
