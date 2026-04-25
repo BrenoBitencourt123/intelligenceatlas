@@ -281,6 +281,7 @@ export type Database = {
       question_attempts: {
         Row: {
           created_at: string
+          extra_session: boolean
           id: string
           is_correct: boolean
           question_id: string
@@ -291,6 +292,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          extra_session?: boolean
           id?: string
           is_correct?: boolean
           question_id: string
@@ -301,6 +303,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          extra_session?: boolean
           id?: string
           is_correct?: boolean
           question_id?: string
@@ -481,6 +484,7 @@ export type Database = {
           duration_minutes: number
           flashcards_reviewed: number
           id: string
+          is_extra: boolean
           questions_answered: number
           session_date: string
           user_id: string
@@ -492,6 +496,7 @@ export type Database = {
           duration_minutes?: number
           flashcards_reviewed?: number
           id?: string
+          is_extra?: boolean
           questions_answered?: number
           session_date?: string
           user_id: string
@@ -503,6 +508,7 @@ export type Database = {
           duration_minutes?: number
           flashcards_reviewed?: number
           id?: string
+          is_extra?: boolean
           questions_answered?: number
           session_date?: string
           user_id?: string
