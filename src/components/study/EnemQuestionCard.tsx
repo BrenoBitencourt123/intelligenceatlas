@@ -161,7 +161,7 @@ export default function EnemQuestionCard({
       {question.command && (
         <div className="px-5 pb-5">
           <p
-            className="text-sm font-semibold text-foreground leading-relaxed"
+            className="text-base font-bold text-foreground leading-relaxed"
             dangerouslySetInnerHTML={{ __html: mathHtml(question.command) }}
           />
         </div>
