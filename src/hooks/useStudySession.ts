@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { QuestionImage } from "@/lib/questionImages";
+import { QuestionImage, normalizeQuestionImages } from "@/lib/questionImages";
 import {
   computePriorityScore,
   nextReviewDateForLevel,
@@ -100,31 +100,7 @@ function loadDailyPlan(): PersistedDailyPlan | null {
   }
 }
 
-function normalizeQuestionImages(images: unknown, imageUrl: string | null): QuestionImage[] {
-  if (Array.isArray(images)) {
-    const parsed = images
-      .map((img, index) => {
-        // Handle plain string entries (legacy format)
-        if (typeof img === "string" && img.trim()) {
-          return { url: img.trim(), order: index } as QuestionImage;
-        }
-        if (!img || typeof img !== "object") return null;
-        const value = img as Record<string, unknown>;
-        if (typeof value.url !== "string" || !value.url.trim()) return null;
-        return {
-          url: value.url.trim(),
-          caption: typeof value.caption === "string" ? value.caption : undefined,
-          order: typeof value.order === "number" ? value.order : index,
-        };
-      })
-      .filter((img): img is NonNullable<typeof img> => img !== null) as QuestionImage[];
-
-    if (parsed.length > 0) return parsed;
-  }
-
-  if (imageUrl) return [{ url: imageUrl, order: 0 }];
-  return [];
-}
+// normalizeQuestionImages agora vem de @/lib/questionImages (fonte única).
 
 function makeTopicKey(area: string, topic: string, subtopic?: string) {
   return `${area}::${normalizeTopic(topic)}::${normalizeSubtopic(subtopic)}`;
