@@ -5,11 +5,13 @@ export interface EnemContentFormat {
 }
 
 export interface EnemContentBlock {
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'table';
   value?: string;
   data?: string;
   caption?: string;
   format?: EnemContentFormat;
+  headers?: string[];
+  rows?: string[][];
 }
 
 export interface EnemAlternative {
