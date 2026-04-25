@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { QuestionImage, uploadQuestionImage, validateQuestionImageFile } from '@/lib/questionImages';
+import { QuestionImage, uploadQuestionImage, validateQuestionImageFile, normalizeQuestionImages } from '@/lib/questionImages';
 
 export interface ImportedQuestion {
   number: number;
@@ -160,28 +160,9 @@ function splitTextIntoChunks(text: string, maxQuestionsPerChunk = 10): string[] 
   return chunks;
 }
 
-function normalizeImages(images: unknown): QuestionImage[] {
-  if (!Array.isArray(images)) return [];
-
-  return images
-    .map((img, index) => {
-      if (typeof img === 'string') {
-        return { url: img, order: index };
-      }
-
-      if (!img || typeof img !== 'object') return null;
-
-      const value = img as Record<string, unknown>;
-      if (typeof value.url !== 'string' || !value.url.trim()) return null;
-
-      return {
-        url: value.url.trim(),
-        caption: typeof value.caption === 'string' ? value.caption : undefined,
-        order: typeof value.order === 'number' ? value.order : index,
-      };
-    })
-    .filter((img): img is NonNullable<typeof img> => img !== null) as QuestionImage[];
-}
+// normalizeImages local foi substituída por normalizeQuestionImages de @/lib/questionImages.
+const normalizeImages = (images: unknown): QuestionImage[] =>
+  normalizeQuestionImages(images);
 
 function inferImageRequirement(
   _statement: string,
