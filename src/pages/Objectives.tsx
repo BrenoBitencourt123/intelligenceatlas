@@ -150,41 +150,92 @@ const Objectives = () => {
     );
   }
 
+  // ── Extra-session picker (overlay) ────────────────────────────
+  if (extraPickerOpen) {
+    return (
+      <MainLayout>
+        <div className="container max-w-lg mx-auto px-4 py-10 pb-24">
+          <div className="space-y-6">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span className="uppercase tracking-wider font-medium">Sessão extra · Pro</span>
+              </div>
+              <h1 className="text-2xl font-bold text-foreground">Continuar estudando</h1>
+              <p className="text-sm text-muted-foreground">
+                Escolha o modo. Sem limite de questões. Não conta para a meta diária.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              {EXTRA_AREAS.map((opt) => (
+                <button
+                  key={opt.label}
+                  onClick={() => handleStartExtra(opt.id)}
+                  className="w-full flex items-center gap-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors p-4 text-left"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground">{opt.label}</p>
+                    <p className="text-xs text-muted-foreground truncate">{opt.sub}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </button>
+              ))}
+            </div>
+
+            <Button variant="ghost" className="w-full" onClick={() => setExtraPickerOpen(false)}>
+              Voltar
+            </Button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   // ── Result screen ──────────────────────────────────────────────
   if (state === 'result' && result) {
     const accuracy = result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0;
+    const isExtraResult = result.blocks.length === 1;
     return (
       <MainLayout>
         <div className="container max-w-lg mx-auto px-4 py-12">
           <div className="space-y-8">
             {/* Score hero */}
             <div className="text-center space-y-2">
+              {isExtraResult && (
+                <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                  <Sparkles className="h-3 w-3" />
+                  Sessão extra
+                </div>
+              )}
               <p className="text-6xl font-black tracking-tight text-foreground">{accuracy}%</p>
               <p className="text-sm text-muted-foreground">
                 {result.correct} de {result.total} questões corretas
               </p>
             </div>
 
-            {/* Block breakdown — horizontal bars */}
-            <div className="space-y-3">
-              {result.blocks.map((block, i) => {
-                const blockAcc = block.total > 0 ? Math.round((block.correct / block.total) * 100) : 0;
-                return (
-                  <div key={i} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{blockLabels[i]}</span>
-                      <span className="font-medium text-foreground">{block.correct}/{block.total}</span>
+            {/* Block breakdown — horizontal bars (oculto em sessão extra: bloco único) */}
+            {!isExtraResult && (
+              <div className="space-y-3">
+                {result.blocks.map((block, i) => {
+                  const blockAcc = block.total > 0 ? Math.round((block.correct / block.total) * 100) : 0;
+                  return (
+                    <div key={i} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{blockLabels[i]}</span>
+                        <span className="font-medium text-foreground">{block.correct}/{block.total}</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-foreground transition-all"
+                          style={{ width: `${blockAcc}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-foreground transition-all"
-                        style={{ width: `${blockAcc}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Meta */}
             <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
@@ -193,6 +244,32 @@ const Objectives = () => {
               <span>🧠 {result.flashcardsGenerated} flashcards</span>
             </div>
 
+            {/* Continue / Pro upsell */}
+            {isPro ? (
+              <Button
+                className="w-full gap-2"
+                onClick={() => { resetSession(); setExtraPickerOpen(true); }}
+              >
+                <Sparkles className="h-4 w-4" />
+                Continuar estudando
+              </Button>
+            ) : (
+              <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3 text-center">
+                <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">Continuar estudando é Pro</p>
+                  <p className="text-xs text-muted-foreground">
+                    No Pro, você faz quantas sessões extras quiser depois das 20 do dia.
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/plano')}>
+                  <Crown className="h-3.5 w-3.5 text-amber-500" />
+                  Ver plano Pro
+                </Button>
+              </div>
+            )}
 
             <Button className="w-full" variant="outline" onClick={resetSession}>
               Voltar ao Início
