@@ -755,6 +755,28 @@ const Objectives = () => {
                 </div>
               )}
 
+              {/* Simulado ENEM entry */}
+              <button
+                onClick={() => navigate('/simulado')}
+                className="w-full rounded-xl border border-border bg-card p-4 flex items-center justify-between gap-3 hover:bg-muted/50 transition-colors text-left"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      Simulado ENEM
+                      {!isPro && <Lock className="h-3 w-3 text-muted-foreground" />}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      Prova completa por ano e dia · {isPro ? 'Pro' : 'Recurso Pro'}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </button>
+
               {/* Session card */}
               <div className="rounded-xl border border-border bg-card p-6 space-y-4">
                 {schedule.isLoading ? (

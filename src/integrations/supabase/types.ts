@@ -288,6 +288,7 @@ export type Database = {
           response_time_ms: number | null
           selected_answer: string | null
           session_date: string
+          simulado_session: boolean
           user_id: string
         }
         Insert: {
@@ -299,6 +300,7 @@ export type Database = {
           response_time_ms?: number | null
           selected_answer?: string | null
           session_date?: string
+          simulado_session?: boolean
           user_id: string
         }
         Update: {
@@ -310,6 +312,7 @@ export type Database = {
           response_time_ms?: number | null
           selected_answer?: string | null
           session_date?: string
+          simulado_session?: boolean
           user_id?: string
         }
         Relationships: [
@@ -402,6 +405,7 @@ export type Database = {
           confidence: number | null
           correct_answer: string
           created_at: string
+          day: number | null
           difficulty: number
           disciplina: string | null
           explanation: string | null
@@ -429,6 +433,7 @@ export type Database = {
           confidence?: number | null
           correct_answer: string
           created_at?: string
+          day?: number | null
           difficulty?: number
           disciplina?: string | null
           explanation?: string | null
@@ -456,6 +461,7 @@ export type Database = {
           confidence?: number | null
           correct_answer?: string
           created_at?: string
+          day?: number | null
           difficulty?: number
           disciplina?: string | null
           explanation?: string | null

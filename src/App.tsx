@@ -24,6 +24,8 @@ import FounderSignup from "./pages/FounderSignup";
 import Landing from "./pages/Landing";
 import Welcome from "./pages/Welcome";
 import Diagnostico from "./pages/Diagnostico";
+import Simulado from "./pages/Simulado";
+import SimuladoSession from "./pages/SimuladoSession";
 import ResetPassword from "./pages/ResetPassword";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -145,6 +147,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Diagnostico />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/simulado"
+              element={
+                <ProtectedRoute>
+                  <Simulado />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/simulado/sessao"
+              element={
+                <ProtectedRoute>
+                  <SimuladoSession />
                 </ProtectedRoute>
               }
             />
