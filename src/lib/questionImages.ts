@@ -37,3 +37,45 @@ export async function uploadQuestionImage(file: File, userId: string, _index?: n
 
   return urlData.publicUrl;
 }
+
+/**
+ * Fonte de verdade única para normalizar imagens de uma questão.
+ *
+ * Prioriza o array `images` (formato canônico). Quando ele está vazio
+ * ou ausente, usa o campo legado `imageUrl` como fallback, transformando
+ * em `[{ url, order: 0 }]`.
+ *
+ * Aceita também o formato antigo onde `images` continha strings cruas
+ * (ex.: `["https://..."]`), convertendo para objetos.
+ */
+export function normalizeQuestionImages(
+  images: unknown,
+  imageUrl?: string | null,
+): QuestionImage[] {
+  if (Array.isArray(images)) {
+    const parsed = images
+      .map((img, index) => {
+        if (typeof img === 'string' && img.trim()) {
+          return { url: img.trim(), order: index } as QuestionImage;
+        }
+        if (!img || typeof img !== 'object') return null;
+        const value = img as Record<string, unknown>;
+        if (typeof value.url !== 'string' || !value.url.trim()) return null;
+        return {
+          url: value.url.trim(),
+          caption: typeof value.caption === 'string' ? value.caption : undefined,
+          order: typeof value.order === 'number' ? value.order : index,
+          local: typeof value.local === 'boolean' ? value.local : undefined,
+        } as QuestionImage;
+      })
+      .filter(Boolean) as QuestionImage[];
+
+    if (parsed.length > 0) return parsed;
+  }
+
+  if (imageUrl && imageUrl.trim()) {
+    return [{ url: imageUrl.trim(), order: 0 }];
+  }
+
+  return [];
+}
