@@ -90,3 +90,16 @@ Fluxo independente do estudo diário e da sessão extra:
 - **Conflito de localStorage**: chave dedicada (`atlas_simulado_session`) garante isolamento.
 
 Confirme se prefere uma flag dedicada `simulado_session` em `question_attempts` (recomendado) ou reaproveitar `extra_session = true` para o simulado também.
+
+---
+
+## Implementação concluída (Prompt 2)
+
+- Migration aplicada: `questions.day` (1|2) com backfill por área + índice `(year, day, number)`; `question_attempts.simulado_session` (boolean default false).
+- Hook `useSimuladoAvailability` lista anos disponíveis com contagem por dia (gating ≥80 questões).
+- Hook `useSimuladoSession` controla início, retomada, pausa, resposta, próxima e finalização. Persistência local em `atlas_simulado_session` (chave isolada das sessões diária e extra). Respostas gravam `simulado_session=true` em `question_attempts` e `is_extra=true` em `study_sessions`, mantendo métricas diárias e streak intactas.
+- Página `/simulado` (Pro): grade ano × dia, contador, cadeado e CTA Pro para Free, retomada visível.
+- Página `/simulado/sessao` (Pro): contador `X/N`, "Antes de responder" preservado, pausa/retomada, justificativa pós-resposta, encerrar antecipadamente, resultado por área (Linguagens+Humanas no Dia 1; Natureza+Matemática no Dia 2).
+- Card "Prova Mista" da tela Hoje substituído por "Simulado ENEM" → `/simulado`.
+- Aba Objetivas ganhou entrada "Simulado ENEM" (cadeado para Free).
+- Build verde (tsc + vite build).
