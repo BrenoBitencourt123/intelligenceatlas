@@ -1,121 +1,92 @@
-# Plano — Sessões extras de estudo (Pro)
+# Simulado por ano e dia (Pro)
 
-## Comportamento
+Implementar a feature de Simulado completo no Atlas: o usuário Pro escolhe um ano e o dia da prova (Dia 1 ou Dia 2) e responde as 90 questões originais na ordem oficial, com pausa/retomada e resultado por área. Para usuários Free, a tela de seleção fica visível mas com botões bloqueados e CTA para upgrade.
 
-Após o aluno **Pro** terminar a sessão diária (tela de resultado em `Objectives`), aparece o botão **"Continuar estudando"**. Ao clicar, ele vê um seletor simples:
+O fluxo de estudo diário (20 questões adaptativas) e as sessões extras Pro continuam intactos — o simulado é uma sessão paralela e independente.
 
-- **Geral** (todas as áreas)
-- **Linguagens** · **Humanas** · **Natureza** · **Matemática**
+## 1. Banco de dados
 
-Após escolher, entra em uma sessão extra:
-- **Sem limite de questões** (fluxo sequencial infinito, carrega em batches)
-- **Sem fases** (nenhum "Aquecimento/Aprendizado/Consolidação", sem stepper)
-- Header simples: `12 · Sessão extra` (apenas o número da questão atual)
-- "Antes de responder, saiba isso" (PreConcept) **continua disponível**, igual à sessão normal
-- Justificativa, flashcards automáticos no erro e cápsulas pós-resposta funcionam igual
-- Botão para **encerrar** a qualquer momento → mostra mini-resumo (questões respondidas, % acerto) e volta para `/objetivas`
+### Migration: adicionar `day` à tabela `questions`
+- `day SMALLINT NULL` (1 ou 2), com CHECK `day IN (1,2)` quando presente.
+- Backfill heurístico baseado em `area`:
+  - `linguagens`, `humanas` → `day = 1`
+  - `natureza`, `matematica` → `day = 2`
+- Índice composto `(year, day, number)` para acelerar a query do simulado.
+- Nullable (não obrigatório) — questões sem `day` simplesmente não aparecem em simulados.
 
-Para **Free**, o card aparece **bloqueado** com cadeado e CTA "Plano PRO".
+Hoje só existem questões de 2020 no banco; o backfill cobre todas elas e a feature passa a ficar disponível para esse ano imediatamente.
 
-## Regra-chave: não contaminar métricas diárias
+## 2. Tela de seleção do simulado
 
-Sessão extra **não** afeta:
-- Streak diária
-- Contador "Hoje: X questões" / progresso do dia (`Progresso do dia`)
-- Cota freemium (`questionsUsedToday`)
-- `study_sessions` agregadas (ou marcamos como sessão extra)
+Nova rota `/simulado` com:
+- Header curto: "Simulado ENEM — escolha ano e dia".
+- Grade de cards por ano (descendente). Cada card mostra:
+  - Ano em destaque.
+  - Dois botões: **Dia 1** (Linguagens + Humanas) e **Dia 2** (Natureza + Matemática).
+  - Total de questões disponíveis abaixo de cada botão (ex.: `90/90` ou `54/90`).
+  - Botão fica desabilitado se houver menos de 80 questões para aquele `(year, day)` (limiar permite tolerância a faltantes pontuais).
+- Para usuários Free: todos os botões aparecem com cadeado, e clique abre o upsell Pro existente (mesmo padrão da sessão extra).
 
-Mas **continua afetando**:
-- `user_topic_profile` / `user_mastery` (o aluno está estudando de verdade — adaptive precisa aprender)
-- `user_question_history` (evita repetir questões já vistas)
-- Geração de flashcards no erro
-- Stats globais de longo prazo (ex.: total de questões resolvidas no histórico)
+A lista de anos vem de uma única query agregada `SELECT year, day, count(*) FROM questions GROUP BY year, day` — nada hardcoded.
 
-Para isso usamos um **flag `extra_session`** ao gravar `question_attempts`, e os hooks que contam questões do dia/cota passam a filtrar por `extra_session = false`.
+## 3. Pontos de entrada
+- **Aba Objetivas**: card "Simulado ENEM" no topo da tela inicial, ao lado/abaixo do CTA diário, navega para `/simulado`.
+- **Tela Hoje**: substituir o card atual "Prova Mista" (que aparece aos sábados via `dayPlan.isMista`) por um card "Simulado ENEM" que leva para `/simulado` em vez de `/objetivas`. O agendamento semanal de sábado continua marcando o dia como simulado, mas o usuário escolhe qual prova fazer.
 
-## Mudanças técnicas
+## 4. Sessão de simulado
 
-### Backend (migration)
+Fluxo independente do estudo diário e da sessão extra:
+- Carrega questões com `WHERE year=? AND day=? ORDER BY number ASC` (até 90).
+- Sem fases Aquecimento/Aprendizado/Consolidação, sem blocos, sem transições.
+- Header simples: contador `47/90` + botão "Pausar".
+- Reaproveita o `EnemQuestionCard` e o componente "Antes de responder, saiba isso" (`PreConceptBlock`) — o diferencial pedagógico continua disponível.
+- Persistência local em `localStorage` com chave `atlas_simulado_session` separada (não colide com a sessão diária nem com a extra). Salva: `year`, `day`, `questionIds`, `currentIndex`, `answers`, `startTime`.
+- "Pausar" volta para a tela de seleção; ao reabrir o mesmo ano/dia aparece "Continuar simulado" com o progresso salvo, ou "Recomeçar".
+- Filtro de língua estrangeira aplicado igual ao restante do app (respeita `user_preferences.foreign_language`).
 
-Adicionar coluna em `question_attempts`:
+## 5. Persistência das respostas e métricas
+- Cada resposta vai para `question_attempts` com uma nova flag `simulado_session = true` (ou reaproveitando `extra_session = true`, opção a definir abaixo).
+- `study_sessions` recebe um registro com `is_extra = true` e `area = 'simulado'` para não poluir as estatísticas diárias / streak.
+- Atualiza `user_topic_profile` e `user_mastery` normalmente — o Mapa de Pontos Fracos é alimentado pelo simulado.
 
-```sql
-ALTER TABLE public.question_attempts
-  ADD COLUMN extra_session boolean NOT NULL DEFAULT false;
+> Recomendação: criar coluna dedicada `simulado_session boolean default false` em `question_attempts` (e expor por filtro) para diferenciar simulado de sessão extra na análise futura. Confirmar essa decisão antes de aplicar a migration.
 
-CREATE INDEX IF NOT EXISTS question_attempts_user_session_extra_idx
-  ON public.question_attempts (user_id, session_date, extra_session);
-```
+## 6. Tela de resultado
+- Exibida ao concluir as 90 questões (ou ao "Encerrar" antecipadamente).
+- Resumo:
+  - Acertos totais e percentual (ex.: `72/90 — 80%`).
+  - Breakdown por área conforme o dia:
+    - **Dia 1**: Linguagens (X/45) e Humanas (Y/45).
+    - **Dia 2**: Natureza (X/45) e Matemática (Y/45).
+  - Tempo total da sessão.
+- Ações: "Revisar questões erradas" (lista de questões erradas com gabarito), "Voltar para o simulado" (`/simulado`), "Ir para o Mapa de Pontos Fracos".
 
-Adicionar coluna em `study_sessions` para distinguir sessões extras dos agregados normais:
+## 7. Restrições e gating
+- Toda a rota `/simulado` e a sessão são bloqueadas para Free no nível da ação (não apenas visual): clique nos botões abre o modal de upsell.
+- O fluxo de estudo diário (20 questões adaptativas) permanece exatamente como está. Sessão extra (Prompt 1) também não é afetada.
 
-```sql
-ALTER TABLE public.study_sessions
-  ADD COLUMN is_extra boolean NOT NULL DEFAULT false;
-```
+## Detalhes técnicos
 
-### Hook `useStudySession.ts`
+### Arquivos novos
+- `supabase/migrations/<timestamp>_add_day_to_questions.sql` — coluna `day`, CHECK, índice e backfill.
+- `src/pages/Simulado.tsx` — tela de seleção (grade ano × dia) + roteamento para a sessão.
+- `src/pages/SimuladoSession.tsx` — tela da sessão (90 questões, contador, pause/resume, resultado).
+- `src/hooks/useSimuladoSession.ts` — hook dedicado: `start(year, day)`, `resume(year, day)`, `answer`, `next`, `pause`, `finish`, persistência em `atlas_simulado_session`, integração com `question_attempts` / `study_sessions` / `user_topic_profile`.
+- `src/hooks/useSimuladoAvailability.ts` — query agregada `(year, day) → count` para popular a grade.
 
-- Novo modo `extraSession: boolean` no estado da sessão.
-- Nova função pública `startExtraSession(area: string | null)`:
-  - Busca lote inicial (~20 questões), filtrando questões já respondidas pelo usuário (`user_question_history`) para evitar repetição.
-  - Marca `state = "active"` com `extraSession = true`, **sem** salvar `daily_plan` e usando uma chave de storage separada (`atlas_extra_session`) para não colidir com a sessão diária persistida.
-- Nova função `loadMoreExtra()`: ao chegar na penúltima questão, pré-carrega mais 10–20 questões do mesmo escopo, filtrando duplicatas.
-- `submitAnswer` passa a aceitar e propagar `extra_session: true` para o insert em `question_attempts`.
-- `nextQuestion` em modo extra **não** finaliza por contagem (não há limite); a finalização acontece via novo `endExtraSession()` chamado pelo botão "Encerrar".
-- Ao encerrar, gravar `study_sessions` com `is_extra = true`.
-- `syncTopicProfile` continua sendo chamado normalmente (queremos aprendizado adaptativo).
+### Arquivos editados
+- `src/App.tsx` — registrar rotas `/simulado` e `/simulado/sessao`.
+- `src/pages/Today.tsx` — substituir o card "Prova Mista" pelo card "Simulado ENEM" navegando para `/simulado`.
+- `src/pages/Objectives.tsx` — adicionar entrada "Simulado ENEM" no topo (visível sempre, com cadeado para Free).
+- `src/integrations/supabase/types.ts` — regenerado automaticamente após a migration.
 
-### Hooks de métricas — filtrar `extra_session = false`
+### Pontos não alterados
+- `useStudySession.ts`, `useStudyStats.ts`, `useFreemiumUsage.ts` continuam ignorando registros com `is_extra=true` / `simulado_session=true`, então o simulado não interfere em métricas diárias nem na streak.
+- Cronograma semanal (`useStudySchedule`) e regras de `mista` permanecem; só o card visível na Hoje muda de destino.
 
-- `useStudyStats`: `question_attempts` query → `.eq('extra_session', false)`. Streak via `study_sessions` → `.eq('is_extra', false)`.
-- `useFreemiumUsage`: `question_attempts` count → `.eq('extra_session', false)`.
+## Riscos e mitigações
+- **Backfill heurístico do `day`**: a regra por área cobre 100% do ENEM moderno (a partir de 2009). Para anos atípicos, o admin poderá corrigir manualmente via Admin > Reclassificar.
+- **Anos com poucas questões**: gating por contagem mínima (80) evita simulados quebrados.
+- **Conflito de localStorage**: chave dedicada (`atlas_simulado_session`) garante isolamento.
 
-### UI — `src/pages/Objectives.tsx`
-
-**1. Tela de resultado (`state === 'result'`)** — adicionar abaixo do botão "Voltar ao Início":
-
-- Se `isPro`: botão **"Continuar estudando"** que muda uma flag local `pickerOpen = true`.
-- Se `isFree`: card pequeno bloqueado "Continuar estudando é um recurso PRO" com CTA "Ver plano".
-
-**2. Tela de seleção de modo (novo state local `extraPickerOpen`)** — substitui temporariamente a tela de resultado:
-
-```text
-Continuar estudando
-Escolha o modo da próxima sessão.
-
-[ Geral · todas as áreas        > ]
-[ Linguagens                    > ]
-[ Humanas                       > ]
-[ Natureza                      > ]
-[ Matemática                    > ]
-
-Voltar
-```
-
-Cada item chama `startExtraSession(area)`.
-
-**3. Tela ativa em modo extra**: condicional sobre `extraSession`:
-
-- Header: `{currentIndex + 1} · Sessão extra` (sem `/total`, sem dots, sem progress bar de bloco).
-- Sem `blockTransition`.
-- Botão "Encerrar sessão extra" no canto (no lugar do X) → chama `endExtraSession()` e mostra resumo simples.
-- "Próxima" sempre disponível enquanto houver questões; ao se aproximar do fim do batch, chama `loadMoreExtra()`.
-
-**4. Tela de resumo da sessão extra**: card minimalista (questões respondidas, % acerto, duração) + botões "Continuar estudando" (volta ao picker) e "Voltar".
-
-## Arquivos afetados
-
-- `supabase/migrations/<timestamp>_extra_study_sessions.sql` (novo)
-- `src/hooks/useStudySession.ts` (novo state + funções `startExtraSession`, `loadMoreExtra`, `endExtraSession`; flag em inserts)
-- `src/hooks/useStudyStats.ts` (filtros `extra_session=false` / `is_extra=false`)
-- `src/hooks/useFreemiumUsage.ts` (filtro `extra_session=false`)
-- `src/pages/Objectives.tsx` (CTA na tela de resultado, picker, render condicional para sessão extra, resumo)
-
-Nenhum arquivo de tipos é editado manualmente — `types.ts` é regenerado após a migration.
-
-## O que **não** muda
-
-- Tela inicial de `/objetivas` (idle dashboard) e o fluxo da sessão diária seguem idênticos.
-- Lógica de fases/blocos da sessão diária intacta.
-- RLS permanece a mesma (ambas colunas têm default e usam as policies já existentes em `question_attempts` / `study_sessions`).
+Confirme se prefere uma flag dedicada `simulado_session` em `question_attempts` (recomendado) ou reaproveitar `extra_session = true` para o simulado também.
