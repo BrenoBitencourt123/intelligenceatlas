@@ -681,6 +681,17 @@ const Objectives = () => {
                 >
                   Não sei
                 </Button>
+              ) : extraSession ? (
+                <Button
+                  className="flex-1"
+                  onClick={handleNext}
+                  disabled={currentIndex + 1 >= totalQuestions && loadingMoreExtra}
+                >
+                  {currentIndex + 1 >= totalQuestions
+                    ? (loadingMoreExtra ? 'Carregando próxima…' : 'Próxima')
+                    : 'Próxima'}
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
               ) : (
                 <Button className="flex-1" onClick={handleNext}>
                   {currentIndex + 1 >= totalQuestions ? 'Ver Resultado' : 'Próxima'}
