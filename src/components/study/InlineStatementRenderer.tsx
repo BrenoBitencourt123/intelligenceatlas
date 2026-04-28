@@ -45,7 +45,7 @@ export function InlineStatementRenderer({
     return (
       <div className={className}>
         {statement?.trim() ? (
-          <MarkdownText content={statement} className="text-sm leading-relaxed" />
+          <>{renderTextSegment(statement, 'fallback')}</>
         ) : (
           <p className="text-sm text-muted-foreground leading-relaxed">
             Esta questão usa imagem como enunciado principal.
@@ -79,14 +79,41 @@ export function InlineStatementRenderer({
             </div>
           );
         }
-        // Text segment
+        // Text segment (with [CITE]...[/CITE] support)
         if (!part.trim()) return null;
-        return (
-          <MarkdownText key={`text-${idx}`} content={part} className="text-sm leading-relaxed" />
-        );
+        return <React.Fragment key={`text-${idx}`}>{renderTextSegment(part, idx)}</React.Fragment>;
       })}
     </div>
   );
+}
+
+/**
+ * Renders a text segment, splitting out [CITE]...[/CITE] blocks as discreet
+ * gray italic citations and rendering remaining text via MarkdownText.
+ */
+function renderTextSegment(text: string, idxKey: number | string): React.ReactNode {
+  const subparts = text.split(/(\[CITE\][\s\S]*?\[\/CITE\])/g);
+  return subparts.map((sub, subIdx) => {
+    const citeMatch = sub.match(/^\s*\[CITE\]([\s\S]*?)\[\/CITE\]\s*$/);
+    if (citeMatch) {
+      return (
+        <p
+          key={`cite-${idxKey}-${subIdx}`}
+          className="text-xs text-muted-foreground italic text-right mt-1 leading-relaxed"
+        >
+          {citeMatch[1].trim()}
+        </p>
+      );
+    }
+    if (!sub.trim()) return null;
+    return (
+      <MarkdownText
+        key={`md-${idxKey}-${subIdx}`}
+        content={sub}
+        className="text-sm leading-relaxed"
+      />
+    );
+  });
 }
 
 function InlineImage({ img, questionNumber }: { img: StatementImage; questionNumber: number }) {
