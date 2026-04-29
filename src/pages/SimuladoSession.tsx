@@ -59,6 +59,7 @@ const SimuladoSession = () => {
           explanation: currentQuestion.explanation,
           area: currentQuestion.area,
           tags: currentQuestion.tags,
+          images: currentQuestion.images,
         }
       : null,
     state === "active" && hasKnowledgeCapsules,
