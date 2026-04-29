@@ -71,6 +71,7 @@ export function useQuestionPedagogy(question: QuestionData | null, shouldLoad: b
             explanation: question.explanation,
             area: question.area,
             tags: question.tags,
+            imageUrl: question.images?.[0]?.url ?? null,
           },
         });
 
