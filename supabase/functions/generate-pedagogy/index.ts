@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { questionId, statement, alternatives, correctAnswer, explanation, area, tags } = await req.json();
+    const { questionId, statement, alternatives, correctAnswer, explanation, area, tags, imageUrl } = await req.json();
 
     if (!questionId || !statement || !correctAnswer) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
