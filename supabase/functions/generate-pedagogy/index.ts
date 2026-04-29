@@ -87,6 +87,13 @@ Responda SOMENTE com o JSON válido, sem markdown.`;
     const apiKey = Deno.env.get('GEMINI_API_KEY');
     if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
 
+    const messageContent = imageUrl
+      ? [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: imageUrl } },
+        ]
+      : prompt;
+
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
       method: 'POST',
       headers: {
@@ -95,7 +102,7 @@ Responda SOMENTE com o JSON válido, sem markdown.`;
       },
       body: JSON.stringify({
         model: 'gemini-2.5-flash-lite',
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user', content: messageContent }],
         temperature: 0.5,
         max_tokens: 1500,
       }),
