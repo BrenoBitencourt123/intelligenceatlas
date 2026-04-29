@@ -66,6 +66,7 @@ Alternativas:
 ${alternativesText}
 Resposta correta: ${correctAnswer}${correctAlt ? ` - ${correctAlt.text}` : ''}
 ${explanation ? `Explicação existente: ${explanation}` : ''}
+${imageUrl ? 'A questão contém uma imagem enviada junto. Analise-a como parte integral do enunciado ao gerar a pedagogia.' : ''}
 
 Gere o seguinte conteúdo em JSON:
 
