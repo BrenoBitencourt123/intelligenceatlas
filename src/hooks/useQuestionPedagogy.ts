@@ -28,6 +28,7 @@ interface QuestionData {
   explanation: string | null;
   area: string;
   tags: string[];
+  images?: { url: string }[];
 }
 
 export function useQuestionPedagogy(question: QuestionData | null, shouldLoad: boolean) {
