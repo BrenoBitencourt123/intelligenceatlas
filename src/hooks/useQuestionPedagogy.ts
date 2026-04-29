@@ -28,6 +28,7 @@ interface QuestionData {
   explanation: string | null;
   area: string;
   tags: string[];
+  images?: { url: string }[];
 }
 
 export function useQuestionPedagogy(question: QuestionData | null, shouldLoad: boolean) {
@@ -70,6 +71,7 @@ export function useQuestionPedagogy(question: QuestionData | null, shouldLoad: b
             explanation: question.explanation,
             area: question.area,
             tags: question.tags,
+            imageUrl: question.images?.[0]?.url ?? null,
           },
         });
 
