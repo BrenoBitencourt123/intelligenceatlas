@@ -27,7 +27,7 @@ interface Question {
   difficulty: number;
   statement: string;
   alternatives: unknown;
-  correct_answer: string;
+  correct_answer: string | null;
   explanation: string | null;
   tags: unknown;
   image_url: string | null;
