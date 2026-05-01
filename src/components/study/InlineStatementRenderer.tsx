@@ -27,6 +27,10 @@ export function InlineStatementRenderer({
 }: InlineStatementRendererProps) {
   const sortedImages = [...images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
+  // DEBUG: temporary logs for Bug 3 diagnosis
+  console.log('[InlineStatement] images received:', images.length, images);
+
+
   const resolveImageByPlaceholder = (rawIndex: number) => {
     return sortedImages[rawIndex] ?? (rawIndex > 0 ? sortedImages[rawIndex - 1] : undefined);
   };
