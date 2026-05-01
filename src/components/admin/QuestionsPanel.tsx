@@ -477,7 +477,11 @@ const QuestionsPanel = () => {
                       <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
                         {q.statement.slice(0, 70)}…
                       </TableCell>
-                      <TableCell className="font-mono font-medium">{q.correct_answer}</TableCell>
+                      <TableCell className="font-mono font-medium">
+                        {q.correct_answer ?? (
+                          <Badge variant="destructive" className="text-[10px]">Anulada</Badge>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Button
