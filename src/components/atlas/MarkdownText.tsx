@@ -97,21 +97,27 @@ function markdownToHtml(text: string): string {
       continue;
     }
 
-    if (line.startsWith('> ')) {
+    // Restore any inline cite placeholders mixed with other text on the same line
+    const restoredLine = line.replace(/%%CITE_BLOCK_(\d+)%%/g, (_, idxStr) => {
+      const ci = parseInt(idxStr, 10);
+      return `[cite]${citeBlocks[ci]}[/cite]`;
+    });
+
+    if (restoredLine.startsWith('> ')) {
       if (!inBlockquote) {
         htmlLines.push('<blockquote class="border-l-2 border-muted-foreground/30 pl-3 my-2 italic text-muted-foreground">');
         inBlockquote = true;
       }
-      htmlLines.push(formatInline(line.slice(2)) + '<br/>');
+      htmlLines.push(formatInline(restoredLine.slice(2)) + '<br/>');
     } else {
       if (inBlockquote) {
         htmlLines.push('</blockquote>');
         inBlockquote = false;
       }
-      if (line.trim() === '') {
+      if (restoredLine.trim() === '') {
         htmlLines.push('<br/>');
       } else {
-        htmlLines.push(formatInline(line) + '<br/>');
+        htmlLines.push(formatInline(restoredLine) + '<br/>');
       }
     }
   }
