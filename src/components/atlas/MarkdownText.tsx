@@ -130,10 +130,6 @@ function formatInline(text: string): string {
     /\[cite\]([\s\S]*?)\[\/cite\]/gi,
     '<span class="text-xs text-muted-foreground italic block mt-1">$1</span>'
   );
-  // Restore inline cite placeholders that appear mid-line
-  result = result.replace(/%%CITE_BLOCK_(\d+)%%/g, (_, idx) => {
-    return `<span class="text-xs text-muted-foreground italic block mt-1">${idx}</span>`;
-  });
   result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   result = result.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
   result = renderMath(result);
