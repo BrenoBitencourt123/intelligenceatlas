@@ -92,9 +92,9 @@ export function InlineStatementRenderer({
  * gray italic citations and rendering remaining text via MarkdownText.
  */
 function renderTextSegment(text: string, idxKey: number | string): React.ReactNode {
-  const subparts = text.split(/(\[CITE\][\s\S]*?\[\/CITE\])/g);
+  const subparts = text.split(/(\[CITE\][\s\S]*?\[\/CITE\])/gi);
   return subparts.map((sub, subIdx) => {
-    const citeMatch = sub.match(/^\s*\[CITE\]([\s\S]*?)\[\/CITE\]\s*$/);
+    const citeMatch = sub.match(/^\s*\[CITE\]([\s\S]*?)\[\/CITE\]\s*$/i);
     if (citeMatch) {
       return (
         <p

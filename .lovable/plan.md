@@ -1,55 +1,32 @@
-# Visão multimodal na geração pedagógica
 
-Hoje a edge function `generate-pedagogy` envia só texto para o Gemini, então questões com charges, gráficos, pinturas e tirinhas geram pedagogia sem o contexto visual essencial. Vamos passar a primeira imagem da questão como input multimodal.
+# Fase 1 — Implementação
 
-## Mudanças
+Verificação feita: **MarkdownText.tsx não tem nenhum regex `[cite]`** — será adicionado novo. **InlineStatementRenderer.tsx tem regex `[CITE]` nas linhas 95 e 97** — receberá flag `i`.
 
-### 1. `supabase/functions/generate-pedagogy/index.ts`
-- Aceitar campo opcional `imageUrl: string | null` no body, **desestruturado junto com os demais campos no início do handler** (antes da montagem do `prompt`), para evitar `ReferenceError` no template string:
-  ```ts
-  const { questionId, statement, alternatives, correctAnswer, explanation, area, tags, imageUrl } = await req.json();
-  ```
-- Adicionar **uma única linha condicional** ao prompt para garantir que o Flash Lite efetivamente analise a imagem (sem alterar a estrutura pedagógica):
-  ```
-  ${imageUrl ? 'A questão contém uma imagem enviada junto. Analise-a como parte integral do enunciado ao gerar a pedagogia.' : ''}
-  ```
-- Montar `content` como array multimodal só quando houver imagem:
-  ```ts
-  const messageContent = imageUrl
-    ? [
-        { type: 'text', text: prompt },
-        { type: 'image_url', image_url: { url: imageUrl } },
-      ]
-    : prompt;
-  messages: [{ role: 'user', content: messageContent }]
-  ```
-- Cache, parsing JSON e upsert em `question_pedagogy` permanecem idênticos.
+## 1.1 Regex [cite] case-insensitive
 
-### 2. `src/hooks/useQuestionPedagogy.ts`
-- Estender `QuestionData` com `images?: { url: string }[]` (formato real `QuestionImage[]` que circula no app — não `string[]`).
-- Na chamada `supabase.functions.invoke('generate-pedagogy', { body })`, adicionar:
-  ```ts
-  imageUrl: question.images?.[0]?.url ?? null,
-  ```
+**`src/components/study/InlineStatementRenderer.tsx`** — adicionar flag `i` nos regexes das linhas 95 e 97.
 
-### 3. Repassar `images` nos call sites do hook
-Hoje os dois consumidores montam o objeto `question` manualmente e **não incluem `images`** — sem essa correção o `imageUrl` chegaria sempre `null` na edge function.
+**`src/components/atlas/MarkdownText.tsx`** — duas mudanças:
+1. Em `markdownToHtml`: pré-processar blocos `[cite]...[/cite]` antes do split por linhas, extraindo-os como spans HTML dedicados para que citações multi-linha não sejam quebradas pelo autoFormat.
+2. Em `formatInline`: adicionar regex `[cite]` case-insensitive como fallback para citações inline curtas.
 
-- **`src/pages/Objectives.tsx`** (linhas ~81-90): adicionar `images: currentQuestion.images` ao objeto passado para `useQuestionPedagogy`. O tipo `Question` de `useStudySession` já carrega `images: QuestionImage[]`.
-- **`src/pages/SimuladoSession.tsx`** (linhas ~52-62): mesma adição. Confirmar que o tipo de `currentQuestion` em `useSimuladoSession` também carrega `images` (deve carregar — vem do mesmo `select("*")` em `questions`); se não estiver tipado, ajustar a interface local para incluir `images: QuestionImage[]`.
-- `PedagogyBlocks.tsx` apenas consome o resultado `pedagogy`, não chama o hook — nenhum ajuste.
+## 1.2 Filtrar questões anuladas
 
-### 4. Carregamento das questões
-- `useStudySession` e `useSimuladoSession` já fazem `select("*")` em `questions` e normalizam via `normalizeQuestionImages`. Nada a alterar no fetch.
+**`src/hooks/useStudySession.ts`**:
+- Tipo `correct_answer: string` → `string | null`
+- Adicionar `.not('correct_answer', 'is', null)` nas queries das linhas 672, 714, 1161
+- Linha 818 (single question by ID) mantém sem filtro
 
-## Observações técnicas
-- Endpoint mantido: `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` com `gemini-2.5-flash-lite`, que aceita `image_url` no formato OpenAI-compat.
-- Bucket `question-images` é público → URL bate direto, sem signed URL.
-- Apenas a primeira imagem é enviada para manter custo/latência baixos (questões com múltiplas imagens são raras nesse contexto e a principal costuma carregar o significado).
+**`src/hooks/useSimuladoSession.ts`**:
+- Adicionar `.not('correct_answer', 'is', null)` na query da linha 151-157
 
-## Decisão consciente sobre o cache existente
-A tabela `question_pedagogy` cacheia por `question_id` sem distinguir se a geração teve visão ou não. Isso significa:
-- Questões já abertas por qualquer usuário antes do deploy ficam com pedagogia **textual** gravada para sempre.
-- Questões abertas pela primeira vez após o deploy passam a usar visão automaticamente.
+**`src/components/admin/QuestionsPanel.tsx`**:
+- Badge "Anulada" quando `correct_answer === null`
 
-**Decisão recomendada: aceitar.** É a opção mais simples e o impacto é limitado — a base de pedagogia cacheada ainda é pequena no estágio atual e o ganho marginal de invalidar não compensa a complexidade. Caso no futuro queiramos invalidar seletivamente, basta adicionar uma coluna `has_image boolean` em `question_pedagogy` e um backfill que limpa registros onde a questão tem imagem mas o cache foi gerado sem ela.
+## 1.3 Fallback topic Geral
+
+**`src/hooks/useStudySession.ts`**:
+- Em `mapQuestion` (linha 408): `topic: normalizeTopic(q.topic) === 'Geral' ? (q.disciplina || q.area) : normalizeTopic(q.topic)`
+
+5 arquivos, 0 migrations. Screenshot após deploy para validação.

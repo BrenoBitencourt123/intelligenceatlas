@@ -153,6 +153,7 @@ export function useSimuladoSession() {
           .select("*")
           .eq("year", year)
           .eq("day", day)
+          .not('correct_answer', 'is', null)
           .order("number", { ascending: true })
           .limit(200);
 

@@ -71,27 +71,53 @@ function autoFormatPlainText(text: string): string {
 function markdownToHtml(text: string): string {
   if (!text) return '';
 
-  const formatted = autoFormatPlainText(text);
+  // Pre-process [cite]...[/cite] blocks before line splitting to preserve multi-line citations
+  const citeBlocks: string[] = [];
+  const withCitePlaceholders = text.replace(/\[cite\]([\s\S]*?)\[\/cite\]/gi, (_match, inner) => {
+    const idx = citeBlocks.length;
+    citeBlocks.push(inner.trim());
+    return `%%CITE_BLOCK_${idx}%%`;
+  });
+
+  const formatted = autoFormatPlainText(withCitePlaceholders);
   const lines = formatted.split('\n');
   const htmlLines: string[] = [];
   let inBlockquote = false;
 
   for (const line of lines) {
-    if (line.startsWith('> ')) {
+    // Check for cite placeholder in the line
+    const citePlaceholderMatch = line.trim().match(/^%%CITE_BLOCK_(\d+)%%$/);
+    if (citePlaceholderMatch) {
+      if (inBlockquote) {
+        htmlLines.push('</blockquote>');
+        inBlockquote = false;
+      }
+      const citeIdx = parseInt(citePlaceholderMatch[1], 10);
+      htmlLines.push(`<p class="text-xs text-muted-foreground italic text-right mt-1 leading-relaxed">${citeBlocks[citeIdx]}</p>`);
+      continue;
+    }
+
+    // Restore any inline cite placeholders mixed with other text on the same line
+    const restoredLine = line.replace(/%%CITE_BLOCK_(\d+)%%/g, (_, idxStr) => {
+      const ci = parseInt(idxStr, 10);
+      return `[cite]${citeBlocks[ci]}[/cite]`;
+    });
+
+    if (restoredLine.startsWith('> ')) {
       if (!inBlockquote) {
         htmlLines.push('<blockquote class="border-l-2 border-muted-foreground/30 pl-3 my-2 italic text-muted-foreground">');
         inBlockquote = true;
       }
-      htmlLines.push(formatInline(line.slice(2)) + '<br/>');
+      htmlLines.push(formatInline(restoredLine.slice(2)) + '<br/>');
     } else {
       if (inBlockquote) {
         htmlLines.push('</blockquote>');
         inBlockquote = false;
       }
-      if (line.trim() === '') {
+      if (restoredLine.trim() === '') {
         htmlLines.push('<br/>');
       } else {
-        htmlLines.push(formatInline(line) + '<br/>');
+        htmlLines.push(formatInline(restoredLine) + '<br/>');
       }
     }
   }
@@ -105,7 +131,12 @@ function markdownToHtml(text: string): string {
 }
 
 function formatInline(text: string): string {
-  let result = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Handle inline [cite]...[/cite] that weren't caught by the block pre-processor
+  let result = text.replace(
+    /\[cite\]([\s\S]*?)\[\/cite\]/gi,
+    '<span class="text-xs text-muted-foreground italic block mt-1">$1</span>'
+  );
+  result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   result = result.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
   result = renderMath(result);
   return result;

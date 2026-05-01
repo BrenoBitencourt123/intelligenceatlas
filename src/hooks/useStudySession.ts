@@ -22,7 +22,7 @@ interface Question {
   skills: string[];
   statement: string;
   alternatives: { letter: string; text: string; image_url?: string | null }[];
-  correct_answer: string;
+  correct_answer: string | null;
   explanation: string | null;
   tags: string[];
   image_url: string | null;
@@ -405,7 +405,7 @@ export function useStudySession() {
       id: q.id,
       number: q.number,
       area: q.area,
-      topic: normalizeTopic(q.topic),
+      topic: normalizeTopic(q.topic) === 'Geral' ? (q.disciplina || q.area) : normalizeTopic(q.topic),
       subtopic: normalizeSubtopic(q.subtopic),
       difficulty: normalizeDifficulty(q.difficulty),
       skills: Array.isArray(q.skills) ? (q.skills as string[]) : [],
@@ -669,7 +669,7 @@ export function useStudySession() {
           savedPlan.area === normalizedArea &&
           savedPlan.questionIds.length > 0
         ) {
-          let resumeQuery = supabase.from("questions").select("*").in("id", savedPlan.questionIds);
+          let resumeQuery = supabase.from("questions").select("*").in("id", savedPlan.questionIds).not('correct_answer', 'is', null);
 
           if (area && area !== "mista") {
             resumeQuery = resumeQuery.eq("area", area);
@@ -711,7 +711,7 @@ export function useStudySession() {
           }
         }
 
-        let query = supabase.from("questions").select("*");
+        let query = supabase.from("questions").select("*").not('correct_answer', 'is', null);
 
         if (area && area !== "mista") {
           query = query.eq("area", area);
@@ -1158,7 +1158,7 @@ export function useStudySession() {
       const userLang = (prefs?.foreign_language as string) || "ingles";
       const oppositeLanguage = userLang === "ingles" ? "espanhol" : "ingles";
 
-      let query = supabase.from("questions").select("*");
+      let query = supabase.from("questions").select("*").not('correct_answer', 'is', null);
       if (area && area !== "geral") {
         query = query.eq("area", area);
       }
