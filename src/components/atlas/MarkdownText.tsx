@@ -134,7 +134,7 @@ function formatInline(text: string): string {
   // Handle inline [cite]...[/cite] that weren't caught by the block pre-processor
   let result = text.replace(
     /\[cite\]([\s\S]*?)\[\/cite\]/gi,
-    '<span class="text-xs text-muted-foreground italic block mt-1">$1</span>'
+    '<span class="text-xs text-muted-foreground italic block text-right mt-1">$1</span>'
   );
   result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   result = result.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
