@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { renderMath } from '@/lib/renderMath';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -560,7 +561,7 @@ const Objectives = () => {
                                 {alt.letter}
                               </span>
                               <span className={`text-sm flex-1 ${hasAltImage ? 'flex items-center gap-2' : ''}`}>
-                                {alt.text && <span>{alt.text}</span>}
+                                {alt.text && <span dangerouslySetInnerHTML={{ __html: renderMath(alt.text) }} />}
                                 {(alt as any).image_url && (
                                   <img
                                     src={(alt as any).image_url}
