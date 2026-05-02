@@ -7,6 +7,7 @@ export interface EnemContentFormat {
 export interface EnemContentBlock {
   type: 'text' | 'image' | 'table' | 'citation';
   value?: string;
+  /** Image source — accepts both a data URI (base64) and a public URL (e.g. Supabase Storage bucket). */
   data?: string;
   caption?: string;
   format?: EnemContentFormat;
