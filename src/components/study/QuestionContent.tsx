@@ -11,6 +11,7 @@ export interface ContentFormat {
 export interface ContentBlock {
   type: 'text' | 'image' | 'citation' | 'table';
   value?: string;
+  /** Image source — accepts both a data URI (base64) and a public URL (e.g. Supabase Storage bucket). */
   data?: string;
   caption?: string;
   format?: ContentFormat;
