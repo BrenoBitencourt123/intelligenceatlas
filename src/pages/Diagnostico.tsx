@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { computePriorityScore, nextReviewDateForLevel } from '@/lib/adaptiveStudy';
 import { InlineStatementRenderer } from '@/components/study/InlineStatementRenderer';
+import QuestionContent from '@/components/study/QuestionContent';
 import { ArrowRight, Check, X } from 'lucide-react';
 import { QuestionImage, normalizeQuestionImages } from '@/lib/questionImages';
 
@@ -24,6 +25,8 @@ interface DiagQuestion {
   explanation: string | null;
   images: QuestionImage[];
   year: number;
+  content?: any[] | null;
+  command?: string | null;
 }
 
 interface AnswerRecord {

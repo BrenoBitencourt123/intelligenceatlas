@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowRight, BookOpen, FileText, Pause } from "lucide-react";
 import MarkdownText from "@/components/atlas/MarkdownText";
 import { InlineStatementRenderer } from "@/components/study/InlineStatementRenderer";
+import QuestionContent from "@/components/study/QuestionContent";
 import { useSimuladoSession } from "@/hooks/useSimuladoSession";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { useExamPdf } from "@/hooks/useExamPdf";
@@ -247,11 +248,18 @@ const SimuladoSession = () => {
                 <span>{AREA_LABELS[currentQuestion.area] ?? currentQuestion.area}</span>
               </div>
 
-              <InlineStatementRenderer
-                statement={currentQuestion.statement || ""}
-                images={statementImages}
-                questionNumber={currentQuestion.number}
-              />
+              {currentQuestion.content && Array.isArray(currentQuestion.content) && currentQuestion.content.length > 0 ? (
+                <QuestionContent
+                  content={currentQuestion.content}
+                  command={currentQuestion.command}
+                />
+              ) : (
+                <InlineStatementRenderer
+                  statement={currentQuestion.statement || ""}
+                  images={statementImages}
+                  questionNumber={currentQuestion.number}
+                />
+              )}
 
               {hasKnowledgeCapsules && !showFeedback && (
                 <PreConceptBlock pedagogy={pedagogy} loading={pedagogyLoading} />
