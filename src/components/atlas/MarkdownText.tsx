@@ -85,9 +85,8 @@ function markdownToHtml(text: string): string {
     return `%%CITE_BLOCK_${idx}%%`;
   });
 
-  // DEBUG: temporary logs for Bug 2 diagnosis
-  console.log('[MarkdownText] input (first 200):', text?.slice(0, 200));
-  console.log('[MarkdownText] cite regex match:', text?.match(/\[cite\]/gi));
+
+
 
   const formatted = autoFormatPlainText(withCitePlaceholders);
   const lines = formatted.split('\n');
