@@ -43,13 +43,19 @@ function autoFormatPlainText(text: string): string {
     }
   }
 
+  // Count non-empty, non-reference, non-quote content lines
+  const contentLineIndices = lines
+    .map((l, i) => ({ i, t: l.trim() }))
+    .filter(({ i, t }) => t && !refIndices.has(i) && !quoteLines.has(i));
+  const hasMultipleContentLines = contentLineIndices.length > 1;
+
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
     if (!trimmed) { result.push(''); continue; }
 
     if (refIndices.has(i)) {
       result.push(`*${trimmed}*`);
-    } else if (i === lastContentIdx && !refIndices.has(i)) {
+    } else if (i === lastContentIdx && !refIndices.has(i) && hasMultipleContentLines) {
       result.push(`**${trimmed}**`);
     } else if (quoteLines.has(i)) {
       result.push(`> ${trimmed}`);
