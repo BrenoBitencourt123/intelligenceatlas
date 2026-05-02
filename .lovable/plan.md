@@ -1,51 +1,33 @@
 
-# Fix Bug 1 + Diagnóstico Bugs 2 e 3
+## Problema 1: ENEM 2025 não aparece no Simulado
 
-## Bug 1 — renderMath nas alternativas (FIX)
+**Causa raiz:** Todas as 185 questões do ENEM 2025 no banco estão com `day = NULL`. O hook `useSimuladoAvailability` filtra com `.not("day", "is", null)`, então nenhuma questão de 2025 é contabilizada.
 
-Causa confirmada: `alt.text` é renderizado como texto bruto em 3 páginas, sem passar por `renderMath`.
+**Solução:** Migração SQL para popular o campo `day` nas questões de 2025:
+- Questões 1-90 (Linguagens + Humanas) → `day = 1`
+- Questões 91-180 (Natureza + Matemática) → `day = 2`
 
-| Arquivo | Linha | Atual | Fix |
-|---------|-------|-------|-----|
-| `src/pages/Objectives.tsx` | 563 | `<span>{alt.text}</span>` | `<span dangerouslySetInnerHTML={{ __html: renderMath(alt.text \|\| '') }} />` |
-| `src/pages/SimuladoSession.tsx` | 287 | `<span>{alt.text}</span>` | idem |
-| `src/pages/Diagnostico.tsx` | 453 | `{alt.text}` | `<span dangerouslySetInnerHTML={{ __html: renderMath(alt.text \|\| '') }} />` |
-
-Adicionar `import { renderMath } from '@/lib/renderMath'` nos 3 arquivos (se não existir).
+Antes de executar, vou confirmar a distribuição por `number` para garantir o mapeamento correto.
 
 ---
 
-## Bug 2 — Console log diagnóstico no MarkdownText
+## Problema 2: Sessão do Simulado sempre retoma a última questão
 
-Adicionar log temporário no `markdownToHtml` de `src/components/atlas/MarkdownText.tsx`, logo antes do replace de cite:
+**Causa raiz:** A sessão é salva em `localStorage` (`atlas_simulado_session`) e nunca expira. Quando o usuário volta no dia seguinte para fazer outro dia/ano, a sessão antiga ainda está lá. O fluxo atual:
 
-```typescript
-console.log('[MarkdownText] input text (first 200 chars):', text?.slice(0, 200));
-console.log('[MarkdownText] cite regex match:', text?.match(/\[cite\]/gi));
-```
+- Na tela de seleção (`/simulado`), se o usuário clica num ano/dia **diferente** do salvo, aparece um `confirm()` para descartar. Isso funciona.
+- Mas se clica no **mesmo** ano/dia, vai para `/simulado/sessao?year=X&day=Y` **sem** `resume=1`. Nesse caso, o `useEffect` chama `startSimulado()` que faz um fetch novo e reseta o index para 0. Isso **deveria** funcionar.
 
-Isso responde: o texto chega com `[cite]` intacto ou já escapado como `&amp;#91;cite&amp;#93;`?
+Porém, o `resumeSimulado()` é chamado **apenas** quando `resume=1` está na URL. Se o comportamento reportado é que "sempre volta para a última questão", provavelmente o usuário está clicando em "Continuar" (que adiciona `resume=1`).
 
----
-
-## Bug 3 — Console log diagnóstico no InlineStatementRenderer
-
-Adicionar log temporário no `InlineStatementRenderer`, dentro do componente antes do return:
-
-```typescript
-console.log('[InlineStatement] images received:', images.length, images);
-console.log('[InlineStatement] hasPlaceholders:', hasPlaceholders, 'hasResolvable:', hasResolvablePlaceholder);
-```
-
-Isso responde: as imagens estão chegando do fetch ou o array está vazio?
+**Solução proposta:**
+1. Quando o usuário clica em "Continuar", funciona como hoje (retoma).
+2. Adicionar um botão mais visível de "Começar do zero" que descarta a sessão e inicia nova.
+3. Ao selecionar um **dia diferente** na grade, descartar automaticamente sem pedir confirmação (o contexto já é claro).
 
 ---
 
-## Após deploy
+## Passos de implementação
 
-Navegar até uma questão real (Q91, Q106 ou Q173 do ENEM 2025) no preview e verificar:
-1. Screenshot — alternativas com notação matemática renderizando como superscript/subscript
-2. Console — logs de cite e images para confirmar se Bugs 2 e 3 estão funcionando ou não
-3. Se os logs mostrarem problema, fazer segundo fix direcionado
-
-Os console logs serão removidos após diagnóstico.
+1. **Migração de dados** — Atualizar `day` para questões ENEM 2025 baseado no range de `number`.
+2. **UX do Simulado** — Na card "Em andamento", adicionar opção explícita de "Recomeçar" ao lado de "Continuar". Ao clicar num dia diferente, descartar a sessão anterior sem confirm dialog.
