@@ -50,7 +50,7 @@ function autoFormatPlainText(text: string): string {
   // Bold last line if multiple content lines OR if it looks like a command (ends with ?)
   const lastLineIsCommand = contentLineIndices.length > 0 &&
     /\?\s*$/.test(contentLineIndices[contentLineIndices.length - 1].t);
-  const shouldBoldLastLine = hasMultipleContentLines || lastLineIsCommand;
+  const shouldBoldLastLine = contentLineIndices.length > 1 || lastLineIsCommand;
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
