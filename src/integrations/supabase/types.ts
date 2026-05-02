@@ -402,7 +402,9 @@ export type Database = {
           classified_at: string | null
           classifier_version: string | null
           cognitive_level: string | null
+          command: string | null
           confidence: number | null
+          content: Json | null
           correct_answer: string
           created_at: string
           day: number | null
@@ -430,7 +432,9 @@ export type Database = {
           classified_at?: string | null
           classifier_version?: string | null
           cognitive_level?: string | null
+          command?: string | null
           confidence?: number | null
+          content?: Json | null
           correct_answer: string
           created_at?: string
           day?: number | null
@@ -458,7 +462,9 @@ export type Database = {
           classified_at?: string | null
           classifier_version?: string | null
           cognitive_level?: string | null
+          command?: string | null
           confidence?: number | null
+          content?: Json | null
           correct_answer?: string
           created_at?: string
           day?: number | null

@@ -1,0 +1,2 @@
+ALTER TABLE public.questions ADD COLUMN content JSONB DEFAULT NULL;
+ALTER TABLE public.questions ADD COLUMN command TEXT DEFAULT NULL;

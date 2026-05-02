@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { computePriorityScore, nextReviewDateForLevel } from '@/lib/adaptiveStudy';
 import { InlineStatementRenderer } from '@/components/study/InlineStatementRenderer';
+import QuestionContent from '@/components/study/QuestionContent';
 import { ArrowRight, Check, X } from 'lucide-react';
 import { QuestionImage, normalizeQuestionImages } from '@/lib/questionImages';
 
@@ -24,6 +25,8 @@ interface DiagQuestion {
   explanation: string | null;
   images: QuestionImage[];
   year: number;
+  content?: any[] | null;
+  command?: string | null;
 }
 
 interface AnswerRecord {
@@ -119,7 +122,7 @@ export default function Diagnostico() {
     // Fetch a broad pool and balance by area + difficulty client-side
     const { data, error } = await supabase
       .from('questions')
-      .select('id, area, topic, subtopic, difficulty, statement, alternatives, correct_answer, explanation, tags, image_url, images, year, number, foreign_language')
+      .select('id, area, topic, subtopic, difficulty, statement, alternatives, correct_answer, explanation, tags, image_url, images, year, number, foreign_language, content, command')
       .in('area', [...AREAS])
       .limit(400);
 
@@ -418,11 +421,18 @@ export default function Diagnostico() {
               </div>
 
               {/* Statement */}
-              <InlineStatementRenderer
-                statement={q.statement || ''}
-                images={statementImages}
-                questionNumber={q.number}
-              />
+              {q.content && Array.isArray(q.content) && q.content.length > 0 ? (
+                <QuestionContent
+                  content={q.content}
+                  command={q.command}
+                />
+              ) : (
+                <InlineStatementRenderer
+                  statement={q.statement || ''}
+                  images={statementImages}
+                  questionNumber={q.number}
+                />
+              )}
 
               {/* Alternatives */}
               <div className="space-y-2">

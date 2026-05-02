@@ -19,6 +19,7 @@ import { PreConceptBlock, PostAnswerBlocks } from '@/components/atlas/PedagogyBl
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QuestionImageGallery } from '@/components/study/QuestionImageGallery';
 import { InlineStatementRenderer } from '@/components/study/InlineStatementRenderer';
+import QuestionContent from '@/components/study/QuestionContent';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AREA_LABELS: Record<string, string> = {
@@ -510,11 +511,18 @@ const Objectives = () => {
                       </div>
 
                       {/* Statement */}
-                      <InlineStatementRenderer
-                        statement={currentQuestion.statement || ''}
-                        images={statementImages}
-                        questionNumber={currentQuestion.number}
-                      />
+                      {currentQuestion.content && Array.isArray(currentQuestion.content) && currentQuestion.content.length > 0 ? (
+                        <QuestionContent
+                          content={currentQuestion.content}
+                          command={currentQuestion.command}
+                        />
+                      ) : (
+                        <InlineStatementRenderer
+                          statement={currentQuestion.statement || ''}
+                          images={statementImages}
+                          questionNumber={currentQuestion.number}
+                        />
+                      )}
 
                       {/* Pre-concept */}
                       {hasKnowledgeCapsules && !showFeedback && (

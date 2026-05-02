@@ -19,6 +19,8 @@ export interface SimuladoQuestion {
   images: QuestionImage[];
   year: number;
   day: number;
+  content?: any[] | null;
+  command?: string | null;
 }
 
 export interface SimuladoAnswer {
@@ -87,6 +89,8 @@ function mapQuestion(raw: any): SimuladoQuestion {
     images: normalizeQuestionImages(raw.images, raw.image_url),
     year: raw.year,
     day: raw.day,
+    content: Array.isArray(raw.content) ? raw.content : null,
+    command: raw.command ?? null,
   };
 }
 
