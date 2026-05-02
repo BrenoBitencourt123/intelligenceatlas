@@ -43,7 +43,7 @@ export function InlineStatementRenderer({
         return Number.isFinite(rawIndex) && Boolean(resolveImageByPlaceholder(rawIndex));
       })
     : false;
-  console.log('[InlineStatement] hasPlaceholders:', hasPlaceholders, 'hasResolvable:', hasResolvablePlaceholder);
+  
 
   if (!hasPlaceholders || !hasResolvablePlaceholder) {
     // Fallback: render statement text, then all images below
