@@ -1,33 +1,80 @@
 
-## Problema 1: ENEM 2025 não aparece no Simulado
+## Respostas aos 4 pontos
 
-**Causa raiz:** Todas as 185 questões do ENEM 2025 no banco estão com `day = NULL`. O hook `useSimuladoAvailability` filtra com `.not("day", "is", null)`, então nenhuma questão de 2025 é contabilizada.
+### 1. Diagnostico.tsx
+**Sim, precisa do fallback.** `Diagnostico.tsx` importa e usa `InlineStatementRenderer` (linha 9 e 421). Vai precisar do mesmo fallback `content` vs `statement`. Vou incluir no plano.
 
-**Solução:** Migração SQL para popular o campo `day` nas questões de 2025:
-- Questões 1-90 (Linguagens + Humanas) → `day = 1`
-- Questões 91-180 (Natureza + Matemática) → `day = 2`
+### 2. Tela "Aquecimento" / Q115
+A rota `/simulado/sessao` renderiza via `SimuladoSession.tsx`, que também usa `InlineStatementRenderer` (linha 11). Não existe componente separado de "Aquecimento" -- tudo passa pelo mesmo renderer. Ou seja, os 3 pontos de uso são:
+- `Objectives.tsx`
+- `SimuladoSession.tsx`
+- `Diagnostico.tsx`
 
-Antes de executar, vou confirmar a distribuição por `number` para garantir o mapeamento correto.
+O `EnemQuestionCard.tsx` existe no código mas **nunca é importado por nenhum arquivo** -- é dead code. Não precisa de fallback.
+
+### 3. Campo de imagem: `url` vs `data`
+O tipo `EnemContentBlock` atual usa `data` (campo `data?: string`). O `EnemQuestionCard` (dead code) lê `block.data`. No seu JSON atual, o campo também é `data` (com base64).
+
+**Proposta:** vou manter o campo como `data` no tipo TypeScript para compatibilidade com o tipo existente. Você popula `data` com a URL do bucket Supabase (não precisa ser base64 -- funciona igual num `<img src>`). Se preferir ter um campo `url` separado, eu adiciono ao tipo, mas é redundante. Recomendo usar `data` mesmo, só trocando o valor de base64 para URL.
+
+### 4. Estratégia de transição (dual-write)
+**Totalmente a favor.** Popular AMBOS `content` + `statement` é a abordagem mais segura. O fluxo fica:
+- Se `content` existe e tem itens -> usa `QuestionContent` (novo)
+- Senão -> usa `InlineStatementRenderer` (antigo, lendo `statement`)
+
+Quando estável, você dropa `statement` depois. Zero risco de rollback.
 
 ---
 
-## Problema 2: Sessão do Simulado sempre retoma a última questão
+## Plano revisado de implementação
 
-**Causa raiz:** A sessão é salva em `localStorage` (`atlas_simulado_session`) e nunca expira. Quando o usuário volta no dia seguinte para fazer outro dia/ano, a sessão antiga ainda está lá. O fluxo atual:
+### 1. Migração SQL
+```sql
+ALTER TABLE questions ADD COLUMN content JSONB DEFAULT NULL;
+ALTER TABLE questions ADD COLUMN command TEXT DEFAULT NULL;
+```
 
-- Na tela de seleção (`/simulado`), se o usuário clica num ano/dia **diferente** do salvo, aparece um `confirm()` para descartar. Isso funciona.
-- Mas se clica no **mesmo** ano/dia, vai para `/simulado/sessao?year=X&day=Y` **sem** `resume=1`. Nesse caso, o `useEffect` chama `startSimulado()` que faz um fetch novo e reseta o index para 0. Isso **deveria** funcionar.
+### 2. Tipo TypeScript atualizado (`src/types/enemQuestion.ts`)
+- Adicionar `'citation'` ao union type de `EnemContentBlock.type`
+- Tipo já usa `data` para imagens -- manter assim
 
-Porém, o `resumeSimulado()` é chamado **apenas** quando `resume=1` está na URL. Se o comportamento reportado é que "sempre volta para a última questão", provavelmente o usuário está clicando em "Continuar" (que adiciona `resume=1`).
+### 3. Novo componente `QuestionContent.tsx`
+Switch simples sobre `block.type`:
+- `text` -> `<div>` com `renderMath`, respeitando `format.bold/color/align`
+- `image` -> `<figure><img src={block.data}>` + caption
+- `citation` -> `<p>` italic muted right-aligned
+- `table` -> tabela HTML
+- `command` -> `<p className="font-bold">` separado
 
-**Solução proposta:**
-1. Quando o usuário clica em "Continuar", funciona como hoje (retoma).
-2. Adicionar um botão mais visível de "Começar do zero" que descarta a sessão e inicia nova.
-3. Ao selecionar um **dia diferente** na grade, descartar automaticamente sem pedir confirmação (o contexto já é claro).
+### 4. Fallback nos 3 pontos de uso
+- `Objectives.tsx` (linha ~514)
+- `SimuladoSession.tsx`
+- `Diagnostico.tsx` (linha ~421)
+
+Lógica: `question.content?.length > 0 ? <QuestionContent> : <InlineStatementRenderer>`
+
+### 5. Hook `useStudySession.ts`
+Incluir `content, command` no `.select()` das queries (linhas 672 e 714).
+
+### 6. Hook `useSimuladoSession.ts`
+Mesmo ajuste de `.select()`.
+
+### 7. Tipo `DiagQuestion` em `Diagnostico.tsx`
+Adicionar `content?: EnemContentBlock[]` e `command?: string`.
 
 ---
 
-## Passos de implementação
+### Arquivos alterados
 
-1. **Migração de dados** — Atualizar `day` para questões ENEM 2025 baseado no range de `number`.
-2. **UX do Simulado** — Na card "Em andamento", adicionar opção explícita de "Recomeçar" ao lado de "Continuar". Ao clicar num dia diferente, descartar a sessão anterior sem confirm dialog.
+| Arquivo | Mudança |
+|---------|---------|
+| Migração SQL | `ADD COLUMN content JSONB`, `ADD COLUMN command TEXT` |
+| `src/types/enemQuestion.ts` | Adicionar `citation` ao type union |
+| `src/components/study/QuestionContent.tsx` | **Novo** componente |
+| `src/pages/Objectives.tsx` | Fallback content vs statement |
+| `src/pages/SimuladoSession.tsx` | Fallback content vs statement |
+| `src/pages/Diagnostico.tsx` | Fallback content vs statement |
+| `src/hooks/useStudySession.ts` | Select content, command |
+| `src/hooks/useSimuladoSession.ts` | Select content, command |
+
+Nada muda no `InlineStatementRenderer` nem no `MarkdownText` -- continuam intactos para questões antigas.
