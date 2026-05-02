@@ -58,7 +58,7 @@ function autoFormatPlainText(text: string): string {
 
     if (refIndices.has(i)) {
       result.push(`*${trimmed}*`);
-    } else if (i === lastContentIdx && !refIndices.has(i) && hasMultipleContentLines) {
+    } else if (i === lastContentIdx && !refIndices.has(i) && shouldBoldLastLine) {
       result.push(`**${trimmed}**`);
     } else if (quoteLines.has(i)) {
       result.push(`> ${trimmed}`);
