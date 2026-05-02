@@ -23,15 +23,18 @@ const Simulado = () => {
       navigate("/plano");
       return;
     }
-    // If a saved simulado exists for a different (year, day), confirm
-    if (hasSaved && savedMeta && (savedMeta.year !== year || savedMeta.day !== day)) {
-      const ok = window.confirm(
-        `Você tem um simulado em andamento (ENEM ${savedMeta.year} · Dia ${savedMeta.day}). Iniciar um novo vai descartar o anterior. Continuar?`,
-      );
-      if (!ok) return;
+    // Always discard any saved session and start fresh
+    if (hasSaved) {
       discardSavedSimulado();
     }
     navigate(`/simulado/sessao?year=${year}&day=${day}`);
+  };
+
+  const handleRestart = () => {
+    if (!savedMeta) return;
+    if (!window.confirm("Descartar progresso e recomeçar do zero?")) return;
+    discardSavedSimulado();
+    navigate(`/simulado/sessao?year=${savedMeta.year}&day=${savedMeta.day}`);
   };
 
   const handleResume = () => {
@@ -88,13 +91,12 @@ const Simulado = () => {
             <div className="flex items-center gap-1.5 shrink-0">
               <Button
                 variant="ghost"
-                size="icon"
-                aria-label="Descartar"
-                onClick={() => {
-                  if (window.confirm("Descartar simulado em andamento?")) discardSavedSimulado();
-                }}
+                size="sm"
+                className="gap-1 text-muted-foreground"
+                onClick={handleRestart}
               >
-                <RotateCcw className="h-4 w-4" />
+                <RotateCcw className="h-3.5 w-3.5" />
+                Recomeçar
               </Button>
               <Button size="sm" className="gap-1.5" onClick={handleResume}>
                 Continuar
