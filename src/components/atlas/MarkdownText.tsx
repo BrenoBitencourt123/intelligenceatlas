@@ -47,7 +47,10 @@ function autoFormatPlainText(text: string): string {
   const contentLineIndices = lines
     .map((l, i) => ({ i, t: l.trim() }))
     .filter(({ i, t }) => t && !refIndices.has(i) && !quoteLines.has(i));
-  const hasMultipleContentLines = contentLineIndices.length > 1;
+  // Bold last line if multiple content lines OR if it looks like a command (ends with ?)
+  const lastLineIsCommand = contentLineIndices.length > 0 &&
+    /\?\s*$/.test(contentLineIndices[contentLineIndices.length - 1].t);
+  const shouldBoldLastLine = contentLineIndices.length > 1 || lastLineIsCommand;
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
@@ -55,7 +58,7 @@ function autoFormatPlainText(text: string): string {
 
     if (refIndices.has(i)) {
       result.push(`*${trimmed}*`);
-    } else if (i === lastContentIdx && !refIndices.has(i) && hasMultipleContentLines) {
+    } else if (i === lastContentIdx && !refIndices.has(i) && shouldBoldLastLine) {
       result.push(`**${trimmed}**`);
     } else if (quoteLines.has(i)) {
       result.push(`> ${trimmed}`);
