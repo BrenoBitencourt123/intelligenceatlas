@@ -28,6 +28,8 @@ interface Question {
   image_url: string | null;
   images: QuestionImage[];
   year: number;
+  content?: any[] | null;
+  command?: string | null;
 }
 
 interface SessionResult {
@@ -417,6 +419,8 @@ export function useStudySession() {
       image_url: q.image_url,
       images: normalizeQuestionImages(q.images, q.image_url),
       year: q.year,
+      content: Array.isArray(q.content) ? q.content : null,
+      command: q.command ?? null,
     }),
     [],
   );

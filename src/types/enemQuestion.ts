@@ -5,7 +5,7 @@ export interface EnemContentFormat {
 }
 
 export interface EnemContentBlock {
-  type: 'text' | 'image' | 'table';
+  type: 'text' | 'image' | 'table' | 'citation';
   value?: string;
   data?: string;
   caption?: string;
