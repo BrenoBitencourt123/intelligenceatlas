@@ -43,13 +43,19 @@ function autoFormatPlainText(text: string): string {
     }
   }
 
+  // Count non-empty, non-reference, non-quote content lines
+  const contentLineIndices = lines
+    .map((l, i) => ({ i, t: l.trim() }))
+    .filter(({ i, t }) => t && !refIndices.has(i) && !quoteLines.has(i));
+  const hasMultipleContentLines = contentLineIndices.length > 1;
+
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
     if (!trimmed) { result.push(''); continue; }
 
     if (refIndices.has(i)) {
       result.push(`*${trimmed}*`);
-    } else if (i === lastContentIdx && !refIndices.has(i)) {
+    } else if (i === lastContentIdx && !refIndices.has(i) && hasMultipleContentLines) {
       result.push(`**${trimmed}**`);
     } else if (quoteLines.has(i)) {
       result.push(`> ${trimmed}`);
@@ -79,9 +85,8 @@ function markdownToHtml(text: string): string {
     return `%%CITE_BLOCK_${idx}%%`;
   });
 
-  // DEBUG: temporary logs for Bug 2 diagnosis
-  console.log('[MarkdownText] input (first 200):', text?.slice(0, 200));
-  console.log('[MarkdownText] cite regex match:', text?.match(/\[cite\]/gi));
+
+
 
   const formatted = autoFormatPlainText(withCitePlaceholders);
   const lines = formatted.split('\n');

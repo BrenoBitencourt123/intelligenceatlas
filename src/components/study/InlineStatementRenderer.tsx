@@ -27,8 +27,8 @@ export function InlineStatementRenderer({
 }: InlineStatementRendererProps) {
   const sortedImages = [...images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-  // DEBUG: temporary logs for Bug 3 diagnosis
-  console.log('[InlineStatement] images received:', images.length, images);
+
+
 
 
   const resolveImageByPlaceholder = (rawIndex: number) => {
@@ -43,7 +43,7 @@ export function InlineStatementRenderer({
         return Number.isFinite(rawIndex) && Boolean(resolveImageByPlaceholder(rawIndex));
       })
     : false;
-  console.log('[InlineStatement] hasPlaceholders:', hasPlaceholders, 'hasResolvable:', hasResolvablePlaceholder);
+  
 
   if (!hasPlaceholders || !hasResolvablePlaceholder) {
     // Fallback: render statement text, then all images below
