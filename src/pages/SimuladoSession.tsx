@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { renderMath } from '@/lib/renderMath';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -284,7 +285,7 @@ const SimuladoSession = () => {
                         {alt.letter}
                       </span>
                       <span className={`text-sm flex-1 ${hasAltImage ? "flex items-center gap-2" : ""}`}>
-                        {alt.text && <span>{alt.text}</span>}
+                        {alt.text && <span dangerouslySetInnerHTML={{ __html: renderMath(alt.text) }} />}
                         {(alt as any).image_url && (
                           <img
                             src={(alt as any).image_url}

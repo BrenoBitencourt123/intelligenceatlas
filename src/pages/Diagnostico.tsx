@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { renderMath } from '@/lib/renderMath';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -450,7 +451,7 @@ export default function Diagnostico() {
                         {alt.letter}
                       </span>
                       <span className="text-sm flex-1">
-                        {alt.text}
+                        <span dangerouslySetInnerHTML={{ __html: renderMath(alt.text || '') }} />
                         {(alt as any).image_url && (
                           <img
                             src={(alt as any).image_url}
