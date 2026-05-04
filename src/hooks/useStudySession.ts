@@ -48,6 +48,8 @@ interface PersistedSession {
   flashcardsGenerated: number;
   area: string | null;
   extraSession?: boolean;
+  /** ISO date key (YYYY-MM-DD) when session was created */
+  date?: string;
 }
 
 interface PersistedDailyPlan {
