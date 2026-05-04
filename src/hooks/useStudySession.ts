@@ -978,15 +978,17 @@ export function useStudySession() {
         [currentIndex]: { selected: selectedLetter, correct: isCorrect },
       }));
       setShowFeedback(true);
-      saveToStorage({
-        questions,
-        currentIndex,
-        answers: nextAnswers,
-        startTime,
-        flashcardsGenerated,
-        area: questions[0]?.area ?? null,
-        extraSession,
-      });
+      if (!previewSession) {
+        saveToStorage({
+          questions,
+          currentIndex,
+          answers: nextAnswers,
+          startTime,
+          flashcardsGenerated,
+          area: questions[0]?.area ?? null,
+          extraSession,
+        });
+      }
 
       // Record attempt
       if (user) {
@@ -1032,6 +1034,7 @@ export function useStudySession() {
       syncTopicProfile,
       user,
       extraSession,
+      previewSession,
     ],
   );
 
