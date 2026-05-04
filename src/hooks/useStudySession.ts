@@ -48,6 +48,7 @@ interface PersistedSession {
   flashcardsGenerated: number;
   area: string | null;
   extraSession?: boolean;
+  previewSession?: boolean;
   /** ISO date key (YYYY-MM-DD) when session was created */
   date?: string;
 }
@@ -403,6 +404,7 @@ export function useStudySession() {
   const [extraSession, setExtraSession] = useState(false);
   const [extraArea, setExtraArea] = useState<string | null>(null);
   const [loadingMoreExtra, setLoadingMoreExtra] = useState(false);
+  const [previewSession, setPreviewSession] = useState(false);
 
   const mapQuestion = useCallback(
     (q: any): Question => ({
@@ -588,7 +590,7 @@ export function useStudySession() {
   // Detect if a resumable session exists (do not auto-open it)
   useEffect(() => {
     const saved = loadFromStorage();
-    if (!saved || saved.questions.length === 0) {
+    if (!saved || saved.questions.length === 0 || saved.previewSession) {
       setHasSavedSession(false);
       return;
     }
@@ -603,7 +605,7 @@ export function useStudySession() {
 
   // Persist session state whenever it changes
   useEffect(() => {
-    if (state === "active" && questions.length > 0) {
+    if (state === "active" && questions.length > 0 && !previewSession) {
       saveToStorage({
         questions,
         currentIndex,
@@ -616,7 +618,7 @@ export function useStudySession() {
       });
       setHasSavedSession(true);
     }
-  }, [state, questions, currentIndex, answers, startTime, flashcardsGenerated, extraSession]);
+  }, [state, questions, currentIndex, answers, startTime, flashcardsGenerated, extraSession, previewSession]);
 
   const resumeSession = useCallback((expectedArea?: string | null) => {
     const saved = loadFromStorage();
