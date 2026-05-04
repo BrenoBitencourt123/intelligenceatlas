@@ -43,8 +43,8 @@ function TextBlock({ block }: { block: ContentBlock }) {
     <div
       className={cn(
         'whitespace-pre-wrap leading-relaxed',
-        isMuted ? 'text-xs text-muted-foreground' : 'text-sm text-muted-foreground',
-        isBold && 'font-semibold',
+        isMuted ? 'text-xs text-muted-foreground' : 'text-sm text-foreground',
+        isBold && 'font-bold',
         align === 'center' && 'text-center',
         align === 'right' && 'text-right',
       )}
