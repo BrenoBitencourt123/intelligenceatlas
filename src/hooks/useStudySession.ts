@@ -588,7 +588,17 @@ export function useStudySession() {
   // Detect if a resumable session exists (do not auto-open it)
   useEffect(() => {
     const saved = loadFromStorage();
-    setHasSavedSession(Boolean(saved && saved.questions.length > 0));
+    if (!saved || saved.questions.length === 0) {
+      setHasSavedSession(false);
+      return;
+    }
+    // Discard sessions from a different day (area rotates daily)
+    if (saved.date && saved.date !== todayDateKey()) {
+      clearStorage(Boolean(saved.extraSession));
+      setHasSavedSession(false);
+      return;
+    }
+    setHasSavedSession(true);
   }, []);
 
   // Persist session state whenever it changes
@@ -608,9 +618,23 @@ export function useStudySession() {
     }
   }, [state, questions, currentIndex, answers, startTime, flashcardsGenerated, extraSession]);
 
-  const resumeSession = useCallback(() => {
+  const resumeSession = useCallback((expectedArea?: string | null) => {
     const saved = loadFromStorage();
     if (!saved || saved.questions.length === 0) {
+      setHasSavedSession(false);
+      return false;
+    }
+
+    // Reject sessions from a different day
+    if (saved.date && saved.date !== todayDateKey()) {
+      clearStorage(Boolean(saved.extraSession));
+      setHasSavedSession(false);
+      return false;
+    }
+
+    // Reject if area doesn't match (non-extra sessions only)
+    if (expectedArea && !saved.extraSession && saved.area && saved.area !== expectedArea) {
+      clearStorage(false);
       setHasSavedSession(false);
       return false;
     }
