@@ -651,6 +651,7 @@ export function useStudySession() {
     setResult(null);
     setExtraSession(Boolean(saved.extraSession));
     setExtraArea(saved.extraSession ? saved.area : null);
+    setPreviewSession(false);
     setState("active");
     setHasSavedSession(true);
     return true;
@@ -729,6 +730,7 @@ export function useStudySession() {
               setFlashcardsGenerated(0);
               setStartTime(now);
               setQuestionStartedAt(now);
+              setPreviewSession(false);
               setState("active");
               saveToStorage({
                 questions: orderedQuestions,
@@ -818,6 +820,7 @@ export function useStudySession() {
         setFlashcardsGenerated(0);
         setStartTime(now);
         setQuestionStartedAt(now);
+        setPreviewSession(false);
         setState("active");
         saveDailyPlan({
           date: today,
