@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { renderMath } from '@/lib/renderMath';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -79,6 +79,7 @@ const Objectives = () => {
   } = useStudySession();
   const [pendingGuessAnswer, setPendingGuessAnswer] = useState<string | null>(null);
   const [extraPickerOpen, setExtraPickerOpen] = useState(false);
+  const previewLoadingRef = useRef<string | null>(null);
   const { available: pdfAvailable, openPdf, loading: pdfLoading } = useExamPdf(currentQuestion?.year);
   const { pedagogy, loading: pedagogyLoading } = useQuestionPedagogy(
     currentQuestion ? {
@@ -103,16 +104,19 @@ const Objectives = () => {
   // Open a specific question directly when arriving from admin preview.
   useEffect(() => {
     if (!previewQuestionId) return;
-    if (state !== 'idle') return;
+    if (previewLoadingRef.current === previewQuestionId) return;
 
+    previewLoadingRef.current = previewQuestionId;
     startPreviewQuestion(previewQuestionId).then((ok) => {
       if (ok) {
         const next = new URLSearchParams(searchParams);
         next.delete('previewQuestionId');
         setSearchParams(next, { replace: true });
+      } else {
+        previewLoadingRef.current = null;
       }
     });
-  }, [previewQuestionId, state, startPreviewQuestion, searchParams, setSearchParams]);
+  }, [previewQuestionId, startPreviewQuestion, searchParams, setSearchParams]);
 
   // Auto-preload more questions during an extra session as we approach the end of the batch.
   useEffect(() => {

@@ -48,6 +48,7 @@ interface PersistedSession {
   flashcardsGenerated: number;
   area: string | null;
   extraSession?: boolean;
+  previewSession?: boolean;
   /** ISO date key (YYYY-MM-DD) when session was created */
   date?: string;
 }
@@ -403,6 +404,7 @@ export function useStudySession() {
   const [extraSession, setExtraSession] = useState(false);
   const [extraArea, setExtraArea] = useState<string | null>(null);
   const [loadingMoreExtra, setLoadingMoreExtra] = useState(false);
+  const [previewSession, setPreviewSession] = useState(false);
 
   const mapQuestion = useCallback(
     (q: any): Question => ({
@@ -588,7 +590,7 @@ export function useStudySession() {
   // Detect if a resumable session exists (do not auto-open it)
   useEffect(() => {
     const saved = loadFromStorage();
-    if (!saved || saved.questions.length === 0) {
+    if (!saved || saved.questions.length === 0 || saved.previewSession) {
       setHasSavedSession(false);
       return;
     }
@@ -603,7 +605,7 @@ export function useStudySession() {
 
   // Persist session state whenever it changes
   useEffect(() => {
-    if (state === "active" && questions.length > 0) {
+    if (state === "active" && questions.length > 0 && !previewSession) {
       saveToStorage({
         questions,
         currentIndex,
@@ -616,7 +618,7 @@ export function useStudySession() {
       });
       setHasSavedSession(true);
     }
-  }, [state, questions, currentIndex, answers, startTime, flashcardsGenerated, extraSession]);
+  }, [state, questions, currentIndex, answers, startTime, flashcardsGenerated, extraSession, previewSession]);
 
   const resumeSession = useCallback((expectedArea?: string | null) => {
     const saved = loadFromStorage();
@@ -649,6 +651,7 @@ export function useStudySession() {
     setResult(null);
     setExtraSession(Boolean(saved.extraSession));
     setExtraArea(saved.extraSession ? saved.area : null);
+    setPreviewSession(false);
     setState("active");
     setHasSavedSession(true);
     return true;
@@ -727,6 +730,7 @@ export function useStudySession() {
               setFlashcardsGenerated(0);
               setStartTime(now);
               setQuestionStartedAt(now);
+              setPreviewSession(false);
               setState("active");
               saveToStorage({
                 questions: orderedQuestions,
@@ -816,6 +820,7 @@ export function useStudySession() {
         setFlashcardsGenerated(0);
         setStartTime(now);
         setQuestionStartedAt(now);
+        setPreviewSession(false);
         setState("active");
         saveDailyPlan({
           date: today,
@@ -862,15 +867,10 @@ export function useStudySession() {
         setFlashcardsGenerated(0);
         setStartTime(Date.now());
         setQuestionStartedAt(Date.now());
+        setPreviewSession(true);
         setState("active");
-        saveToStorage({
-          questions: [previewQuestion],
-          currentIndex: 0,
-          answers: {},
-          startTime: Date.now(),
-          flashcardsGenerated: 0,
-          area: previewQuestion.area ?? null,
-        });
+        clearStorage(false);
+        setHasSavedSession(false);
         return true;
       } catch (err) {
         console.error("Error starting preview question:", err);
@@ -978,15 +978,17 @@ export function useStudySession() {
         [currentIndex]: { selected: selectedLetter, correct: isCorrect },
       }));
       setShowFeedback(true);
-      saveToStorage({
-        questions,
-        currentIndex,
-        answers: nextAnswers,
-        startTime,
-        flashcardsGenerated,
-        area: questions[0]?.area ?? null,
-        extraSession,
-      });
+      if (!previewSession) {
+        saveToStorage({
+          questions,
+          currentIndex,
+          answers: nextAnswers,
+          startTime,
+          flashcardsGenerated,
+          area: questions[0]?.area ?? null,
+          extraSession,
+        });
+      }
 
       // Record attempt
       if (user) {
@@ -1032,6 +1034,7 @@ export function useStudySession() {
       syncTopicProfile,
       user,
       extraSession,
+      previewSession,
     ],
   );
 
