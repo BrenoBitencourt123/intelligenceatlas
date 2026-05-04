@@ -867,15 +867,10 @@ export function useStudySession() {
         setFlashcardsGenerated(0);
         setStartTime(Date.now());
         setQuestionStartedAt(Date.now());
+        setPreviewSession(true);
         setState("active");
-        saveToStorage({
-          questions: [previewQuestion],
-          currentIndex: 0,
-          answers: {},
-          startTime: Date.now(),
-          flashcardsGenerated: 0,
-          area: previewQuestion.area ?? null,
-        });
+        clearStorage(false);
+        setHasSavedSession(false);
         return true;
       } catch (err) {
         console.error("Error starting preview question:", err);
