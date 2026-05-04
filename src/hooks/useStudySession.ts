@@ -602,6 +602,7 @@ export function useStudySession() {
         flashcardsGenerated,
         area: questions[0]?.area ?? null,
         extraSession,
+        date: todayDateKey(),
       });
       setHasSavedSession(true);
     }
