@@ -847,7 +847,7 @@ const Objectives = () => {
                       <div className="flex items-center gap-2">
                         <Button
                           className="flex-1 gap-2"
-                          onClick={resumeSession}
+                          onClick={() => resumeSession(effectiveArea)}
                         >
                           Continuar estudo
                           <ArrowRight className="h-4 w-4" />
