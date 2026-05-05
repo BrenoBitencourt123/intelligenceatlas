@@ -280,8 +280,10 @@ function buildAdaptiveSelection(input: Question[], profiles: ProfileRow[], limit
     .filter((item) => item.level >= 3 && item.accuracy >= 0.75)
     .sort((a, b) => b.accuracy - a.accuracy || a.priority - b.priority);
 
+  const weakSet = new Set(weak);
+  const maintenanceSet = new Set(maintenance);
   const middle = withPriority
-    .filter((item) => !weak.includes(item) && !maintenance.includes(item))
+    .filter((item) => !weakSet.has(item) && !maintenanceSet.has(item))
     .sort((a, b) => b.priority - a.priority);
 
   const selected: Question[] = [];
