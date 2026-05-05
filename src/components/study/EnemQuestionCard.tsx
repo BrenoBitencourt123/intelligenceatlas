@@ -32,8 +32,9 @@ function ContentText({ block }: { block: EnemContentBlock }) {
         align === 'center' && 'text-center',
         align === 'right' && 'text-right',
       )}
-      dangerouslySetInnerHTML={{ __html: mathHtml(block.value ?? '') }}
-    />
+    >
+      {mathNode(block.value ?? '')}
+    </div>
   );
 }
 
@@ -73,8 +74,9 @@ function ContentTable({ block }: { block: EnemContentBlock }) {
                     key={i}
                     scope="col"
                     className="px-3 py-2 text-left font-semibold text-foreground border-b border-border"
-                    dangerouslySetInnerHTML={{ __html: mathHtml(h) }}
-                  />
+                  >
+                    {mathNode(h)}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -89,8 +91,9 @@ function ContentTable({ block }: { block: EnemContentBlock }) {
                   <td
                     key={ci}
                     className="px-3 py-2 text-foreground align-top"
-                    dangerouslySetInnerHTML={{ __html: mathHtml(cell) }}
-                  />
+                    >
+                      {mathNode(cell)}
+                    </td>
                 ))}
               </tr>
             ))}
@@ -141,8 +144,9 @@ function Alternative({
       <div className="flex-1 pt-0.5">
         <span
           className="text-sm leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: mathHtml(alt.text) }}
-        />
+        >
+          {mathNode(alt.text)}
+        </span>
         {alt.image && (
           <img
             src={alt.image}
@@ -206,10 +210,9 @@ export default function EnemQuestionCard({
       {/* Command */}
       {question.command && (
         <div className="px-5 pb-5">
-          <p
-            className="text-base font-bold text-foreground leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: mathHtml(question.command) }}
-          />
+          <p className="text-base font-bold text-foreground leading-relaxed">
+            {mathNode(question.command)}
+          </p>
         </div>
       )}
 
