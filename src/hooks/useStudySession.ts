@@ -60,8 +60,10 @@ interface PersistedDailyPlan {
 }
 
 type SessionState = "idle" | "loading" | "active" | "result";
+type SessionCandidate = Pick<Question, "id" | "number" | "area" | "topic" | "subtopic" | "difficulty" | "skills" | "correct_answer" | "tags">;
 
 const QUESTION_SELECT_COLUMNS = "id,number,area,topic,subtopic,difficulty,skills,statement,alternatives,correct_answer,explanation,tags,image_url,images,year,content,command,foreign_language,disciplina" as const;
+const QUESTION_SELECTION_COLUMNS = "id,number,area,topic,subtopic,difficulty,skills,correct_answer,tags,foreign_language,disciplina" as const;
 
 const STORAGE_KEY = "atlas_study_session";
 const EXTRA_STORAGE_KEY = "atlas_extra_session";
@@ -158,7 +160,7 @@ type ProfileRow = {
 
 const DIAGNOSTIC_QUESTIONS_PER_AREA = 20;
 
-function buildExplorationSelection(input: Question[], limit: number): Question[] {
+function buildExplorationSelection(input: SessionCandidate[], limit: number): SessionCandidate[] {
   if (input.length <= limit) return shuffleArray(input);
 
   const selected: Question[] = [];
@@ -233,7 +235,7 @@ function buildExplorationSelection(input: Question[], limit: number): Question[]
   return selected.slice(0, limit);
 }
 
-function buildAdaptiveSelection(input: Question[], profiles: ProfileRow[], limit: number): Question[] {
+function buildAdaptiveSelection(input: SessionCandidate[], profiles: ProfileRow[], limit: number): SessionCandidate[] {
   if (input.length <= limit) return shuffleArray(input);
 
   const profileMap = new Map<string, ProfileRow>();
