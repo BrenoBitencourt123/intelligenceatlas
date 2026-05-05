@@ -4,6 +4,11 @@ export default {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
+  safelist: [
+    'inline-flex', 'flex-col', 'items-center', 'items-start',
+    'align-middle', 'text-center', 'text-[0.92em]', 'text-[0.65em]',
+    'px-1.5', 'px-0.5', 'mx-1', 'block', 'w-full',
+  ],
   theme: {
     container: {
       center: true,
