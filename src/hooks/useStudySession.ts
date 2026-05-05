@@ -174,7 +174,7 @@ function buildExplorationSelection(input: SessionCandidate[], limit: number): Se
   };
   const maxPerSubtopic = 4;
 
-  const byTopic = new Map<string, Question[]>();
+  const byTopic = new Map<string, SessionCandidate[]>();
   for (const question of shuffleArray(input)) {
     const key = makeTopicKey(question.area, question.topic, question.subtopic);
     const bucket = byTopic.get(key) ?? [];
