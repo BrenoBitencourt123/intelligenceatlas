@@ -12,13 +12,8 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
 /* ── helpers ─────────────────────────────────────────── */
 
-function mathHtml(text: string): string {
-  // Escape basic HTML then apply renderMath
-  const escaped = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  return renderMath(escaped);
+function mathNode(text: string) {
+  return renderMath(text);
 }
 
 /* ── sub-components ──────────────────────────────────── */

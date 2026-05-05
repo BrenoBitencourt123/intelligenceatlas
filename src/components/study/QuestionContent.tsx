@@ -142,10 +142,9 @@ export default function QuestionContent({ content, command, className }: Questio
         </React.Fragment>
       ))}
       {command && (
-        <p
-          className="text-base font-bold text-foreground leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: mathHtml(command) }}
-        />
+        <p className="text-base font-bold text-foreground leading-relaxed">
+          {mathNode(command)}
+        </p>
       )}
     </div>
   );
