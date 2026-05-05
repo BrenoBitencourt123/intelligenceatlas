@@ -750,7 +750,7 @@ export function useStudySession() {
           }
         }
 
-        let query = supabase.from("questions").select("*").not('correct_answer', 'is', null);
+        let query = supabase.from("questions").select(QUESTION_SELECT_COLUMNS).not('correct_answer', 'is', null);
 
         if (area && area !== "mista") {
           query = query.eq("area", area);
