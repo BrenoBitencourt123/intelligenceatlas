@@ -293,7 +293,7 @@ const SimuladoSession = () => {
                         {alt.letter}
                       </span>
                       <span className={`text-sm flex-1 ${hasAltImage ? "flex items-center gap-2" : ""}`}>
-                        {alt.text && <span dangerouslySetInnerHTML={{ __html: renderMath(alt.text) }} />}
+                        {alt.text && <span>{renderMath(alt.text)}</span>}
                         {(alt as any).image_url && (
                           <img
                             src={(alt as any).image_url}

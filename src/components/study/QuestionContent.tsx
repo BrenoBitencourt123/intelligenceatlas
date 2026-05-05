@@ -25,12 +25,8 @@ interface QuestionContentProps {
   className?: string;
 }
 
-function mathHtml(text: string): string {
-  const escaped = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  return renderMath(escaped);
+function mathNode(text: string) {
+  return renderMath(text);
 }
 
 function TextBlock({ block }: { block: ContentBlock }) {
@@ -48,8 +44,9 @@ function TextBlock({ block }: { block: ContentBlock }) {
         align === 'center' && 'text-center',
         align === 'right' && 'text-right',
       )}
-      dangerouslySetInnerHTML={{ __html: mathHtml(block.value) }}
-    />
+    >
+      {mathNode(block.value)}
+    </div>
   );
 }
 
@@ -98,8 +95,9 @@ function TableBlock({ block }: { block: ContentBlock }) {
                     key={i}
                     scope="col"
                     className="px-3 py-2 text-left font-semibold text-foreground border-b border-border"
-                    dangerouslySetInnerHTML={{ __html: mathHtml(h) }}
-                  />
+                  >
+                    {mathNode(h)}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -114,8 +112,9 @@ function TableBlock({ block }: { block: ContentBlock }) {
                   <td
                     key={ci}
                     className="px-3 py-2 text-foreground align-top"
-                    dangerouslySetInnerHTML={{ __html: mathHtml(cell) }}
-                  />
+                  >
+                    {mathNode(cell)}
+                  </td>
                 ))}
               </tr>
             ))}
@@ -143,10 +142,9 @@ export default function QuestionContent({ content, command, className }: Questio
         </React.Fragment>
       ))}
       {command && (
-        <p
-          className="text-base font-bold text-foreground leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: mathHtml(command) }}
-        />
+        <p className="text-base font-bold text-foreground leading-relaxed">
+          {mathNode(command)}
+        </p>
       )}
     </div>
   );
