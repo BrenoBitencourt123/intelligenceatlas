@@ -60,8 +60,10 @@ interface PersistedDailyPlan {
 }
 
 type SessionState = "idle" | "loading" | "active" | "result";
+type SessionCandidate = Pick<Question, "id" | "number" | "area" | "topic" | "subtopic" | "difficulty" | "skills" | "correct_answer" | "tags">;
 
 const QUESTION_SELECT_COLUMNS = "id,number,area,topic,subtopic,difficulty,skills,statement,alternatives,correct_answer,explanation,tags,image_url,images,year,content,command,foreign_language,disciplina" as const;
+const QUESTION_SELECTION_COLUMNS = "id,number,area,topic,subtopic,difficulty,skills,correct_answer,tags,foreign_language,disciplina" as const;
 
 const STORAGE_KEY = "atlas_study_session";
 const EXTRA_STORAGE_KEY = "atlas_extra_session";
@@ -158,10 +160,10 @@ type ProfileRow = {
 
 const DIAGNOSTIC_QUESTIONS_PER_AREA = 20;
 
-function buildExplorationSelection(input: Question[], limit: number): Question[] {
+function buildExplorationSelection(input: SessionCandidate[], limit: number): SessionCandidate[] {
   if (input.length <= limit) return shuffleArray(input);
 
-  const selected: Question[] = [];
+  const selected: SessionCandidate[] = [];
   const selectedIds = new Set<string>();
   const subtopicCount = new Map<string, number>();
   const difficultyCount = { 1: 0, 2: 0, 3: 0 };
@@ -172,7 +174,7 @@ function buildExplorationSelection(input: Question[], limit: number): Question[]
   };
   const maxPerSubtopic = 4;
 
-  const byTopic = new Map<string, Question[]>();
+  const byTopic = new Map<string, SessionCandidate[]>();
   for (const question of shuffleArray(input)) {
     const key = makeTopicKey(question.area, question.topic, question.subtopic);
     const bucket = byTopic.get(key) ?? [];
@@ -233,7 +235,7 @@ function buildExplorationSelection(input: Question[], limit: number): Question[]
   return selected.slice(0, limit);
 }
 
-function buildAdaptiveSelection(input: Question[], profiles: ProfileRow[], limit: number): Question[] {
+function buildAdaptiveSelection(input: SessionCandidate[], profiles: ProfileRow[], limit: number): SessionCandidate[] {
   if (input.length <= limit) return shuffleArray(input);
 
   const profileMap = new Map<string, ProfileRow>();
@@ -286,7 +288,7 @@ function buildAdaptiveSelection(input: Question[], profiles: ProfileRow[], limit
     .filter((item) => !weakSet.has(item) && !maintenanceSet.has(item))
     .sort((a, b) => b.priority - a.priority);
 
-  const selected: Question[] = [];
+  const selected: SessionCandidate[] = [];
   const selectedIds = new Set<string>();
   const topicCount = new Map<string, number>();
   const subtopicCount = new Map<string, number>();
@@ -429,6 +431,21 @@ export function useStudySession() {
       year: q.year,
       content: Array.isArray(q.content) ? q.content : null,
       command: q.command ?? null,
+    }),
+    [],
+  );
+
+  const mapSessionCandidate = useCallback(
+    (q: any): SessionCandidate => ({
+      id: q.id,
+      number: q.number,
+      area: q.area,
+      topic: normalizeTopic(q.topic) === 'Geral' ? (q.disciplina || q.area) : normalizeTopic(q.topic),
+      subtopic: normalizeSubtopic(q.subtopic),
+      difficulty: normalizeDifficulty(q.difficulty),
+      skills: Array.isArray(q.skills) ? (q.skills as string[]) : [],
+      correct_answer: q.correct_answer,
+      tags: Array.isArray(q.tags) ? (q.tags as string[]) : [],
     }),
     [],
   );
@@ -750,7 +767,7 @@ export function useStudySession() {
           }
         }
 
-        let query = supabase.from("questions").select(QUESTION_SELECT_COLUMNS).not('correct_answer', 'is', null);
+        let query = supabase.from("questions").select(QUESTION_SELECTION_COLUMNS).not('correct_answer', 'is', null);
 
         if (area && area !== "mista") {
           query = query.eq("area", area);
@@ -789,9 +806,9 @@ export function useStudySession() {
           return;
         }
 
-        const parsedQuestions = filteredData.map(mapQuestion);
-        const hasTaxonomy = parsedQuestions.some((q) => q.topic && q.topic !== "Geral");
-        let selectedQuestions = shuffleArray(parsedQuestions).slice(0, limit);
+        const candidateQuestions = filteredData.map(mapSessionCandidate);
+        const hasTaxonomy = candidateQuestions.some((q) => q.topic && q.topic !== "Geral");
+        let selectedCandidates = shuffleArray(candidateQuestions).slice(0, limit);
 
         if (hasTaxonomy) {
           let profileQuery = supabase
@@ -809,10 +826,30 @@ export function useStudySession() {
             const attemptsInArea = typedProfiles.reduce((sum, p) => sum + (p.attempts ?? 0), 0);
             const inDiagnosticMode = attemptsInArea < DIAGNOSTIC_QUESTIONS_PER_AREA;
 
-            selectedQuestions = inDiagnosticMode
-              ? buildExplorationSelection(parsedQuestions, limit)
-              : buildAdaptiveSelection(parsedQuestions, typedProfiles, limit);
+            selectedCandidates = inDiagnosticMode
+              ? buildExplorationSelection(candidateQuestions, limit)
+              : buildAdaptiveSelection(candidateQuestions, typedProfiles, limit);
           }
+        }
+
+        const selectedIds = selectedCandidates.map((question) => question.id);
+        const { data: fullData, error: fullError } = await supabase
+          .from("questions")
+          .select(QUESTION_SELECT_COLUMNS)
+          .in("id", selectedIds)
+          .not('correct_answer', 'is', null);
+        if (fullError) throw fullError;
+
+        const fullById = new Map((fullData ?? []).map((question) => [question.id, question]));
+        const selectedQuestions = selectedIds
+          .map((id) => fullById.get(id))
+          .filter((item): item is NonNullable<typeof item> => Boolean(item))
+          .map(mapQuestion);
+
+        if (selectedQuestions.length === 0) {
+          toast.error("Nenhuma questão disponível para esta área");
+          setState("idle");
+          return;
         }
 
         const now = Date.now();
@@ -846,7 +883,7 @@ export function useStudySession() {
         setState("idle");
       }
     },
-    [mapQuestion, queryClient, user],
+    [mapQuestion, mapSessionCandidate, queryClient, user],
   );
 
   const startPreviewQuestion = useCallback(
