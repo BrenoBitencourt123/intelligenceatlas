@@ -707,7 +707,7 @@ export function useStudySession() {
           savedPlan.area === normalizedArea &&
           savedPlan.questionIds.length > 0
         ) {
-          let resumeQuery = supabase.from("questions").select("*").in("id", savedPlan.questionIds).not('correct_answer', 'is', null);
+          let resumeQuery = supabase.from("questions").select(QUESTION_SELECT_COLUMNS).in("id", savedPlan.questionIds).not('correct_answer', 'is', null);
 
           if (area && area !== "mista") {
             resumeQuery = resumeQuery.eq("area", area);
