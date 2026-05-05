@@ -163,7 +163,7 @@ const DIAGNOSTIC_QUESTIONS_PER_AREA = 20;
 function buildExplorationSelection(input: SessionCandidate[], limit: number): SessionCandidate[] {
   if (input.length <= limit) return shuffleArray(input);
 
-  const selected: Question[] = [];
+  const selected: SessionCandidate[] = [];
   const selectedIds = new Set<string>();
   const subtopicCount = new Map<string, number>();
   const difficultyCount = { 1: 0, 2: 0, 3: 0 };
@@ -288,7 +288,7 @@ function buildAdaptiveSelection(input: SessionCandidate[], profiles: ProfileRow[
     .filter((item) => !weakSet.has(item) && !maintenanceSet.has(item))
     .sort((a, b) => b.priority - a.priority);
 
-  const selected: Question[] = [];
+  const selected: SessionCandidate[] = [];
   const selectedIds = new Set<string>();
   const topicCount = new Map<string, number>();
   const subtopicCount = new Map<string, number>();
