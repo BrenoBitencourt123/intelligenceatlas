@@ -183,16 +183,15 @@ function buildExplorationSelection(input: SessionCandidate[], limit: number): Se
   }
 
   const topicKeys = shuffleArray([...byTopic.keys()]);
-  let keepGoing = true;
+  let madeProgress = true;
 
-  while (selected.length < limit && keepGoing) {
-    keepGoing = false;
+  while (selected.length < limit && madeProgress) {
+    madeProgress = false;
 
     for (const topicKey of topicKeys) {
       if (selected.length >= limit) break;
       const bucket = byTopic.get(topicKey);
       if (!bucket || bucket.length === 0) continue;
-      keepGoing = true;
 
       const pickIndex = bucket.findIndex((q) => {
         const diff = normalizeDifficulty(q.difficulty);
@@ -220,6 +219,7 @@ function buildExplorationSelection(input: SessionCandidate[], limit: number): Se
       selectedIds.add(question.id);
       subtopicCount.set(subKey, (subtopicCount.get(subKey) ?? 0) + 1);
       difficultyCount[normalizeDifficulty(question.difficulty)] += 1;
+      madeProgress = true;
     }
   }
 
