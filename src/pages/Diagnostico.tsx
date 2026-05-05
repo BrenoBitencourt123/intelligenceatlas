@@ -461,7 +461,7 @@ export default function Diagnostico() {
                         {alt.letter}
                       </span>
                       <span className="text-sm flex-1">
-                        <span dangerouslySetInnerHTML={{ __html: renderMath(alt.text || '') }} />
+                        <span>{renderMath(alt.text || '')}</span>
                         {(alt as any).image_url && (
                           <img
                             src={(alt as any).image_url}
