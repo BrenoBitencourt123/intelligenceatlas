@@ -1,80 +1,45 @@
 
-## Respostas aos 4 pontos
+## Objetivo
 
-### 1. Diagnostico.tsx
-**Sim, precisa do fallback.** `Diagnostico.tsx` importa e usa `InlineStatementRenderer` (linha 9 e 421). Vai precisar do mesmo fallback `content` vs `statement`. Vou incluir no plano.
+Reescrever `renderMath` para renderizar corretamente fórmulas químicas, frações empilhadas, raízes e macros LaTeX. Corrigir o bug do subscrito greedy (`H_2O` → subscrevendo "2O" inteiro).
 
-### 2. Tela "Aquecimento" / Q115
-A rota `/simulado/sessao` renderiza via `SimuladoSession.tsx`, que também usa `InlineStatementRenderer` (linha 11). Não existe componente separado de "Aquecimento" -- tudo passa pelo mesmo renderer. Ou seja, os 3 pontos de uso são:
-- `Objectives.tsx`
-- `SimuladoSession.tsx`
-- `Diagnostico.tsx`
+## Mudanças
 
-O `EnemQuestionCard.tsx` existe no código mas **nunca é importado por nenhum arquivo** -- é dead code. Não precisa de fallback.
+### 1. Reescrever `src/lib/renderMath.ts`
 
-### 3. Campo de imagem: `url` vs `data`
-O tipo `EnemContentBlock` atual usa `data` (campo `data?: string`). O `EnemQuestionCard` (dead code) lê `block.data`. No seu JSON atual, o campo também é `data` (com base64).
+Substituir a implementação atual (que usa KaTeX e retorna string HTML) pela nova versão fornecida nas instruções, que:
+- Retorna `ReactNode` em vez de string
+- Suporta `\frac{num}{den}` com componente `Frac` (flex-col)
+- Suporta `\sqrt{x}` e `\sqrt[n]{x}` com componente `Sqrt`
+- Expande macros LaTeX (`\times` → ×, `\pi` → π, etc.)
+- Corrige subscrito: `_X` captura apenas 1 char (não greedy)
+- Remove dependência do KaTeX
 
-**Proposta:** vou manter o campo como `data` no tipo TypeScript para compatibilidade com o tipo existente. Você popula `data` com a URL do bucket Supabase (não precisa ser base64 -- funciona igual num `<img src>`). Se preferir ter um campo `url` separado, eu adiciono ao tipo, mas é redundante. Recomendo usar `data` mesmo, só trocando o valor de base64 para URL.
+Remover `katex` do package.json (`bun remove katex`).
 
-### 4. Estratégia de transição (dual-write)
-**Totalmente a favor.** Popular AMBOS `content` + `statement` é a abordagem mais segura. O fluxo fica:
-- Se `content` existe e tem itens -> usa `QuestionContent` (novo)
-- Senão -> usa `InlineStatementRenderer` (antigo, lendo `statement`)
+### 2. Criar `renderMathHtml` para contextos de string HTML
 
-Quando estável, você dropa `statement` depois. Zero risco de rollback.
+O `MarkdownText.tsx` usa `renderMath` dentro de uma pipeline que retorna string HTML (concatenada com bold/italic/cite já em HTML). Não dá para injetar ReactNode ali.
 
----
+Solução: exportar uma segunda função `renderMathHtml(text: string): string` no mesmo arquivo que faz as mesmas expansões (macros, sub/sup, frac, sqrt) mas retorna HTML string. Frac e Sqrt serão `<span>` com inline styles.
 
-## Plano revisado de implementação
-
-### 1. Migração SQL
-```sql
-ALTER TABLE questions ADD COLUMN content JSONB DEFAULT NULL;
-ALTER TABLE questions ADD COLUMN command TEXT DEFAULT NULL;
-```
-
-### 2. Tipo TypeScript atualizado (`src/types/enemQuestion.ts`)
-- Adicionar `'citation'` ao union type de `EnemContentBlock.type`
-- Tipo já usa `data` para imagens -- manter assim
-
-### 3. Novo componente `QuestionContent.tsx`
-Switch simples sobre `block.type`:
-- `text` -> `<div>` com `renderMath`, respeitando `format.bold/color/align`
-- `image` -> `<figure><img src={block.data}>` + caption
-- `citation` -> `<p>` italic muted right-aligned
-- `table` -> tabela HTML
-- `command` -> `<p className="font-bold">` separado
-
-### 4. Fallback nos 3 pontos de uso
-- `Objectives.tsx` (linha ~514)
-- `SimuladoSession.tsx`
-- `Diagnostico.tsx` (linha ~421)
-
-Lógica: `question.content?.length > 0 ? <QuestionContent> : <InlineStatementRenderer>`
-
-### 5. Hook `useStudySession.ts`
-Incluir `content, command` no `.select()` das queries (linhas 672 e 714).
-
-### 6. Hook `useSimuladoSession.ts`
-Mesmo ajuste de `.select()`.
-
-### 7. Tipo `DiagQuestion` em `Diagnostico.tsx`
-Adicionar `content?: EnemContentBlock[]` e `command?: string`.
-
----
-
-### Arquivos alterados
+### 3. Atualizar 6 consumidores
 
 | Arquivo | Mudança |
 |---------|---------|
-| Migração SQL | `ADD COLUMN content JSONB`, `ADD COLUMN command TEXT` |
-| `src/types/enemQuestion.ts` | Adicionar `citation` ao type union |
-| `src/components/study/QuestionContent.tsx` | **Novo** componente |
-| `src/pages/Objectives.tsx` | Fallback content vs statement |
-| `src/pages/SimuladoSession.tsx` | Fallback content vs statement |
-| `src/pages/Diagnostico.tsx` | Fallback content vs statement |
-| `src/hooks/useStudySession.ts` | Select content, command |
-| `src/hooks/useSimuladoSession.ts` | Select content, command |
+| `EnemQuestionCard.tsx` | `mathHtml` → usar `renderMath` direto, remover `dangerouslySetInnerHTML`, renderizar `{renderMath(text)}` |
+| `QuestionContent.tsx` | Idem |
+| `Objectives.tsx` | `<span dangerouslySetInnerHTML=...>` → `<span>{renderMath(alt.text)}</span>` |
+| `Diagnostico.tsx` | Idem |
+| `SimuladoSession.tsx` | Idem |
+| `MarkdownText.tsx` | Trocar `renderMath` por `renderMathHtml` (mantém pipeline HTML) |
 
-Nada muda no `InlineStatementRenderer` nem no `MarkdownText` -- continuam intactos para questões antigas.
+### 4. Safelist Tailwind (preventivo)
+
+Adicionar safelist em `tailwind.config.ts` com as classes usadas nos componentes Frac/Sqrt.
+
+### Detalhes técnicos
+
+- A função `renderMath` agora é recursiva (frac chama renderMath no numerador/denominador), permitindo fórmulas compostas como `\frac{k^{2}\sqrt{3}}{24}`
+- O regex de subscrito muda de `_([\w]+)` (greedy, multi-char) para `_(\w)` (1 char apenas), com `_{...}` para múltiplos chars — corrigindo o bug de `H_2O`
+- O HTML escaping (que antes era feito nos `mathHtml` helpers) será feito dentro do novo `renderMath` antes do parse, já que agora retorna React nodes seguros
