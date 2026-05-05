@@ -61,6 +61,8 @@ interface PersistedDailyPlan {
 
 type SessionState = "idle" | "loading" | "active" | "result";
 
+const QUESTION_SELECT_COLUMNS = "id,number,area,topic,subtopic,difficulty,skills,statement,alternatives,correct_answer,explanation,tags,image_url,images,year,content,command,foreign_language,disciplina" as const;
+
 const STORAGE_KEY = "atlas_study_session";
 const EXTRA_STORAGE_KEY = "atlas_extra_session";
 const DAILY_PLAN_KEY = "atlas_study_daily_plan";
@@ -278,8 +280,10 @@ function buildAdaptiveSelection(input: Question[], profiles: ProfileRow[], limit
     .filter((item) => item.level >= 3 && item.accuracy >= 0.75)
     .sort((a, b) => b.accuracy - a.accuracy || a.priority - b.priority);
 
+  const weakSet = new Set(weak);
+  const maintenanceSet = new Set(maintenance);
   const middle = withPriority
-    .filter((item) => !weak.includes(item) && !maintenance.includes(item))
+    .filter((item) => !weakSet.has(item) && !maintenanceSet.has(item))
     .sort((a, b) => b.priority - a.priority);
 
   const selected: Question[] = [];
@@ -703,7 +707,7 @@ export function useStudySession() {
           savedPlan.area === normalizedArea &&
           savedPlan.questionIds.length > 0
         ) {
-          let resumeQuery = supabase.from("questions").select("*").in("id", savedPlan.questionIds).not('correct_answer', 'is', null);
+          let resumeQuery = supabase.from("questions").select(QUESTION_SELECT_COLUMNS).in("id", savedPlan.questionIds).not('correct_answer', 'is', null);
 
           if (area && area !== "mista") {
             resumeQuery = resumeQuery.eq("area", area);
@@ -746,7 +750,7 @@ export function useStudySession() {
           }
         }
 
-        let query = supabase.from("questions").select("*").not('correct_answer', 'is', null);
+        let query = supabase.from("questions").select(QUESTION_SELECT_COLUMNS).not('correct_answer', 'is', null);
 
         if (area && area !== "mista") {
           query = query.eq("area", area);
@@ -851,7 +855,7 @@ export function useStudySession() {
       setState("loading");
 
       try {
-        const { data, error } = await supabase.from("questions").select("*").eq("id", questionId).single();
+        const { data, error } = await supabase.from("questions").select(QUESTION_SELECT_COLUMNS).eq("id", questionId).single();
 
         if (error || !data) {
           throw new Error(error?.message || "Questao nao encontrada");
@@ -1192,7 +1196,7 @@ export function useStudySession() {
       const userLang = (prefs?.foreign_language as string) || "ingles";
       const oppositeLanguage = userLang === "ingles" ? "espanhol" : "ingles";
 
-      let query = supabase.from("questions").select("*").not('correct_answer', 'is', null);
+      let query = supabase.from("questions").select(QUESTION_SELECT_COLUMNS).not('correct_answer', 'is', null);
       if (area && area !== "geral") {
         query = query.eq("area", area);
       }
