@@ -1196,7 +1196,7 @@ export function useStudySession() {
       const userLang = (prefs?.foreign_language as string) || "ingles";
       const oppositeLanguage = userLang === "ingles" ? "espanhol" : "ingles";
 
-      let query = supabase.from("questions").select("*").not('correct_answer', 'is', null);
+      let query = supabase.from("questions").select(QUESTION_SELECT_COLUMNS).not('correct_answer', 'is', null);
       if (area && area !== "geral") {
         query = query.eq("area", area);
       }
