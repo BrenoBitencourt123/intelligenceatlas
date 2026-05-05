@@ -61,6 +61,8 @@ interface PersistedDailyPlan {
 
 type SessionState = "idle" | "loading" | "active" | "result";
 
+const QUESTION_SELECT_COLUMNS = "id,number,area,topic,subtopic,difficulty,skills,statement,alternatives,correct_answer,explanation,tags,image_url,images,year,content,command,foreign_language,disciplina" as const;
+
 const STORAGE_KEY = "atlas_study_session";
 const EXTRA_STORAGE_KEY = "atlas_extra_session";
 const DAILY_PLAN_KEY = "atlas_study_daily_plan";
