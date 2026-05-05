@@ -855,7 +855,7 @@ export function useStudySession() {
       setState("loading");
 
       try {
-        const { data, error } = await supabase.from("questions").select("*").eq("id", questionId).single();
+        const { data, error } = await supabase.from("questions").select(QUESTION_SELECT_COLUMNS).eq("id", questionId).single();
 
         if (error || !data) {
           throw new Error(error?.message || "Questao nao encontrada");
