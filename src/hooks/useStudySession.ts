@@ -192,7 +192,6 @@ function buildExplorationSelection(input: SessionCandidate[], limit: number): Se
       if (selected.length >= limit) break;
       const bucket = byTopic.get(topicKey);
       if (!bucket || bucket.length === 0) continue;
-      keepGoing = true;
 
       const pickIndex = bucket.findIndex((q) => {
         const diff = normalizeDifficulty(q.difficulty);
