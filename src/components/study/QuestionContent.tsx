@@ -112,23 +112,9 @@ function TableBlock({ block }: { block: ContentBlock }) {
                   <td
                     key={ci}
                     className="px-3 py-2 text-foreground align-top"
-                  />
-                ))}
-              </tr>
-            </thead>
-          )}
-          <tbody>
-            {rows.map((row, ri) => (
-              <tr
-                key={ri}
-                className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
-              >
-                {row.map((cell, ci) => (
-                  <td
-                    key={ci}
-                    className="px-3 py-2 text-foreground align-top"
-                    dangerouslySetInnerHTML={{ __html: mathHtml(cell) }}
-                  />
+                  >
+                    {mathNode(cell)}
+                  </td>
                 ))}
               </tr>
             ))}
