@@ -560,6 +560,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ufu_events: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          payload: Json
+          session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          payload?: Json
+          session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          payload?: Json
+          session_id?: string | null
+        }
+        Relationships: []
+      }
       user_mastery: {
         Row: {
           attempts: number
@@ -774,7 +798,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      ufu_share_rate: {
+        Row: {
+          calculos: number | null
+          cards_gerados: number | null
+          dia: string | null
+          downloads: number | null
+          share_rate_pct: number | null
+          shares: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
