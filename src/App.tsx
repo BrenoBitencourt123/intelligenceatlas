@@ -29,6 +29,8 @@ import SimuladoSession from "./pages/SimuladoSession";
 import ResetPassword from "./pages/ResetPassword";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import CalculadoraUfu from "./pages/CalculadoraUfu";
+import RedacaoUfu from "./pages/RedacaoUfu";
 
 const queryClient = new QueryClient();
 
@@ -85,7 +87,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/historico"
               element={
@@ -168,6 +170,18 @@ const App = () => (
             />
             <Route path="/fundadores" element={<Founders />} />
             <Route path="/fundadores/cadastro" element={<FounderSignup />} />
+            {/* UFU - pagina publica, sem cadastro (funil) */}
+            <Route path="/ufu" element={<CalculadoraUfu />} />
+            <Route path="/calculadora-ufu" element={<Navigate to="/ufu" replace />} />
+            {/* UFU - corretor de redacao (produto; requer login) */}
+            <Route
+              path="/redacao-ufu"
+              element={
+                <ProtectedRoute>
+                  <RedacaoUfu />
+                </ProtectedRoute>
+              }
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

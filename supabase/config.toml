@@ -6,6 +6,12 @@ verify_jwt = false
 [functions.improve-essay]
 verify_jwt = false
 
+[functions.analyze-essay-ufu]
+verify_jwt = false
+
+[functions.improve-essay-ufu]
+verify_jwt = false
+
 [functions.generate-theme]
 verify_jwt = false
 

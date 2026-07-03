@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "fonte_pdf": "Enem 2023 dia 1.pdf",
+    "pagina_origem": 2,
+    "coluna": "esquerda",
+    "extraido_em": "2026-05-14",
+    "regras_aplicadas": "v1 (ver _contexto/05_regras_byte_fidelidade.md)",
+    "correct_answer_source": "claude_visual_pending_gabarito_oficial",
+    "observacoes_piloto": [
+      "Gabarito PDF subido só cobre Q46-Q90 (Humanas). Resposta B é minha leitura, precisa confirmacao com gabarito oficial INEP de Linguagens.",
+      "Texto interno do cartaz preservado no statement como redundância acessível (imagem pode não carregar)."
+    ]
+  },
+  "number": 1,
+  "day": 1,
+  "year": 2023,
+  "area": "linguagens",
+  "disciplina": "ingles",
+  "topic": "ingles__interpretacao_texto",
+  "subtopic": "",
+  "difficulty": 2,
+  "cognitive_level": "aplicacao",
+  "skills": ["inferencias_implicitas", "impacto_socioambiental"],
+  "foreign_language": "ingles",
+  "statement": "{{IMG_0}}\n\nThe average american tosses 300 pounds of food each year, making food the number one contributor to America's landfills. Eat your leftovers and keep your perishables in the fridge – the Earth is counting on it.\n\n*Disponível em: https://mir-s3-cdn-cf.behance.net. Acesso em: 29 out. 2021 (adaptado).*\n\n**Esse cartaz de campanha sugere que**",
+  "alternatives": [
+    {"letter": "A", "text": "os lixões precisam de ampliação."},
+    {"letter": "B", "text": "o desperdício degrada o ambiente."},
+    {"letter": "C", "text": "os mercados doam alimentos perecíveis."},
+    {"letter": "D", "text": "a desnutrição compromete o raciocínio."},
+    {"letter": "E", "text": "as residências carecem de refrigeradores."}
+  ],
+  "correct_answer": "B",
+  "explanation": "O cartaz apresenta a expressão 'FOOD FOR THOUGHT' formada por alimentos descartados sobre um lixão. O texto da campanha esclarece que os americanos descartam, em média, 300 libras de comida por ano, sendo o desperdício de alimentos o principal contribuinte para os aterros sanitários. A sugestão de aproveitar sobras e refrigerar alimentos perecíveis estabelece uma relação direta entre **desperdício de alimentos e degradação ambiental**, justificando a alternativa B.",
+  "tags": ["campanha publicitária", "consumo consciente", "desperdício de alimentos"],
+  "requires_image": true,
+  "image_reason": "Cartaz publicitário com texto integrado à composição visual. A interpretação depende de identificar o cartaz como campanha de conscientização ambiental.",
+  "images": [
+    {
+      "order": 0,
+      "local_path": "_extracao_enem2023_dia1/_v2/figuras/Q01_ingles_v2b.png",
+      "caption": "Cartaz da campanha 'FOOD FOR THOUGHT', com as palavras 'FOOD FOR THOUGHT' formadas a partir de alimentos descartados (frutas, vegetais) dispostos sobre um lixão. Abaixo da composição, há um bloco branco com o texto da campanha.",
+      "url": null
+    }
+  ],
+  "needs_review": true,
+  "needs_review_reasons": ["correct_answer_sem_gabarito_oficial"]
+}
