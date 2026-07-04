@@ -87,29 +87,12 @@ export function useDailyTheme(): UseDailyThemeResult {
         return;
       }
 
-      // Step 2: No theme in database - call Edge Function to generate
-      console.log('[useDailyTheme] No theme found, calling generate-theme...');
-      
-      const { data: funcData, error: funcError } = await supabase.functions.invoke('generate-theme', {
-        body: { date: today },
-      });
+      // No theme in database — use local fallback (no AI generation).
+      console.log('[useDailyTheme] No theme in DB, using local fallback');
+      setTheme(fallbackTheme);
+      setIsAiGenerated(false);
+      cachedTheme = { theme: fallbackTheme, isAiGenerated: false, date: today };
 
-      if (funcError) {
-        console.error('[useDailyTheme] Edge function error:', funcError);
-        throw new Error('Erro ao gerar tema');
-      }
-
-      if (funcData?.theme) {
-        console.log('[useDailyTheme] Theme generated:', funcData.theme.title);
-        const mappedTheme = mapDbThemeToFrontend(funcData.theme as DbDailyTheme);
-        setTheme(mappedTheme);
-        setIsAiGenerated(true);
-        
-        // Update cache
-        cachedTheme = { theme: mappedTheme, isAiGenerated: true, date: today };
-      } else {
-        throw new Error('Resposta inválida do servidor');
-      }
     } catch (err) {
       console.error('[useDailyTheme] Error:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
