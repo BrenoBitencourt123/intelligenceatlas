@@ -151,7 +151,7 @@ export default function Welcome() {
               <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
             </div>
             <div className="mt-3">
-              <p className="font-semibold text-foreground">Resolver questões do ENEM</p>
+              <p className="font-semibold text-foreground">Resolver questões</p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                 O Atlas já sabe por onde começar. Você resolve, ele aprende onde você trava.
               </p>
