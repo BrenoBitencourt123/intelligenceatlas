@@ -1,27 +1,10 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-  ArrowRight,
-  BookOpen,
-  PenLine,
-  Brain,
-  Check,
-  Smartphone,
-  Calendar,
-} from 'lucide-react';
-import { getMonthsUntilEnem, getDiscountTier, STRIPE_PLANS } from '@/lib/stripe';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Calculator, PenLine, Target, BookOpen, Check } from 'lucide-react';
+import { CURSOS_UFU, TOTAL_QUESTOES, EDICAO } from '@/data/ufu/vestibular';
 import { useMemo } from 'react';
 
-/* ─── Helpers de intenção de compra ─── */
-function setPurchaseIntent(plan: string, coupon?: string) {
-  localStorage.setItem(
-    'atlas_purchase_intent',
-    JSON.stringify({ plan, ...(coupon ? { coupon } : {}) })
-  );
-}
-
-/* ─── Animation ─── */
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   visible: (i: number = 0) => ({
@@ -31,137 +14,65 @@ const fadeUp = {
   }),
 };
 
-/* ─── Data ─── */
-const OLD_WAY = [
+const CRITERIOS_DIRPS = [
   {
-    emoji: '📺',
-    title: 'Videoaulas intermináveis',
-    desc: 'Horas assistindo conteúdo sem praticar. A sensação de que está estudando — mas sem evolução real.',
+    n: 'C1',
+    titulo: 'Adequação ao tema e ao gênero',
+    desc: 'Sua redação responde exatamente ao que a banca pediu, no gênero exigido pelo edital.',
   },
   {
-    emoji: '🖨️',
-    title: 'Imprimir provas antigas',
-    desc: 'Custo, trabalho e zero feedback. Você não sabe o que errou, nem o que priorizar depois.',
+    n: 'C2',
+    titulo: 'Coerência e argumentação',
+    desc: 'Encadeamento das ideias, consistência do ponto de vista e força dos argumentos.',
   },
   {
-    emoji: '❓',
-    title: 'Sem saber onde está errando',
-    desc: 'Estuda tudo igualmente, sem descobrir quais áreas realmente estão te custando pontos.',
-  },
-];
-
-const PILLARS = [
-  {
-    icon: BookOpen,
-    tag: 'Sem imprimir nada',
-    title: 'Questões reais do ENEM',
-    desc: 'Resolva provas oficiais direto no celular. O sistema mapeia onde você erra e ajusta o que você estuda — automaticamente.',
+    n: 'C3',
+    titulo: 'Coesão textual',
+    desc: 'Uso adequado de conectivos, referência, repetições evitadas — o texto flui.',
   },
   {
-    icon: PenLine,
-    tag: 'Resultado em minutos',
-    title: 'Redação com análise completa',
-    desc: 'Escreva sua redação e receba feedback por competência, nota estimada e uma versão melhorada baseada no seu próprio raciocínio.',
+    n: 'C4',
+    titulo: 'Modalidade escrita padrão',
+    desc: 'Ortografia, acentuação, pontuação, concordância e regência conforme a norma culta.',
   },
   {
-    icon: Brain,
-    tag: 'Zero trabalho manual',
-    title: 'Flashcards automáticos',
-    desc: 'Quando você erra uma questão, o sistema cria flashcards automaticamente. Revisão espaçada que garante que o conteúdo fica.',
+    n: 'C5',
+    titulo: 'Uso produtivo dos textos-base',
+    desc: 'Diálogo real com a coletânea, sem cópia — a banca DIRPS penaliza paráfrase preguiçosa.',
   },
 ];
 
-const STEPS = [
-  {
-    num: '01',
-    title: 'Crie sua conta',
-    desc: 'Gratuito, sem cartão de crédito. Em menos de 1 minuto você já está dentro.',
-  },
-  {
-    num: '02',
-    title: 'Configure seu perfil',
-    desc: 'Escolha suas áreas de foco, língua estrangeira e meta diária. O Atlas monta seu cronograma automaticamente.',
-  },
-  {
-    num: '03',
-    title: 'Comece a evoluir',
-    desc: 'Resolva questões, escreva sua redação e veja exatamente onde você está melhorando.',
-  },
-];
-
-const FREE_FEATURES = [
-  '10 questões por dia em todas as áreas',
-  '1 redação por semana com análise por IA',
-  'Análise das 5 competências ENEM',
-  'Versão melhorada da redação',
-  'Tema do dia automático',
-  'Feedback detalhado por competência',
-  'Editor de redação no celular',
-  'Histórico de desempenho',
-];
-
-const PRO_FEATURES = [
-  'Questões ilimitadas em todas as áreas',
-  '60 redações por mês',
-  'Tema do dia automático',
-  'Análise das 5 competências ENEM',
-  'Versão melhorada da redação',
-  'Flashcards automáticos ao errar',
-  'Cápsulas de conhecimento',
-  'Plano diário personalizado',
-  'Histórico completo de desempenho',
-];
-
-/* ─── Component ─── */
 export default function Landing() {
-  const navigate = useNavigate();
-  const monthsUntilEnem = useMemo(() => getMonthsUntilEnem(), []);
-  const discountTier = useMemo(() => getDiscountTier(monthsUntilEnem), [monthsUntilEnem]);
-  const proPrice = STRIPE_PLANS.pro.price;
-  const discountedPrice = discountTier
-    ? proPrice * (1 - discountTier.percent / 100)
-    : proPrice;
-
-  const handleStartPro = () => {
-    setPurchaseIntent('pro');
-    navigate('/cadastro');
-  };
+  const totalCursos = CURSOS_UFU.length;
+  const campi = useMemo(
+    () => new Set(CURSOS_UFU.map((c) => `${c.campus}-${c.cidade}`)).size,
+    [],
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-
-      {/* ─── Nav ─── */}
+      {/* Nav */}
       <nav className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="max-w-5xl mx-auto flex items-center justify-between px-5 h-14">
           <Link to="/" className="flex items-center gap-2">
-            <img
-              src="https://storage.googleapis.com/gpt-engineer-file-uploads/f4QJ9UCag0bQmfSQvlHZMs1PDKy2/uploads/1770063094363-favicon.ico"
-              alt="Atlas"
-              className="h-6 w-6 rounded-md"
-            />
-            <span className="font-bold tracking-tight">Atlas</span>
+            <span className="font-bold tracking-tight">Placar UFU</span>
           </Link>
           <div className="flex items-center gap-2">
             <Link to="/login">
               <Button variant="ghost" size="sm" className="text-sm">Entrar</Button>
             </Link>
-            <Button
-              size="sm"
-              className="text-sm font-bold rounded-full px-4"
-              onClick={() => {
-                document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              Criar conta grátis
-            </Button>
+            <Link to="/ufu">
+              <Button size="sm" className="text-sm font-bold rounded-full px-4">
+                Calcular acertos
+              </Button>
+            </Link>
           </div>
         </div>
       </nav>
 
-      {/* ─── Hero ─── */}
+      {/* Hero */}
       <section className="pt-32 pb-24 px-5">
         <div className="max-w-3xl mx-auto text-center">
-
           <motion.div
             initial="hidden"
             animate="visible"
@@ -169,8 +80,8 @@ export default function Landing() {
             custom={0}
             className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-semibold mb-7"
           >
-            <Smartphone className="h-3 w-3" />
-            Provas reais do ENEM direto no celular
+            <Calculator className="h-3 w-3" />
+            Vestibular UFU {EDICAO} · dados oficiais DIRPS
           </motion.div>
 
           <motion.h1
@@ -180,13 +91,8 @@ export default function Landing() {
             custom={1}
             className="text-[2.4rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-6"
           >
-            Você já sabe que precisa{' '}
-            <br className="hidden sm:block" />
-            resolver provas.{' '}
-            <span className="text-muted-foreground">
-              O Atlas descobre
-              {' '}onde você erra.
-            </span>
+            Quantos acertos te colocam{' '}
+            <span className="text-muted-foreground">dentro da UFU?</span>
           </motion.h1>
 
           <motion.p
@@ -196,33 +102,30 @@ export default function Landing() {
             custom={2}
             className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed"
           >
-            Questões adaptativas, redação corrigida por IA e flashcards automáticos —
-            tudo baseado no seu desempenho real, sem imprimir nada.
+            Calculadora gratuita, sem cadastro. Descubra em 30 segundos onde você está
+            em relação à nota de corte real do seu curso — em {totalCursos} cursos,
+            {' '}{campi} campi.
           </motion.p>
 
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={fadeUp}
-            custom={3}
-          >
-            <Button
-              size="lg"
-              className="h-13 px-8 text-base font-bold rounded-full shadow-lg active:scale-[0.98] transition-transform"
-              onClick={() => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              Criar conta grátis
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3}>
+            <Link to="/ufu">
+              <Button
+                size="lg"
+                className="h-13 px-8 text-base font-bold rounded-full shadow-lg active:scale-[0.98] transition-transform"
+              >
+                Calcular meus acertos
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
             <p className="text-xs text-muted-foreground mt-3">
-              Sem cartão de crédito · Funciona no celular e computador
+              Grátis · Sem cadastro · Cortes oficiais {EDICAO}
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* ─── Problema ─── */}
-      <section className="py-20 px-5 bg-secondary/40">
+      {/* Insight — passar no corte não é passar */}
+      <section className="py-24 px-5 bg-foreground text-background">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial="hidden"
@@ -230,30 +133,41 @@ export default function Landing() {
             viewport={{ once: true }}
             variants={fadeUp}
             custom={0}
-            className="text-center mb-12"
+            className="text-center mb-14"
           >
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
-              O problema
+            <p className="text-xs font-bold uppercase tracking-widest text-background/50 mb-3">
+              O que ninguém te conta
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold">
-              Como a maioria dos estudantes se prepara
+            <h2 className="text-2xl sm:text-4xl font-bold text-background leading-tight max-w-2xl mx-auto">
+              A UFU classifica <span className="text-background/60">6×</span> mais candidatos
+              que vagas para a 2ª fase.
             </h2>
+            <p className="text-background/70 mt-5 max-w-xl mx-auto text-base leading-relaxed">
+              Passar no corte só te dá o direito de ter a redação corrigida.
+              A vaga é decidida na 2ª fase, contra 5 concorrentes por vaga que também passaram.
+            </p>
           </motion.div>
 
           <div className="grid sm:grid-cols-3 gap-5">
-            {OLD_WAY.map((item, i) => (
+            {[
+              { n: '1ª fase', t: 'Objetiva', d: '65 questões. Classifica 6× o número de vagas.' },
+              { n: '2ª fase', t: 'Redação', d: 'Corrigida só para os classificados. Peso 3 na nota final.' },
+              { n: 'Vaga', t: 'Nota ponderada', d: 'Soma dos acertos × pesos do curso + nota da redação.' },
+            ].map((s, i) => (
               <motion.div
-                key={item.title}
+                key={s.n}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
                 variants={fadeUp}
                 custom={i + 1}
-                className="bg-card border border-border rounded-2xl p-6 space-y-3"
+                className="border border-background/15 rounded-2xl p-6 space-y-2"
               >
-                <span className="text-3xl">{item.emoji}</span>
-                <h3 className="font-semibold text-foreground">{item.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-background/50">
+                  {s.n}
+                </p>
+                <h3 className="font-bold text-lg text-background">{s.t}</h3>
+                <p className="text-sm text-background/70 leading-relaxed">{s.d}</p>
               </motion.div>
             ))}
           </div>
@@ -264,124 +178,15 @@ export default function Landing() {
             viewport={{ once: true }}
             variants={fadeUp}
             custom={4}
-            className="text-center text-sm text-muted-foreground mt-8"
+            className="text-center text-sm text-background/60 mt-10 max-w-lg mx-auto"
           >
-            Muito esforço. Pouco progresso real.
+            Por isso o Placar UFU não te treina pra passar no corte — te treina pra passar com folga.
           </motion.p>
         </div>
       </section>
 
-      {/* ─── Solução / Pilares ─── */}
+      {/* Redação DIRPS */}
       <section className="py-24 px-5">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={0}
-            className="text-center mb-14"
-          >
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
-              A solução
-            </p>
-            <h2 className="text-2xl sm:text-3xl font-bold max-w-xl mx-auto leading-snug">
-              O método que funciona — do jeito que deveria ser desde o início
-            </h2>
-            <p className="text-muted-foreground mt-3 max-w-md mx-auto text-sm">
-              Resolver provas antigas é o caminho certo. O Atlas faz isso no seu celular
-              e ainda te diz o que fazer com os resultados.
-            </p>
-          </motion.div>
-
-          <div className="grid sm:grid-cols-3 gap-6">
-            {PILLARS.map((p, i) => (
-              <motion.div
-                key={p.title}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-                custom={i + 1}
-                className="bg-card border border-border rounded-2xl p-6 space-y-4"
-              >
-                <div className="w-11 h-11 rounded-xl bg-foreground flex items-center justify-center">
-                  <p.icon className="h-5 w-5 text-background" />
-                </div>
-                <div className="space-y-1">
-                  <span className="inline-block text-xs font-semibold bg-secondary text-secondary-foreground px-2.5 py-1 rounded-full">
-                    {p.tag}
-                  </span>
-                  <h3 className="font-bold text-lg text-foreground">{p.title}</h3>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">{p.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Como funciona ─── */}
-      <section className="py-20 px-5 bg-foreground text-background">
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={0}
-            className="text-center mb-14"
-          >
-            <h2 className="text-2xl sm:text-3xl font-bold text-background">
-              Comece em menos de 5 minutos
-            </h2>
-          </motion.div>
-
-          <div className="space-y-8">
-            {STEPS.map((step, i) => (
-              <motion.div
-                key={step.num}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-                custom={i + 1}
-                className="flex gap-6 items-start"
-              >
-                <span className="text-5xl font-black text-background/15 shrink-0 w-14 text-right leading-none pt-1">
-                  {step.num}
-                </span>
-                <div className="space-y-1">
-                  <h3 className="font-bold text-lg text-background">{step.title}</h3>
-                  <p className="text-sm text-background/60 leading-relaxed">{step.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={4}
-            className="text-center mt-14"
-          >
-            <Button
-              size="lg"
-              variant="secondary"
-              className="h-12 px-8 text-base font-bold rounded-full"
-              onClick={() => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              Criar conta grátis
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── Preços ─── */}
-      <section id="planos" className="py-24 px-5">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial="hidden"
@@ -389,172 +194,138 @@ export default function Landing() {
             viewport={{ once: true }}
             variants={fadeUp}
             custom={0}
-            className="text-center mb-4"
+            className="text-center mb-12"
           >
-            <h2 className="text-2xl sm:text-3xl font-bold">
-              Comece grátis, evolua quando quiser
+            <div className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-semibold mb-5">
+              <PenLine className="h-3 w-3" />
+              2ª fase · onde a vaga é decidida
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-bold leading-tight max-w-2xl mx-auto">
+              Corretor de redação nos 5 critérios oficiais da banca DIRPS
             </h2>
+            <p className="text-muted-foreground mt-4 max-w-xl mx-auto text-base leading-relaxed">
+              Sua redação avaliada exatamente pela rubrica do edital — sem inventar
+              critério, sem simplificação. Nota estimada, feedback por critério e uma
+              versão melhorada baseada no seu próprio texto.
+            </p>
           </motion.div>
 
-          {discountTier && (
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeUp}
-              custom={1}
-              className="text-center mb-10"
-            >
-              <span className="inline-flex items-center gap-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-4 py-2 rounded-full text-sm font-medium">
-                <Calendar className="h-3.5 w-3.5" />
-                {monthsUntilEnem} meses até o ENEM · Assine agora e ganhe {discountTier.percent}% de desconto
-              </span>
-            </motion.div>
-          )}
-
-          <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
-
-            {/* Free */}
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeUp}
-              custom={2}
-              className="rounded-2xl border border-border bg-card p-6 flex flex-col gap-6"
-            >
-              <div>
-                <h3 className="font-bold text-xl">Grátis</h3>
-                <p className="text-muted-foreground text-sm mt-1">Para experimentar sem compromisso</p>
-                <p className="text-4xl font-black mt-4">R$ 0</p>
-                <p className="text-xs text-muted-foreground">para sempre</p>
-              </div>
-              <ul className="space-y-3 flex-1">
-                {FREE_FEATURES.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm">
-                    <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <span className="text-foreground">{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link to="/cadastro">
-                <Button variant="outline" className="w-full font-semibold rounded-xl">
-                  Criar conta grátis
-                </Button>
-              </Link>
-            </motion.div>
-
-            {/* Pro */}
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeUp}
-              custom={3}
-              className="rounded-2xl border-2 border-foreground bg-foreground text-background p-6 flex flex-col gap-6 relative"
-            >
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                <span className="bg-background text-foreground text-xs font-bold px-3 py-1 rounded-full shadow">
-                  Recomendado
-                </span>
-              </div>
-
-              <div>
-                <h3 className="font-bold text-xl text-background">PRO</h3>
-                <p className="text-background/60 text-sm mt-1">Preparação completa e ilimitada</p>
-
-                {discountTier ? (
-                  <div className="mt-4">
-                    <span className="text-sm text-background/40 line-through">
-                      R$ {proPrice.toFixed(2).replace('.', ',')}
-                    </span>
-                    <p className="text-4xl font-black text-background">
-                      R$ {discountedPrice.toFixed(2).replace('.', ',')}
-                    </p>
-                    <p className="text-xs text-amber-400 font-semibold mt-1">
-                      -{discountTier.percent}% por tempo limitado
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-4xl font-black mt-4 text-background">
-                    R$ {proPrice.toFixed(2).replace('.', ',')}
-                  </p>
-                )}
-                <p className="text-xs text-background/40 mt-1">/mês · cancele quando quiser</p>
-              </div>
-
-              <ul className="space-y-3 flex-1">
-                {PRO_FEATURES.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm">
-                    <Check className="h-4 w-4 text-background mt-0.5 shrink-0" />
-                    <span className="text-background/90">{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Button
-                variant="secondary"
-                className="w-full font-bold rounded-xl"
-                onClick={handleStartPro}
+          <div className="grid sm:grid-cols-2 gap-4 mb-10">
+            {CRITERIOS_DIRPS.map((c, i) => (
+              <motion.div
+                key={c.n}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                custom={i + 1}
+                className="bg-card border border-border rounded-2xl p-5 flex gap-4"
               >
-                Começar com PRO
+                <div className="shrink-0 w-11 h-11 rounded-xl bg-foreground text-background flex items-center justify-center font-bold text-sm">
+                  {c.n}
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground">{c.titulo}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{c.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link to="/redacao-ufu">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 px-8 text-base font-bold rounded-full"
+              >
+                Corrigir minha redação
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            </motion.div>
-
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* ─── CTA Final ─── */}
-      <section className="py-20 px-5 bg-secondary/40">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          custom={0}
-          className="max-w-xl mx-auto text-center space-y-6"
-        >
-          <h2 className="text-2xl sm:text-3xl font-bold leading-snug">
-            O ENEM não espera.<br />Comece hoje.
+      {/* Em breve — trilha por curso */}
+      <section className="py-24 px-5 bg-secondary/40">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={0}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center gap-2 bg-background border border-border px-3 py-1.5 rounded-full text-xs font-semibold mb-5">
+              <Target className="h-3 w-3" />
+              Em breve
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-bold leading-tight max-w-2xl mx-auto">
+              Trilha de questões por curso, com os pesos oficiais
+            </h2>
+            <p className="text-muted-foreground mt-4 max-w-xl mx-auto text-base leading-relaxed">
+              Cada curso da UFU pesa as 11 disciplinas de forma diferente. Estudar 1 hora
+              de matemática vale muito mais pra quem quer Engenharia do que pra quem quer
+              Direito. A trilha vai priorizar automaticamente as disciplinas que mais pesam
+              no seu curso — usando os pesos oficiais do quadro DIRPS {EDICAO}.
+            </p>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-3 gap-5 max-w-3xl mx-auto">
+            {[
+              { icon: Target, t: 'Priorização por peso', d: 'As disciplinas com peso 3 no seu curso viram foco automático.' },
+              { icon: BookOpen, t: 'Questões reais', d: `${TOTAL_QUESTOES} questões por prova, cobertura das 11 disciplinas.` },
+              { icon: Check, t: 'Onde investir', d: 'Análise de pontos deixados na mesa por disciplina × peso.' },
+            ].map((f, i) => (
+              <motion.div
+                key={f.t}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                custom={i + 1}
+                className="bg-card border border-border rounded-2xl p-5 space-y-3"
+              >
+                <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
+                  <f.icon className="h-4 w-4 text-background" />
+                </div>
+                <h3 className="font-semibold text-foreground">{f.t}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{f.d}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA final */}
+      <section className="py-24 px-5">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4">
+            Comece pelo que importa: descobrir onde você está
           </h2>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            Crie sua conta grátis, faça sua primeira redação ou questão agora mesmo
-            e veja onde você realmente está.
+          <p className="text-muted-foreground mb-8">
+            A calculadora é grátis e não pede cadastro. Você sai dela sabendo,
+            em acertos brutos, quanto falta pra chegar no seu curso.
           </p>
-          <div>
+          <Link to="/ufu">
             <Button
               size="lg"
-              className="h-12 px-8 text-base font-bold rounded-full shadow-lg active:scale-[0.98] transition-transform"
-              onClick={() => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' })}
+              className="h-13 px-8 text-base font-bold rounded-full shadow-lg"
             >
-              Criar conta grátis
+              Calcular meus acertos
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <p className="text-xs text-muted-foreground mt-3">
-              Sem cartão de crédito · Funciona no celular
-            </p>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ─── Footer ─── */}
-      <footer className="py-8 text-center border-t border-border space-y-2">
-        <p className="text-xs text-muted-foreground">
-          Inteligência Atlas © {new Date().getFullYear()}
-        </p>
-        <div className="flex justify-center gap-4">
-          <Link to="/termos" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-            Termos de uso
-          </Link>
-          <span className="text-xs text-muted-foreground">·</span>
-          <Link to="/privacidade" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-            Política de privacidade
           </Link>
         </div>
-      </footer>
+      </section>
 
+      <footer className="border-t border-border py-8 px-5 text-center text-xs text-muted-foreground">
+        Dados oficiais DIRPS/UFU · Vestibular {EDICAO} ·{' '}
+        <Link to="/privacidade" className="underline">Privacidade</Link> ·{' '}
+        <Link to="/termos" className="underline">Termos</Link>
+      </footer>
     </div>
   );
 }
