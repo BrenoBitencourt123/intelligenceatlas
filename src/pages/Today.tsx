@@ -126,23 +126,6 @@ const Today = () => {
                 </Button>
               </CardContent>
             </Card>
-          ) : dayPlan.isMista ? (
-            /* Simulado (sábado) */
-            <Card className="border-border/50 shadow-sm">
-              <CardContent className="p-6 space-y-4">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Simulado
-                  </p>
-                  <h2 className="text-xl font-bold text-foreground">Simulado ENEM</h2>
-                  <p className="text-sm text-muted-foreground">Escolha o ano e o dia · 90 questões na ordem oficial</p>
-                </div>
-                <Button onClick={() => navigate('/simulado')} className="w-full gap-2">
-                  Escolher simulado
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
           ) : null}
 
           {/* ── Revisão rápida ── */}
