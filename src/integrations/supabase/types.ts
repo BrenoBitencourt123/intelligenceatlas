@@ -204,7 +204,9 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          cota_ufu: string | null
           created_at: string
+          curso_ufu: string | null
           email: string
           enem_target_date: string | null
           flexible_quota: boolean
@@ -217,7 +219,9 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          cota_ufu?: string | null
           created_at?: string
+          curso_ufu?: string | null
           email: string
           enem_target_date?: string | null
           flexible_quota?: boolean
@@ -230,7 +234,9 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          cota_ufu?: string | null
           created_at?: string
+          curso_ufu?: string | null
           email?: string
           enem_target_date?: string | null
           flexible_quota?: boolean
