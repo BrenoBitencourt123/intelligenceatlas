@@ -65,11 +65,7 @@ const App = () => (
             />
             <Route
               path="/redacao"
-              element={
-                <ProtectedRoute>
-                  <Essay />
-                </ProtectedRoute>
-              }
+              element={<Navigate to="/redacao-ufu" replace />}
             />
             <Route
               path="/objetivas"
