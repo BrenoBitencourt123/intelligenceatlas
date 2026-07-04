@@ -212,8 +212,7 @@ const Today = () => {
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  No PRO: questões ilimitadas, 60 redações/mês, flashcards automáticos e plano diário
-                  personalizado.
+                  No PRO: questões ilimitadas, correção de redação e plano diário personalizado.
                 </p>
                 <Button
                   size="sm"
