@@ -3,8 +3,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ============================================================
 // Corretor de redação — modelo VESTIBULAR UFU (banca DIRPS)
-// Rubrica oficial do Edital 18/2026 (Quadro 2): 5 critérios, 80 pts,
-// notas por FAIXA. Nota zero em qualquer condição eliminatória = eliminado.
+// ARQUITETURA v4 (detetive + juiz):
+//   1) A IA NÃO dá nota. Ela só coleta EVIDÊNCIAS (achados) do texto.
+//   2) Código determinístico mapeia achados → faixas oficiais do
+//      Quadro 2 do Edital DIRPS 18/2026. Rigor vira regra, não opinião.
 // Espelho da rubrica em src/data/ufu/redacao.ts — manter em sincronia.
 // ============================================================
 
@@ -14,124 +16,285 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// gpt-4.1-mini (mesmo modelo do analyze-essay ENEM)
+// gpt-4.1-mini
 const INPUT_COST_PER_MILLION = 0.4;
 const OUTPUT_COST_PER_MILLION = 1.6;
 
-// Faixas válidas por critério (clamp server-side — a banca não dá 17/20)
-const FAIXAS_VALIDAS: Record<string, number[]> = {
-  proposta_tematica: [20, 15, 10, 5, 0],
-  genero_discurso: [20, 15, 10, 5, 0],
-  coesao_coerencia: [20, 15, 10, 5, 0],
-  convencoes_escrita: [12, 9, 6, 3, 0],
-  leitura_motivadores: [8, 6, 4, 2, 0],
-};
+// ─────────────────────────────────────────────────────────────
+// PROMPT: só extração de evidências. Nenhuma nota é pedida.
+// ─────────────────────────────────────────────────────────────
+const SYSTEM_PROMPT = `Você é um analista linguístico da banca DIRPS/UFU. Sua função NÃO é dar nota — é fazer um LEVANTAMENTO COMPLETO E IMPIEDOSO de evidências no texto do candidato. Outro sistema aplicará a rubrica sobre seus achados. Seja exaustivo: evidência não registrada = evidência que não existe. Na dúvida se algo é falha, REGISTRE (com o trecho literal).
 
-const ORDEM_CRITERIOS = [
-  "proposta_tematica",
-  "genero_discurso",
-  "coesao_coerencia",
-  "convencoes_escrita",
-  "leitura_motivadores",
-];
+Analise o texto e responda APENAS com este JSON:
 
-const SYSTEM_PROMPT = `Você é um corretor oficial da banca DIRPS/UFU (Vestibular da Universidade Federal de Uberlândia). Você corrige EXATAMENTE pela rubrica oficial do edital, com o rigor real da banca — que é rigorosa, não bondosa. Redações medianas ficam na casa de 45-60/80. Nota alta (70+) é rara e exige texto excelente de verdade.
-
-REGRA DE OURO: cada critério só aceita as notas das FAIXAS oficiais abaixo. Nunca invente valores intermediários.
-
-CALIBRAÇÃO OBRIGATÓRIA DA BANCA:
-- Em dúvida entre duas faixas, atribua SEMPRE a menor.
-- Faixa máxima em qualquer critério exige AUSÊNCIA de falhas naquele critério. UMA falha identificável e citável já derruba para a faixa seguinte.
-- Toda falha PONTUA no critério correspondente — nunca relegue uma falha apenas ao campo "alertas".
-- Distribuição realista da banca: redação mediana fica entre 45 e 58. Total acima de 70 é excepcional e exige texto sem falhas relevantes em nenhum critério.
-
-═══ ETAPA 0 — CONDIÇÕES ELIMINATÓRIAS (verificar ANTES de pontuar) ═══
-A redação recebe NOTA ZERO TOTAL (e o candidato é ELIMINADO do vestibular) se:
-a) Fugir da proposta temática;
-b) Fugir do gênero solicitado;
-c) Ter menos de 15 linhas (use a estimativa de linhas informada);
-d) Ser cópia total dos textos motivadores;
-e) Estar total/parcialmente em língua estrangeira;
-f) Desrespeitar direitos humanos (termos racistas, sexistas, homofóbicos);
-g) Conter assinatura/nome/sinal que identifique o candidato.
-Se houver eliminação, marque eliminado=true, explique o(s) motivo(s) e dê nota 0 em tudo.
-Se houver RISCO PRÓXIMO de eliminação (tangenciamento forte, gênero descaracterizado mas reconhecível), NÃO elimine, mas registre em "alertas".
-
-═══ RUBRICA OFICIAL (Quadro 2 do Edital DIRPS 18/2026) ═══
-
-1. PROPOSTA TEMÁTICA (20 pts) — faixas: 20 | 15 | 10 | 5 | 0
-20: compreensão totalmente adequada E plena obediência ao que se pede. TODOS os parágrafos dentro do recorte.
-15: compreensão adequada, falhas pontuais que não comprometem.
-10: compreensão pouco adequada, falhas que comprometem significativamente.
-5: TANGENCIAMENTO — assunto relacionado sem o recorte específico exigido; foco no tema amplo ou em aspecto periférico.
-0: fuga total (elimina).
-PROCEDIMENTO: verifique PARÁGRAFO POR PARÁGRAFO se desenvolve o RECORTE específico da proposta. Um parágrafo que escorrega pro tema amplo ou pra assunto vizinho (sem conectar de volta ao recorte) = falha pontual → máximo 15. Dois ou mais parágrafos fora do recorte → 10.
-
-2. GÊNERO DO DISCURSO (20 pts) — faixas: 20 | 15 | 10 | 5 | 0
-20: contempla adequadamente TODOS os elementos constitutivos do gênero, sem falhas de estilo.
-15: falhas na construção COMPOSICIONAL (estrutura: elementos do gênero faltando ou incompletos, ex.: artigo sem título, carta sem fecho).
-10: falhas no ESTILO (registro, pessoa do discurso, interlocução ou tom inadequados ao gênero — ex.: 2ª pessoa ou tom de carta num artigo de opinião, informalidade em gênero formal).
-5: falhas na composição E no estilo.
-0: gênero irreconhecível (elimina).
-ATENÇÃO: falha de registro/pessoa do discurso NÃO é "alerta" — é falha de ESTILO e coloca o critério na faixa 10. Se além disso faltar elemento composicional, desce pra 5.
-EXEMPLO OBRIGATÓRIO: "Caro leitor, pense comigo" ou qualquer tratamento direto ao leitor/2ª pessoa num artigo de opinião = falha de ESTILO = faixa 10. Nunca 15, nunca só alerta.
-
-3. COESÃO E COERÊNCIA TEXTUAIS (20 pts) — faixas: 20 | 15 | 10 | 5 | 0
-20: coerência adequada E ótima articulação (coesão referencial e sequencial), sem clichês.
-15: coerente, com falhas de coesão que não comprometem o sentido.
-10: coeso, mas com falhas de coerência: baixa informatividade, pouca progressão temática, contradições, clichês.
-5: falhas conceituais E articulação inadequada que comprometem significativamente.
-0: incoeso e incoerente.
-PROCEDIMENTO: cace ativamente ANTES de pontuar: (a) clichês e fórmulas prontas ("desde os primórdios", "a sociedade como um todo", "nos dias de hoje"); (b) contradição entre afirmações de parágrafos diferentes; (c) repetição de ideia ou palavra sem retomada pronominal/sinonímia; (d) parágrafo com baixa progressão (não adiciona informação nova). Encontrou ocorrências de 2 ou mais desses tipos → máximo 10.
-CONTRADIÇÃO DIRETA (ex.: afirmar que X "é o maior problema" num parágrafo e que Y "é o maior problema" em outro) compromete a coerência SOZINHA → máximo 10, mesmo sem outros defeitos.
-
-4. CONVENÇÕES DE ESCRITA (12 pts) — faixas: 12 | 9 | 6 | 3 | 0
-(ortografia, pontuação, concordância verbal/nominal, regência verbal/nominal)
-PROCEDIMENTO OBRIGATÓRIO: varra o texto FRASE A FRASE e liste TODOS os desvios encontrados em "desviosContados" ANTES de atribuir a faixa. Checagens que a banca sempre faz: concordância com verbo "haver" impessoal (ex.: "haviam pessoas" = desvio), concordância sujeito-verbo distante, regência ("assistir o" = desvio; correto: assistir A), formas inexistentes ("menas"), grafia e junções indevidas ("porisso", "concerteza"), vírgula entre sujeito e verbo, crase.
-PONTUE PELA CONTAGEM: 0-2 desvios = 12; 3-5 desvios = 9; 6+ desvios OU desvios recorrentes com predominância de sintaxe simples = 6; desvios que comprometem o sentido global = 3; generalizados = 0.
-
-5. LEITURA DOS TEXTOS MOTIVADORES E REPERTÓRIO (8 pts) — faixas: 8 | 6 | 4 | 2 | 0
-8: leitura CRÍTICA + diálogo real com os motivadores + repertório cultural pertinente e FUNCIONAL no argumento.
-6: leitura satisfatória mas só PARÁFRASE + repertório pertinente.
-4: leitura superficial, simples menções genéricas ("dados mostram que...") + repertório DE BOLSO.
-2: leitura equivocada + repertório de bolso.
-0: sem diálogo, sem repertório, com cópia de trechos.
-DEFINIÇÃO DE REPERTÓRIO DE BOLSO: citação célebre decorada (Mandela, Einstein, "frase de efeito") que NÃO sustenta o argumento específico do parágrafo — poderia ser removida sem perda lógica. Repertório de bolso → máximo 4. Menção vaga a "dados/estudos" sem especificar também NÃO é diálogo com motivadores.
-TESTE PRÁTICO: remova mentalmente a citação — o argumento continua idêntico? Então é de bolso → máximo 4. Faixa 6 exige repertório que FAZ TRABALHO no argumento.
-
-═══ AUTOVERIFICAÇÃO FINAL (obrigatória antes de fechar o JSON) ═══
-Releia suas notas e corrija-as se necessário:
-1. Algum item de "alertas" descreve falha de estilo/registro/pessoa do discurso? → gênero_discurso ≤ 10 (mova a falha pra lá).
-2. O texto tem clichê E (contradição OU repetição OU baixa progressão)? → coesao_coerencia ≤ 10.
-3. O repertório citado sustenta o argumento específico (teste da remoção)? Se não → leitura_motivadores ≤ 4.
-4. Você varreu TODAS as frases atrás de desvios (haver impessoal, regência, "menas", junções, vírgula sujeito-verbo, crase)? Confirme a contagem antes da faixa.
-5. Algum critério recebeu faixa máxima MESMO com falha citada na justificativa? → desça uma faixa.
-ATENÇÃO: se a proposta/textos motivadores não foram informados, avalie o diálogo com a temática e o repertório, e registre essa limitação em "alertas".
-
-═══ FORMATO DE RESPOSTA (JSON puro) ═══
 {
-  "eliminado": boolean,
-  "motivosEliminacao": ["..."] ,
-  "alertas": ["risco próximo de zero ou limitação da correção, se houver"],
-  "criterios": [
-    {
-      "id": "proposta_tematica" (e os demais, NESTA ordem: proposta_tematica, genero_discurso, coesao_coerencia, convencoes_escrita, leitura_motivadores),
-      "pontos": number (APENAS valores da faixa),
-      "faixa": "rótulo oficial da faixa atribuída",
-      "justificativa": "por que caiu nesta faixa e não na de cima — 2-3 frases diretas",
-      "evidencias": ["trecho literal da redação que comprova", "..."] (1-3 trechos),
-      "comoSubirUmaFaixa": "o que exatamente faltou pra faixa seguinte, acionável"
-    }
-  ],
-  "totalScore": number (soma, 0-80),
-  "desviosContados": ["desvio 1: trecho → correção", "..."] (para convenções; liste até 8),
-  "feedbackGeral": "3-4 frases: diagnóstico honesto + a UMA prioridade de maior impacto",
-  "prioridadeUnica": "se o aluno só melhorar UMA coisa na próxima redação, qual"
+  "eliminatorias": {
+    "fugaTotalDoTema": boolean,        // texto NÃO trata da proposta temática
+    "fugaTotalDoGenero": boolean,      // gênero irreconhecível
+    "copiaTotalDosMotivadores": boolean,
+    "linguaEstrangeira": boolean,      // trechos relevantes em outra língua
+    "desrespeitoDireitosHumanos": boolean,
+    "identificacaoDoCandidato": boolean, // nome/assinatura/sinal identificador
+    "justificativa": "se alguma for true, explique qual e por quê; senão string vazia"
+  },
+
+  "proposta": {
+    "compreensaoGlobal": "adequada" | "pouco_adequada" | "equivocada",
+    "focoNoTemaAmploSemRecorte": boolean, // trata só do tema geral, nunca do recorte específico
+    "paragrafosForaDoRecorte": [ { "trecho": "início literal do parágrafo", "motivo": "por que escapa do recorte específico da proposta" } ]
+    // Um parágrafo que discute assunto vizinho (ex.: tema amplo 'abandono infantil' quando o recorte é 'desafios da adoção') SEM conectar de volta ao recorte = fora do recorte.
+  },
+
+  "genero": {
+    "elementosAusentes": ["elemento constitutivo esperado que falta, ex.: título, tese explícita, refutação, fecho"],
+    "falhasComposicionais": [ { "trecho": "...", "motivo": "estrutura/parte do gênero incompleta ou mal construída" } ],
+    "falhasDeEstilo": [ { "trecho": "...", "motivo": "registro, pessoa do discurso, interlocução ou tom inadequados ao gênero" } ]
+    // ex. CLÁSSICO de falha de estilo: 'Caro leitor, pense comigo' / 2ª pessoa / tom de carta num artigo de opinião; informalidade em gênero formal. SEMPRE registre aqui, nunca ignore.
+  },
+
+  "coesaoCoerencia": {
+    "cliches": ["trecho literal de cada clichê/fórmula pronta, ex.: 'desde os primórdios', 'a sociedade como um todo', 'nos dias de hoje'"],
+    "contradicoes": [ { "afirmacao1": "trecho", "afirmacao2": "trecho", "explicacao": "por que se contradizem" } ],
+    "repeticoesSemRetomada": ["palavra/ideia repetida sem pronome ou sinônimo, com trecho"],
+    "paragrafosSemProgressao": ["parágrafo que não adiciona informação nova, com trecho inicial"],
+    "falhasDeCoesaoLeves": ["conectivo mal usado / retomada falha que NÃO compromete o sentido, com trecho"],
+    "falhasConceituaisGraves": ["incoerência que compromete significativamente o sentido, com trecho"]
+  },
+
+  "convencoes": {
+    "desvios": [ { "trecho": "literal", "correcao": "forma correta", "tipo": "concordância|regência|grafia|pontuação|crase|forma inexistente" } ],
+    // VARRA FRASE A FRASE. Checagens obrigatórias: 'haver' impessoal ("haviam pessoas"), concordância com sujeito distante, regência (assistir A, "assistir o sofrimento" = desvio), formas inexistentes ("menas"), junções ("porisso", "concerteza"), vírgula entre sujeito e verbo ("As famílias que esperam, desistem"), crase.
+    "sintaxePredominante": "simples" | "variada",
+    "desviosComprometemSentidoGlobal": boolean
+  },
+
+  "leitura": {
+    "dialogoComTema": "critico" | "parafrase" | "mencao_generica" | "equivocado" | "ausente",
+    // critico = analisa/problematiza dados ou ideias dos motivadores/tema; parafrase = reformula sem analisar; mencao_generica = "dados oficiais mostram" sem especificar nada
+    "repertorios": [ { "trecho": "citação/referência usada", "sustentaOArgumento": boolean, "porque": "teste: removendo, o argumento muda? Se não muda, é decorativo (false)" } ],
+    "copiaDeTrechosDosMotivadores": boolean
+  },
+
+  "feedbackGeral": "3-4 frases honestas: diagnóstico do texto + a UMA prioridade de maior impacto",
+  "prioridadeUnica": "se o aluno melhorar UMA coisa na próxima redação, qual",
+  "alertas": ["limitações desta análise (ex.: proposta não informada) ou riscos próximos de eliminação"]
 }`;
 
+// ─────────────────────────────────────────────────────────────
+// JUIZ: achados → faixas oficiais (determinístico)
+// ─────────────────────────────────────────────────────────────
+interface Achados {
+  eliminatorias: {
+    fugaTotalDoTema: boolean; fugaTotalDoGenero: boolean;
+    copiaTotalDosMotivadores: boolean; linguaEstrangeira: boolean;
+    desrespeitoDireitosHumanos: boolean; identificacaoDoCandidato: boolean;
+    justificativa: string;
+  };
+  proposta: {
+    compreensaoGlobal: string; focoNoTemaAmploSemRecorte: boolean;
+    paragrafosForaDoRecorte: { trecho: string; motivo: string }[];
+  };
+  genero: {
+    elementosAusentes: string[];
+    falhasComposicionais: { trecho: string; motivo: string }[];
+    falhasDeEstilo: { trecho: string; motivo: string }[];
+  };
+  coesaoCoerencia: {
+    cliches: string[]; contradicoes: { afirmacao1: string; afirmacao2: string; explicacao: string }[];
+    repeticoesSemRetomada: string[]; paragrafosSemProgressao: string[];
+    falhasDeCoesaoLeves: string[]; falhasConceituaisGraves: string[];
+  };
+  convencoes: {
+    desvios: { trecho: string; correcao: string; tipo: string }[];
+    sintaxePredominante: string; desviosComprometemSentidoGlobal: boolean;
+  };
+  leitura: {
+    dialogoComTema: string;
+    repertorios: { trecho: string; sustentaOArgumento: boolean; porque: string }[];
+    copiaDeTrechosDosMotivadores: boolean;
+  };
+  feedbackGeral: string; prioridadeUnica: string; alertas: string[];
+}
+
+interface CriterioJulgado {
+  id: string; pontos: number; faixa: string;
+  justificativa: string; evidencias: string[]; comoSubirUmaFaixa: string;
+}
+
+const arr = <T,>(v: T[] | undefined | null): T[] => (Array.isArray(v) ? v : []);
+
+function julgarProposta(a: Achados): CriterioJulgado {
+  const fora = arr(a.proposta?.paragrafosForaDoRecorte);
+  const comp = a.proposta?.compreensaoGlobal ?? "adequada";
+  let pontos: number, faixa: string, justificativa: string;
+
+  if (comp === "equivocada") {
+    pontos = 5; faixa = "Tangenciamento do tema";
+    justificativa = "Compreensão equivocada da proposta: o texto orbita o assunto sem desenvolver o recorte exigido.";
+  } else if (a.proposta?.focoNoTemaAmploSemRecorte) {
+    pontos = 5; faixa = "Tangenciamento do tema";
+    justificativa = "O texto trata do tema amplo sem desenvolver o recorte específico exigido pela proposta.";
+  } else if (fora.length >= 2 || comp === "pouco_adequada") {
+    pontos = 10; faixa = "Atendimento parcial à proposta";
+    justificativa = `Falhas que comprometem o atendimento: ${fora.length} parágrafo(s) fora do recorte específico.`;
+  } else if (fora.length === 1) {
+    pontos = 15; faixa = "Atendimento satisfatório à proposta";
+    justificativa = `Compreensão adequada, mas um parágrafo escapa do recorte: ${fora[0].motivo}`;
+  } else {
+    pontos = 20; faixa = "Atendimento total à proposta";
+    justificativa = "Todos os parágrafos desenvolvem o recorte específico da proposta.";
+  }
+  return {
+    id: "proposta_tematica", pontos, faixa, justificativa,
+    evidencias: fora.map((f) => f.trecho).slice(0, 3),
+    comoSubirUmaFaixa: pontos >= 20 ? "Critério no teto — mantenha todos os parágrafos amarrados ao recorte."
+      : "Amarre cada parágrafo explicitamente ao recorte da proposta: ao abrir um exemplo ou causa, feche mostrando o que ele diz sobre o recorte específico.",
+  };
+}
+
+function julgarGenero(a: Achados): CriterioJulgado {
+  const estilo = arr(a.genero?.falhasDeEstilo);
+  const compos = [...arr(a.genero?.falhasComposicionais)];
+  const ausentes = arr(a.genero?.elementosAusentes);
+  const temCompos = compos.length > 0 || ausentes.length > 0;
+  const temEstilo = estilo.length > 0;
+  let pontos: number, faixa: string, justificativa: string;
+
+  if (temEstilo && temCompos) {
+    pontos = 5; faixa = "Produção insatisfatória do gênero";
+    justificativa = `Falhas de composição (${[...ausentes, ...compos.map((c) => c.motivo)].slice(0, 2).join("; ")}) E de estilo (${estilo[0].motivo}).`;
+  } else if (temEstilo) {
+    pontos = 10; faixa = "Produção parcialmente satisfatória (falhas no estilo)";
+    justificativa = `Falha de estilo no gênero: ${estilo.map((e) => e.motivo).slice(0, 2).join("; ")}.`;
+  } else if (temCompos) {
+    pontos = 15; faixa = "Produção parcialmente satisfatória (falhas na composição)";
+    justificativa = `Falhas composicionais: ${[...ausentes, ...compos.map((c) => c.motivo)].slice(0, 3).join("; ")}.`;
+  } else {
+    pontos = 20; faixa = "Produção totalmente satisfatória do gênero";
+    justificativa = "Todos os elementos constitutivos do gênero presentes, com estilo adequado.";
+  }
+  return {
+    id: "genero_discurso", pontos, faixa, justificativa,
+    evidencias: [...estilo.map((e) => e.trecho), ...compos.map((c) => c.trecho)].filter(Boolean).slice(0, 3),
+    comoSubirUmaFaixa: temEstilo
+      ? "Elimine as marcas de estilo alheias ao gênero (registro, pessoa do discurso, interlocução) — é a falha mais barata de corrigir."
+      : temCompos
+        ? `Complete a estrutura do gênero: ${ausentes.slice(0, 2).join(", ") || "revise as partes apontadas"}.`
+        : "Critério no teto.",
+  };
+}
+
+function julgarCoesao(a: Achados): CriterioJulgado {
+  const c = a.coesaoCoerencia ?? ({} as Achados["coesaoCoerencia"]);
+  const cliches = arr(c.cliches), contra = arr(c.contradicoes),
+    repet = arr(c.repeticoesSemRetomada), semProg = arr(c.paragrafosSemProgressao),
+    leves = arr(c.falhasDeCoesaoLeves), graves = arr(c.falhasConceituaisGraves);
+  const tiposCoerencia =
+    (cliches.length ? 1 : 0) + (contra.length ? 1 : 0) + (repet.length ? 1 : 0) + (semProg.length ? 1 : 0);
+  let pontos: number, faixa: string, justificativa: string;
+
+  if (graves.length > 0) {
+    pontos = 5; faixa = "Texto pouco coerente e pouco coeso";
+    justificativa = `Falhas conceituais que comprometem o sentido: ${graves[0]}`;
+  } else if (contra.length > 0 || tiposCoerencia >= 2) {
+    pontos = 10; faixa = "Texto coeso, com falhas na coerência";
+    const partes: string[] = [];
+    if (contra.length) partes.push(`contradição (${contra[0].explicacao})`);
+    if (cliches.length) partes.push(`${cliches.length} clichê(s)`);
+    if (repet.length) partes.push("repetição sem retomada");
+    if (semProg.length) partes.push("baixa progressão");
+    justificativa = `Falhas de coerência: ${partes.join("; ")}.`;
+  } else if (tiposCoerencia === 1 || leves.length > 0) {
+    pontos = 15; faixa = "Texto coerente, com falhas de coesão";
+    justificativa = cliches.length
+      ? `Coerente, mas com fórmulas prontas que empobrecem a articulação: ${cliches.slice(0, 2).join("; ")}.`
+      : `Falhas leves de coesão que não comprometem o sentido: ${leves[0] ?? repet[0] ?? semProg[0] ?? ""}`;
+  } else {
+    pontos = 20; faixa = "Texto totalmente coeso e coerente";
+    justificativa = "Articulação referencial e sequencial adequadas, sem clichês, contradições ou repetições.";
+  }
+  return {
+    id: "coesao_coerencia", pontos, faixa, justificativa,
+    evidencias: [...contra.map((x) => `"${x.afirmacao1}" × "${x.afirmacao2}"`), ...cliches].slice(0, 3),
+    comoSubirUmaFaixa: contra.length
+      ? "Resolva a contradição: decida qual é a tese e alinhe os parágrafos a ela."
+      : cliches.length
+        ? "Troque as fórmulas prontas por afirmações específicas do seu recorte — clichê é espaço perdido."
+        : "Varie retomadas com pronomes e sinônimos e garanta que cada parágrafo adicione informação nova.",
+  };
+}
+
+function julgarConvencoes(a: Achados): CriterioJulgado {
+  const desvios = arr(a.convencoes?.desvios);
+  const simples = a.convencoes?.sintaxePredominante === "simples";
+  const n = desvios.length;
+  let pontos: number, faixa: string;
+
+  if (a.convencoes?.desviosComprometemSentidoGlobal) {
+    pontos = 3; faixa = "Domínio insatisfatório da norma-padrão";
+  } else if (n >= 6 || (n >= 3 && simples)) {
+    pontos = 6; faixa = "Pouco domínio da norma-padrão";
+  } else if (n >= 3 || (n > 0 && simples)) {
+    pontos = 9; faixa = "Bom domínio da norma-padrão";
+  } else if (n <= 2 && !simples) {
+    pontos = 12; faixa = "Pleno domínio da norma-padrão";
+  } else {
+    pontos = 9; faixa = "Bom domínio da norma-padrão";
+  }
+  return {
+    id: "convencoes_escrita", pontos, faixa,
+    justificativa: `${n} desvio(s) identificado(s)${simples ? ", com predominância de construções sintáticas simples" : ""}. A banca admite no máximo 2 desvios para a faixa plena.`,
+    evidencias: desvios.slice(0, 3).map((d) => `${d.trecho} → ${d.correcao}`),
+    comoSubirUmaFaixa: n > 0
+      ? `Corrija os padrões apontados (${[...new Set(desvios.map((d) => d.tipo))].join(", ")}) e varie a construção das frases (subordinação, inversões).`
+      : "Varie mais a sintaxe: períodos compostos, subordinação, inversões.",
+  };
+}
+
+function julgarLeitura(a: Achados): CriterioJulgado {
+  const dialogo = a.leitura?.dialogoComTema ?? "ausente";
+  const reps = arr(a.leitura?.repertorios);
+  const temBolso = reps.some((r) => !r.sustentaOArgumento);
+  const temFuncional = reps.some((r) => r.sustentaOArgumento);
+  const copia = a.leitura?.copiaDeTrechosDosMotivadores === true;
+  let pontos: number, faixa: string, justificativa: string;
+
+  if (copia && dialogo === "ausente") {
+    pontos = 0; faixa = "Uso totalmente inadequado";
+    justificativa = "Cópia de trechos sem diálogo próprio com o tema.";
+  } else if (dialogo === "equivocado") {
+    pontos = 2; faixa = "Uso inadequado";
+    justificativa = "Leitura equivocada do tema/motivadores.";
+  } else if (dialogo === "mencao_generica" || dialogo === "ausente" || temBolso) {
+    pontos = 4; faixa = "Uso pouco adequado";
+    const partes: string[] = [];
+    if (dialogo === "mencao_generica") partes.push("menções genéricas sem especificar dados");
+    if (temBolso) {
+      const bolso = reps.find((r) => !r.sustentaOArgumento);
+      partes.push(`repertório de bolso ("${bolso?.trecho.slice(0, 60)}..." — ${bolso?.porque})`);
+    }
+    justificativa = `Leitura superficial: ${partes.join("; ")}.`;
+  } else if (dialogo === "parafrase") {
+    pontos = 6; faixa = "Uso adequado";
+    justificativa = "Leitura satisfatória, mas em nível de paráfrase, com repertório pertinente.";
+  } else {
+    pontos = temFuncional ? 8 : 6;
+    faixa = pontos === 8 ? "Uso totalmente adequado" : "Uso adequado";
+    justificativa = pontos === 8
+      ? "Leitura crítica com repertório que trabalha a favor do argumento."
+      : "Leitura crítica, mas sem repertório cultural que agregue.";
+  }
+  return {
+    id: "leitura_motivadores", pontos, faixa, justificativa,
+    evidencias: reps.map((r) => r.trecho).slice(0, 3),
+    comoSubirUmaFaixa: temBolso
+      ? "Troque a citação decorativa por repertório que sustente o argumento — ou conecte-a explicitamente à sua tese (o teste: se removê-la, o parágrafo deve perder força)."
+      : "Vá além da paráfrase: analise, problematize ou refute uma ideia dos textos motivadores.",
+  };
+}
+
 const calculateCost = (p: number, c: number) =>
-  (p * INPUT_COST_PER_MILLION) / 1_000_000 +
-  (c * OUTPUT_COST_PER_MILLION) / 1_000_000;
+  (p * INPUT_COST_PER_MILLION) / 1_000_000 + (c * OUTPUT_COST_PER_MILLION) / 1_000_000;
 
 function estimarLinhas(texto: string): number {
   return texto.split("\n").reduce((total, par) => {
@@ -147,7 +310,7 @@ serve(async (req) => {
   }
 
   try {
-    // ── Auth (mesmo padrão do analyze-essay) ──
+    // ── Auth ──
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return json({ error: "Não autorizado. Faça login para continuar." }, 401);
@@ -158,14 +321,13 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } =
-      await supabaseClient.auth.getUser(token);
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getUser(token);
     if (claimsError || !claimsData?.user) {
       return json({ error: "Sessão inválida. Faça login novamente." }, 401);
     }
     const user = claimsData.user;
 
-    // ── Quota (mesmo pool de essays do fluxo ENEM) ──
+    // ── Quota (mesmo pool de essays) ──
     const { data: profile } = await supabaseClient
       .from("profiles")
       .select("plan_type, flexible_quota, created_at")
@@ -178,8 +340,7 @@ serve(async (req) => {
 
     if (planType === "free") {
       const isWelcomeBonus = profile?.created_at
-        ? new Date(profile.created_at) >= sevenDaysAgo
-        : false;
+        ? new Date(profile.created_at) >= sevenDaysAgo : false;
       const weeklyLimit = isWelcomeBonus ? 2 : 1;
       const { count: weeklyCount } = await supabaseClient
         .from("essays")
@@ -188,61 +349,47 @@ serve(async (req) => {
         .not("analyzed_at", "is", null)
         .gte("analyzed_at", sevenDaysAgo.toISOString());
       if ((weeklyCount ?? 0) >= weeklyLimit) {
-        return json(
-          {
-            error: "Cota semanal de correções atingida.",
-            code: "QUOTA_EXCEEDED",
-            limit_type: "weekly",
-          },
-          403,
-        );
+        return json({ error: "Cota semanal de correções atingida.", code: "QUOTA_EXCEEDED", limit_type: "weekly" }, 403);
       }
     }
 
     // ── Input ──
-    const { text, theme, genreId, genreLabel, genreElementos, proposta } =
-      await req.json();
+    const { text, theme, genreId, genreLabel, genreElementos, proposta } = await req.json();
     if (!text?.trim()) return json({ error: "Envie o texto da redação." }, 400);
     if (!genreId || !genreLabel) {
-      return json(
-        { error: "Informe o gênero solicitado pela proposta (obrigatório na UFU)." },
-        400,
-      );
+      return json({ error: "Informe o gênero solicitado pela proposta (obrigatório na UFU)." }, 400);
     }
 
     const linhasEstimadas = estimarLinhas(text);
 
-    const userPrompt = `Corrija esta redação do Vestibular UFU.
+    const userPrompt = `Faça o levantamento de evidências desta redação do Vestibular UFU.
 
 GÊNERO SOLICITADO PELA PROPOSTA: ${genreLabel}
-ELEMENTOS CONSTITUTIVOS ESPERADOS: ${(genreElementos ?? []).join("; ") || "os canônicos do gênero"}
-${theme ? `TEMA/RECORTE DA PROPOSTA: ${theme}` : "TEMA: não informado (registre em alertas)"}
+ELEMENTOS CONSTITUTIVOS ESPERADOS DO GÊNERO: ${(genreElementos ?? []).join("; ") || "os canônicos do gênero"}
+${theme ? `TEMA/RECORTE ESPECÍFICO DA PROPOSTA: ${theme}` : "TEMA: não informado (registre em alertas)"}
 ${proposta ? `ENUNCIADO DA PROPOSTA: ${proposta}` : ""}
-LINHAS ESTIMADAS NA FOLHA OFICIAL: ${linhasEstimadas} (mínimo 15, máximo 34)
+LINHAS ESTIMADAS NA FOLHA OFICIAL: ${linhasEstimadas}
 
-REDAÇÃO DO CANDIDATO:
+TEXTO DO CANDIDATO:
 """
 ${text}
 """
 
-Aplique a ETAPA 0 primeiro, depois a rubrica. Responda APENAS com o JSON.`;
+Responda APENAS com o JSON de achados.`;
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gpt-4.1-mini",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.2, // correção: consistência > criatividade
+        temperature: 0.2,
         response_format: { type: "json_object" },
       }),
     });
@@ -261,59 +408,46 @@ Aplique a ETAPA 0 primeiro, depois a rubrica. Responda APENAS com o JSON.`;
     const usage = data.usage;
     if (!content) throw new Error("Resposta vazia da IA");
 
-    let result;
+    let achados: Achados;
     try {
-      result = JSON.parse(content);
+      achados = JSON.parse(content);
     } catch {
       console.error("Failed to parse AI response:", content);
       throw new Error("Resposta da IA em formato inválido");
     }
 
-    if (!Array.isArray(result.criterios) || result.criterios.length !== 5) {
-      console.error("Incomplete response:", result);
-      throw new Error("Resposta da IA incompleta");
-    }
+    // ── JUIZ: eliminatórias ──
+    const el = achados.eliminatorias ?? ({} as Achados["eliminatorias"]);
+    const motivosEliminacao: string[] = [];
+    if (el.fugaTotalDoTema) motivosEliminacao.push("Não atendimento à proposta temática (fuga ao tema)");
+    if (el.fugaTotalDoGenero) motivosEliminacao.push("Não atendimento ao gênero solicitado (fuga ao gênero)");
+    if (el.copiaTotalDosMotivadores) motivosEliminacao.push("Cópia total dos textos motivadores");
+    if (el.linguaEstrangeira) motivosEliminacao.push("Texto total/parcialmente em língua estrangeira");
+    if (el.desrespeitoDireitosHumanos) motivosEliminacao.push("Desrespeito aos direitos humanos");
+    if (el.identificacaoDoCandidato) motivosEliminacao.push("Identificação do candidato no texto");
+    if (linhasEstimadas < 15) motivosEliminacao.push(`Texto com ${linhasEstimadas} linhas estimadas (mínimo oficial: 15)`);
+    if (el.justificativa && motivosEliminacao.length > 0) motivosEliminacao.push(el.justificativa);
+    const eliminado = motivosEliminacao.length > 0;
 
-    // ── Enforcement da rubrica (server-side) ──
-    const eliminado = result.eliminado === true || linhasEstimadas < 15;
-    if (linhasEstimadas < 15) {
-      result.motivosEliminacao = [
-        ...(result.motivosEliminacao ?? []),
-        `Texto com ${linhasEstimadas} linhas estimadas (mínimo oficial: 15)`,
-      ];
-    }
+    // ── JUIZ: critérios ──
+    let criterios: CriterioJulgado[] = [
+      julgarProposta(achados),
+      julgarGenero(achados),
+      julgarCoesao(achados),
+      julgarConvencoes(achados),
+      julgarLeitura(achados),
+    ];
+    if (eliminado) criterios = criterios.map((c) => ({ ...c, pontos: 0 }));
+    const totalScore = eliminado ? 0 : criterios.reduce((s, c) => s + c.pontos, 0);
 
-    const byId = new Map(
-      result.criterios.map((cr: { id: string }) => [cr.id, cr]),
+    const desviosContados = arr(achados.convencoes?.desvios).map(
+      (d, i) => `Desvio ${i + 1} (${d.tipo}): '${d.trecho}' → '${d.correcao}'`,
     );
-    const criterios = ORDEM_CRITERIOS.map((id) => {
-      const cr = (byId.get(id) ?? { id }) as Record<string, unknown>;
-      const faixas = FAIXAS_VALIDAS[id];
-      let pontos = Number(cr.pontos ?? 0);
-      // trava na faixa válida mais próxima (pra baixo em empate — banca rigorosa)
-      pontos = faixas.reduce(
-        (best, f) =>
-          Math.abs(f - pontos) < Math.abs(best - pontos) ||
-          (Math.abs(f - pontos) === Math.abs(best - pontos) && f < best)
-            ? f
-            : best,
-        faixas[0],
-      );
-      if (eliminado) pontos = 0;
-      return { ...cr, id, pontos };
-    });
 
-    const totalScore = eliminado
-      ? 0
-      : criterios.reduce((s, cr) => s + (cr.pontos as number), 0);
-
-    // ── Token log (mesmo padrão) ──
+    // ── Token log ──
     let tokenUsage = null;
     if (usage) {
-      const estimatedCost = calculateCost(
-        usage.prompt_tokens,
-        usage.completion_tokens,
-      );
+      const estimatedCost = calculateCost(usage.prompt_tokens, usage.completion_tokens);
       tokenUsage = { ...usage, estimated_cost_usd: estimatedCost };
       try {
         const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -336,14 +470,14 @@ Aplique a ETAPA 0 primeiro, depois a rubrica. Responda APENAS com o JSON.`;
     return json({
       banca: "ufu",
       eliminado,
-      motivosEliminacao: result.motivosEliminacao ?? [],
-      alertas: result.alertas ?? [],
+      motivosEliminacao,
+      alertas: arr(achados.alertas),
       criterios,
       totalScore,
       linhasEstimadas,
-      desviosContados: result.desviosContados ?? [],
-      feedbackGeral: result.feedbackGeral ?? "",
-      prioridadeUnica: result.prioridadeUnica ?? "",
+      desviosContados,
+      feedbackGeral: achados.feedbackGeral ?? "",
+      prioridadeUnica: achados.prioridadeUnica ?? "",
       usage: tokenUsage,
     });
   } catch (error) {
