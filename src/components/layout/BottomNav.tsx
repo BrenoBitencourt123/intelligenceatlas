@@ -4,8 +4,8 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { title: 'Hoje', path: '/hoje', icon: CalendarCheck },
-  { title: 'Objetivas', path: '/objetivas', icon: ListChecks },
-  { title: 'Redação', path: '/redacao', icon: PenLine },
+  { title: 'Questões', path: '/objetivas', icon: ListChecks },
+  { title: 'Redação', path: '/redacao-ufu', icon: PenLine },
   { title: 'Perfil', path: '/perfil', icon: User },
 ];
 

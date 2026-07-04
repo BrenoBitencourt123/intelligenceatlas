@@ -126,23 +126,6 @@ const Today = () => {
                 </Button>
               </CardContent>
             </Card>
-          ) : dayPlan.isMista ? (
-            /* Simulado (sábado) */
-            <Card className="border-border/50 shadow-sm">
-              <CardContent className="p-6 space-y-4">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Simulado
-                  </p>
-                  <h2 className="text-xl font-bold text-foreground">Simulado ENEM</h2>
-                  <p className="text-sm text-muted-foreground">Escolha o ano e o dia · 90 questões na ordem oficial</p>
-                </div>
-                <Button onClick={() => navigate('/simulado')} className="w-full gap-2">
-                  Escolher simulado
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
           ) : null}
 
           {/* ── Revisão rápida ── */}
@@ -183,12 +166,6 @@ const Today = () => {
                 )}
               </div>
 
-              {!isThemeLoading && hasThemeAccess && theme && (
-                <p className="text-sm text-muted-foreground italic border-l-2 border-border pl-3 leading-relaxed line-clamp-2">
-                  "{theme.title}"
-                </p>
-              )}
-
               {!isFree && !userStats.isLoading && (
                 <div className="space-y-1">
                   <Progress value={usagePercentage} className="h-1" />
@@ -198,33 +175,13 @@ const Today = () => {
                 </div>
               )}
 
-              <Button onClick={() => navigate('/redacao')} className="w-full gap-2">
+              <Button onClick={() => navigate('/redacao-ufu')} className="w-full gap-2">
                 {dayPlan.isEssayDay ? 'Escrever Redação' : 'Praticar Redação'}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </CardContent>
           </Card>
 
-          {/* ── Flashcards ── */}
-          <div className="flex items-center justify-between px-1">
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium text-foreground">Flashcards</p>
-              <p className="text-xs text-muted-foreground">
-                {stats.flashcardsDue > 0
-                  ? `${stats.flashcardsDue} para revisar`
-                  : 'Nenhum pendente'}
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/flashcards')}
-              disabled={stats.flashcardsDue === 0}
-              className="text-sm"
-            >
-              Revisar
-            </Button>
-          </div>
 
           {/* ── Progresso diagnóstico ── */}
           {!stats.isLoading && inDiagnosticMode && (
@@ -255,8 +212,7 @@ const Today = () => {
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  No PRO: questões ilimitadas, 60 redações/mês, flashcards automáticos e plano diário
-                  personalizado.
+                  No PRO: questões ilimitadas, correção de redação e plano diário personalizado.
                 </p>
                 <Button
                   size="sm"

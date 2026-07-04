@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Today from "./pages/Today";
-import Essay from "./pages/Essay";
+
 import Objectives from "./pages/Objectives";
 import Flashcards from "./pages/Flashcards";
 
@@ -65,11 +65,7 @@ const App = () => (
             />
             <Route
               path="/redacao"
-              element={
-                <ProtectedRoute>
-                  <Essay />
-                </ProtectedRoute>
-              }
+              element={<Navigate to="/redacao-ufu" replace />}
             />
             <Route
               path="/objetivas"
