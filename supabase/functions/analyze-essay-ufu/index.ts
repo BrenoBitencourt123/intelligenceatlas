@@ -74,6 +74,7 @@ PROCEDIMENTO: verifique PARÁGRAFO POR PARÁGRAFO se desenvolve o RECORTE espec�
 5: falhas na composição E no estilo.
 0: gênero irreconhecível (elimina).
 ATENÇÃO: falha de registro/pessoa do discurso NÃO é "alerta" — é falha de ESTILO e coloca o critério na faixa 10. Se além disso faltar elemento composicional, desce pra 5.
+EXEMPLO OBRIGATÓRIO: "Caro leitor, pense comigo" ou qualquer tratamento direto ao leitor/2ª pessoa num artigo de opinião = falha de ESTILO = faixa 10. Nunca 15, nunca só alerta.
 
 3. COESÃO E COERÊNCIA TEXTUAIS (20 pts) — faixas: 20 | 15 | 10 | 5 | 0
 20: coerência adequada E ótima articulação (coesão referencial e sequencial), sem clichês.
@@ -82,6 +83,7 @@ ATENÇÃO: falha de registro/pessoa do discurso NÃO é "alerta" — é falha de
 5: falhas conceituais E articulação inadequada que comprometem significativamente.
 0: incoeso e incoerente.
 PROCEDIMENTO: cace ativamente ANTES de pontuar: (a) clichês e fórmulas prontas ("desde os primórdios", "a sociedade como um todo", "nos dias de hoje"); (b) contradição entre afirmações de parágrafos diferentes; (c) repetição de ideia ou palavra sem retomada pronominal/sinonímia; (d) parágrafo com baixa progressão (não adiciona informação nova). Encontrou ocorrências de 2 ou mais desses tipos → máximo 10.
+CONTRADIÇÃO DIRETA (ex.: afirmar que X "é o maior problema" num parágrafo e que Y "é o maior problema" em outro) compromete a coerência SOZINHA → máximo 10, mesmo sem outros defeitos.
 
 4. CONVENÇÕES DE ESCRITA (12 pts) — faixas: 12 | 9 | 6 | 3 | 0
 (ortografia, pontuação, concordância verbal/nominal, regência verbal/nominal)
@@ -95,6 +97,15 @@ PONTUE PELA CONTAGEM: 0-2 desvios = 12; 3-5 desvios = 9; 6+ desvios OU desvios r
 2: leitura equivocada + repertório de bolso.
 0: sem diálogo, sem repertório, com cópia de trechos.
 DEFINIÇÃO DE REPERTÓRIO DE BOLSO: citação célebre decorada (Mandela, Einstein, "frase de efeito") que NÃO sustenta o argumento específico do parágrafo — poderia ser removida sem perda lógica. Repertório de bolso → máximo 4. Menção vaga a "dados/estudos" sem especificar também NÃO é diálogo com motivadores.
+TESTE PRÁTICO: remova mentalmente a citação — o argumento continua idêntico? Então é de bolso → máximo 4. Faixa 6 exige repertório que FAZ TRABALHO no argumento.
+
+═══ AUTOVERIFICAÇÃO FINAL (obrigatória antes de fechar o JSON) ═══
+Releia suas notas e corrija-as se necessário:
+1. Algum item de "alertas" descreve falha de estilo/registro/pessoa do discurso? → gênero_discurso ≤ 10 (mova a falha pra lá).
+2. O texto tem clichê E (contradição OU repetição OU baixa progressão)? → coesao_coerencia ≤ 10.
+3. O repertório citado sustenta o argumento específico (teste da remoção)? Se não → leitura_motivadores ≤ 4.
+4. Você varreu TODAS as frases atrás de desvios (haver impessoal, regência, "menas", junções, vírgula sujeito-verbo, crase)? Confirme a contagem antes da faixa.
+5. Algum critério recebeu faixa máxima MESMO com falha citada na justificativa? → desça uma faixa.
 ATENÇÃO: se a proposta/textos motivadores não foram informados, avalie o diálogo com a temática e o repertório, e registre essa limitação em "alertas".
 
 ═══ FORMATO DE RESPOSTA (JSON puro) ═══
