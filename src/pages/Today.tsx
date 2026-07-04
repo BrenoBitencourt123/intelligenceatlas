@@ -166,12 +166,6 @@ const Today = () => {
                 )}
               </div>
 
-              {!isThemeLoading && hasThemeAccess && theme && (
-                <p className="text-sm text-muted-foreground italic border-l-2 border-border pl-3 leading-relaxed line-clamp-2">
-                  "{theme.title}"
-                </p>
-              )}
-
               {!isFree && !userStats.isLoading && (
                 <div className="space-y-1">
                   <Progress value={usagePercentage} className="h-1" />
@@ -181,33 +175,13 @@ const Today = () => {
                 </div>
               )}
 
-              <Button onClick={() => navigate('/redacao')} className="w-full gap-2">
+              <Button onClick={() => navigate('/redacao-ufu')} className="w-full gap-2">
                 {dayPlan.isEssayDay ? 'Escrever Redação' : 'Praticar Redação'}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </CardContent>
           </Card>
 
-          {/* ── Flashcards ── */}
-          <div className="flex items-center justify-between px-1">
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium text-foreground">Flashcards</p>
-              <p className="text-xs text-muted-foreground">
-                {stats.flashcardsDue > 0
-                  ? `${stats.flashcardsDue} para revisar`
-                  : 'Nenhum pendente'}
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/flashcards')}
-              disabled={stats.flashcardsDue === 0}
-              className="text-sm"
-            >
-              Revisar
-            </Button>
-          </div>
 
           {/* ── Progresso diagnóstico ── */}
           {!stats.isLoading && inDiagnosticMode && (
