@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS curso_ufu text, ADD COLUMN IF NOT EXISTS cota_ufu text;
