@@ -21,6 +21,7 @@ import { QuestionImageGallery } from '@/components/study/QuestionImageGallery';
 import { InlineStatementRenderer } from '@/components/study/InlineStatementRenderer';
 import QuestionContent from '@/components/study/QuestionContent';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUfuAvailability } from '@/hooks/useUfuAvailability';
 
 const AREA_LABELS: Record<string, string> = {
   matematica: 'Matemática',
@@ -733,6 +734,43 @@ const Objectives = () => {
   const weakTopics = stats.topWeaknesses
     .filter((t: any) => t.priority > 0)
     .slice(0, 3);
+
+  const { hasUfuQuestions, isLoading: ufuLoading } = useUfuAvailability();
+
+  if (!ufuLoading && !hasUfuQuestions) {
+    return (
+      <MainLayout>
+        <div className="container max-w-lg mx-auto px-4 py-8 pb-24">
+          <div className="space-y-4">
+            <h1 className="text-2xl font-bold text-foreground">Questões Objetivas</h1>
+            <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-6 space-y-3">
+              <div className="flex items-start gap-3">
+                <BookOpen className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
+                <div className="space-y-1">
+                  <h2 className="font-semibold text-foreground">
+                    Banco de questões UFU chegando
+                  </h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Estamos etiquetando as provas oficiais da DIRPS. Enquanto isso, você já
+                    pode treinar redação nos 5 critérios da banca.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-2"
+                onClick={() => navigate('/redacao-ufu')}
+              >
+                Ir para Redação
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

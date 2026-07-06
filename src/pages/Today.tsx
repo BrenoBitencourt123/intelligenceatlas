@@ -10,9 +10,11 @@ import { useUserStats } from '@/hooks/useUserStats';
 import { useDailyTheme } from '@/hooks/useDailyTheme';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { useFreemiumUsage } from '@/hooks/useFreemiumUsage';
-import { ArrowRight, Flame, Crown } from 'lucide-react';
+import { ArrowRight, Flame, Crown, BookOpenCheck } from 'lucide-react';
 import { InstallBanner } from '@/components/pwa/InstallBanner';
 import { NotificationBanner } from '@/components/pwa/NotificationBanner';
+import { useUfuAvailability } from '@/hooks/useUfuAvailability';
+import { GoalCard } from '@/components/ufu/GoalCard';
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -29,6 +31,7 @@ const Today = () => {
   const userStats = useUserStats();
   const { theme, isLoading: isThemeLoading } = useDailyTheme();
   const { hasThemeAccess, monthlyLimit, isFree } = usePlanFeatures();
+  const { hasUfuQuestions } = useUfuAvailability();
 
   const usedEssays = isFree ? userStats.totalEssays : userStats.monthlyEssays;
   const usagePercentage = Math.min(100, Math.round((usedEssays / monthlyLimit) * 100));
@@ -86,7 +89,7 @@ const Today = () => {
                 <Skeleton className="h-10 w-full rounded mt-2" />
               </CardContent>
             </Card>
-          ) : dayPlan.isObjectiveDay && !dayPlan.isMista && dayPlan.mainArea ? (
+          ) : dayPlan.isObjectiveDay && !dayPlan.isMista && dayPlan.mainArea && hasUfuQuestions ? (
             <Card className="border-border/50 shadow-sm">
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-1">
@@ -126,35 +129,28 @@ const Today = () => {
                 </Button>
               </CardContent>
             </Card>
-          ) : null}
-
-          {/* ── Revisão rápida ── */}
-          {!dayPlan.isLoading && dayPlan.hasReview && dayPlan.reviewArea && (
-            <Card className="border-border/50 shadow-sm">
-              <CardContent className="p-4 flex items-center justify-between gap-4">
-                <div className="space-y-0.5 min-w-0">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Revisão rápida
-                  </p>
-                  <p className="text-sm font-semibold text-foreground truncate">
-                    {dayPlan.reviewAreaLabel}
-                  </p>
-                  <p className="text-xs text-muted-foreground">10 questões · ~15 min</p>
+          ) : (
+            // Empty state — UFU question bank still being ingested
+            <Card className="border-dashed border-border/60 bg-muted/20 shadow-none">
+              <CardContent className="p-6 space-y-3">
+                <div className="flex items-start gap-3">
+                  <BookOpenCheck className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
+                  <div className="space-y-1">
+                    <h2 className="font-semibold text-foreground">
+                      Banco de questões UFU chegando
+                    </h2>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Estamos etiquetando as provas oficiais da DIRPS. Enquanto isso, você já
+                      pode treinar redação nos 5 critérios da banca.
+                    </p>
+                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 gap-1.5"
-                  onClick={() =>
-                    navigate(`/objetivas?area=${dayPlan.reviewArea}&count=10`)
-                  }
-                >
-                  Revisar
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
               </CardContent>
             </Card>
           )}
+
+          {/* ── Meta do aluno na UFU ── */}
+          <GoalCard />
 
           {/* ── Redação ── */}
           <Card className="border-border/50 shadow-sm">

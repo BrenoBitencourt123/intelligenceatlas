@@ -724,7 +724,7 @@ export function useStudySession() {
           savedPlan.area === normalizedArea &&
           savedPlan.questionIds.length > 0
         ) {
-          let resumeQuery = supabase.from("questions").select(QUESTION_SELECT_COLUMNS).in("id", savedPlan.questionIds).not('correct_answer', 'is', null);
+          let resumeQuery = supabase.from("questions").select(QUESTION_SELECT_COLUMNS).eq('exam', 'ufu').in("id", savedPlan.questionIds).not('correct_answer', 'is', null);
 
           if (area && area !== "mista") {
             resumeQuery = resumeQuery.eq("area", area);
@@ -767,7 +767,7 @@ export function useStudySession() {
           }
         }
 
-        let query = supabase.from("questions").select(QUESTION_SELECTION_COLUMNS).not('correct_answer', 'is', null);
+        let query = supabase.from("questions").select(QUESTION_SELECTION_COLUMNS).eq('exam', 'ufu').not('correct_answer', 'is', null);
 
         if (area && area !== "mista") {
           query = query.eq("area", area);
@@ -836,6 +836,7 @@ export function useStudySession() {
         const { data: fullData, error: fullError } = await supabase
           .from("questions")
           .select(QUESTION_SELECT_COLUMNS)
+          .eq('exam', 'ufu')
           .in("id", selectedIds)
           .not('correct_answer', 'is', null);
         if (fullError) throw fullError;
@@ -892,7 +893,7 @@ export function useStudySession() {
       setState("loading");
 
       try {
-        const { data, error } = await supabase.from("questions").select(QUESTION_SELECT_COLUMNS).eq("id", questionId).single();
+        const { data, error } = await supabase.from("questions").select(QUESTION_SELECT_COLUMNS).eq('exam', 'ufu').eq("id", questionId).single();
 
         if (error || !data) {
           throw new Error(error?.message || "Questao nao encontrada");
@@ -1233,7 +1234,7 @@ export function useStudySession() {
       const userLang = (prefs?.foreign_language as string) || "ingles";
       const oppositeLanguage = userLang === "ingles" ? "espanhol" : "ingles";
 
-      let query = supabase.from("questions").select(QUESTION_SELECT_COLUMNS).not('correct_answer', 'is', null);
+      let query = supabase.from("questions").select(QUESTION_SELECT_COLUMNS).eq('exam', 'ufu').not('correct_answer', 'is', null);
       if (area && area !== "geral") {
         query = query.eq("area", area);
       }

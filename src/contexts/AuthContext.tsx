@@ -14,6 +14,8 @@ interface Profile {
   onboarding_completed: boolean;
   enem_target_date: string | null;
   phone: string | null;
+  curso_ufu: string | null;
+  cota_ufu: string | null;
 }
 
 interface AuthContextType {
