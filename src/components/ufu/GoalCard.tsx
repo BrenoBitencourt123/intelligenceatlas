@@ -75,55 +75,87 @@ export function GoalCard() {
           </p>
         ) : (
           <>
-            {/* Zones bar */}
-            <div className="space-y-2">
-              <div className="relative h-2 rounded-full overflow-hidden bg-muted">
-                <div
-                  className="absolute inset-y-0 left-0 bg-muted-foreground/25"
-                  style={{ width: `${(corte / TOTAL_QUESTOES) * 100}%` }}
-                />
-                <div
-                  className="absolute inset-y-0 bg-muted-foreground/50"
-                  style={{
-                    left: `${(corte / TOTAL_QUESTOES) * 100}%`,
-                    width: `${((meta - corte) / TOTAL_QUESTOES) * 100}%`,
-                  }}
-                />
-                <div
-                  className="absolute inset-y-0 bg-foreground"
-                  style={{
-                    left: `${(meta / TOTAL_QUESTOES) * 100}%`,
-                    width: `${((TOTAL_QUESTOES - meta) / TOTAL_QUESTOES) * 100}%`,
-                  }}
-                />
-              </div>
-              <div className="flex justify-between text-[10px] text-muted-foreground tabular-nums">
-                <span>0</span>
-                <span>{corte} corte</span>
-                <span>{meta} meta</span>
-                <span>{TOTAL_QUESTOES}</span>
-              </div>
-            </div>
+            {/* Zones bar with animated position marker.
+                No simulado data yet → marker at 0 with helper text. */}
+            {(() => {
+              const posicaoAtual = 0; // TODO: hook up to último simulado quando existir
+              const temDados = false;
+              const posPct = (posicaoAtual / TOTAL_QUESTOES) * 100;
+              return (
+                <div className="space-y-2">
+                  <div className="relative h-2.5 rounded-full overflow-hidden bg-muted">
+                    {/* Zona abaixo — vermelho suave */}
+                    <div
+                      className="absolute inset-y-0 left-0 bg-[hsl(var(--status-unavailable)/0.18)]"
+                      style={{ width: `${(corte / TOTAL_QUESTOES) * 100}%` }}
+                    />
+                    {/* Zona no corte — âmbar */}
+                    <div
+                      className="absolute inset-y-0 bg-[hsl(var(--status-draft)/0.22)]"
+                      style={{
+                        left: `${(corte / TOTAL_QUESTOES) * 100}%`,
+                        width: `${((meta - corte) / TOTAL_QUESTOES) * 100}%`,
+                      }}
+                    />
+                    {/* Zona meta — verde */}
+                    <div
+                      className="absolute inset-y-0 bg-[hsl(var(--status-analyzed)/0.22)]"
+                      style={{
+                        left: `${(meta / TOTAL_QUESTOES) * 100}%`,
+                        width: `${((TOTAL_QUESTOES - meta) / TOTAL_QUESTOES) * 100}%`,
+                      }}
+                    />
+                    {/* Marcos verticais: corte e meta */}
+                    <div
+                      className="absolute inset-y-0 w-px bg-[hsl(var(--status-draft))]"
+                      style={{ left: `${(corte / TOTAL_QUESTOES) * 100}%` }}
+                    />
+                    <div
+                      className="absolute inset-y-0 w-px bg-[hsl(var(--status-analyzed))]"
+                      style={{ left: `${(meta / TOTAL_QUESTOES) * 100}%` }}
+                    />
+                    {/* Marcador da posição atual */}
+                    <motion.div
+                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-4 w-4 rounded-full bg-foreground ring-2 ring-background shadow-sm"
+                      initial={{ left: '0%', opacity: 0, scale: 0.4 }}
+                      animate={{ left: `${posPct}%`, opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-muted-foreground tabular-nums">
+                    <span>0</span>
+                    <span>{corte} corte</span>
+                    <span>{meta} meta</span>
+                    <span>{TOTAL_QUESTOES}</span>
+                  </div>
+                  {!temDados && (
+                    <p className="text-xs text-muted-foreground pt-1">
+                      Faça seu primeiro treino para ver sua posição.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Zones legend */}
             <div className="grid grid-cols-3 gap-2 text-xs">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-sm bg-muted-foreground/25" />
+                  <span className="w-2 h-2 rounded-sm bg-[hsl(var(--status-unavailable)/0.5)]" />
                   <span className="text-muted-foreground">Abaixo</span>
                 </div>
                 <p className="font-medium text-foreground tabular-nums">0 – {corte - 1}</p>
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-sm bg-muted-foreground/50" />
+                  <span className="w-2 h-2 rounded-sm bg-[hsl(var(--status-draft)/0.6)]" />
                   <span className="text-muted-foreground">No corte</span>
                 </div>
                 <p className="font-medium text-foreground tabular-nums">{corte} – {meta - 1}</p>
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-sm bg-foreground" />
+                  <span className="w-2 h-2 rounded-sm bg-[hsl(var(--status-analyzed)/0.7)]" />
                   <span className="text-muted-foreground">Meta</span>
                 </div>
                 <p className="font-medium text-foreground tabular-nums">{meta} – {TOTAL_QUESTOES}</p>
