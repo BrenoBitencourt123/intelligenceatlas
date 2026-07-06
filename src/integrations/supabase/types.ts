@@ -416,6 +416,7 @@ export type Database = {
           day: number | null
           difficulty: number
           disciplina: string | null
+          exam: string
           explanation: string | null
           foreign_language: string | null
           id: string
@@ -446,6 +447,7 @@ export type Database = {
           day?: number | null
           difficulty?: number
           disciplina?: string | null
+          exam?: string
           explanation?: string | null
           foreign_language?: string | null
           id?: string
@@ -476,6 +478,7 @@ export type Database = {
           day?: number | null
           difficulty?: number
           disciplina?: string | null
+          exam?: string
           explanation?: string | null
           foreign_language?: string | null
           id?: string
