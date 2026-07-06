@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { MainLayout } from "@/components/layout/MainLayout";
 import {
   GENEROS_UFU, PROPOSTAS_UFU, CRITERIOS_UFU, REDACAO_TOTAL,
   LINHAS_MIN, LINHAS_MAX, estimarLinhas,
@@ -133,9 +134,9 @@ export default function RedacaoUfu() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header sticky no padrão Atlas */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
+    <MainLayout>
+      {/* Header interno da página (não sticky — o TopNav já é sticky no desktop) */}
+      <div className="border-b border-border bg-background">
         <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-foreground">Redação</h1>
@@ -150,7 +151,7 @@ export default function RedacaoUfu() {
             </div>
           )}
         </div>
-      </header>
+      </div>
 
       <main className="container max-w-6xl mx-auto px-4 py-8">
         <div className="grid gap-6 lg:grid-cols-[1fr_400px] items-start">
@@ -490,7 +491,7 @@ export default function RedacaoUfu() {
           )}
         </AnimatePresence>
       </main>
-    </div>
+    </MainLayout>
   );
 }
 
