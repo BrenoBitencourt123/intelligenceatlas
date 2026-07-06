@@ -491,7 +491,7 @@ export default function RedacaoUfu() {
           )}
         </AnimatePresence>
       </main>
-    </div>
+    </MainLayout>
   );
 }
 
