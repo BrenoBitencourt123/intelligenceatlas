@@ -42,11 +42,12 @@ Analise o texto e responda APENAS com este JSON:
     "compreensaoGlobal": "adequada" | "pouco_adequada" | "equivocada",
     "focoNoTemaAmploSemRecorte": boolean, // trata só do tema geral, nunca do recorte específico
     "paragrafosForaDoRecorte": [ { "trecho": "início literal do parágrafo", "motivo": "por que escapa do recorte específico da proposta" } ]
-    // Um parágrafo que discute assunto vizinho (ex.: tema amplo 'abandono infantil' quando o recorte é 'desafios da adoção') SEM conectar de volta ao recorte = fora do recorte.
+    // Liste APENAS parágrafos MAJORITARIAMENTE fora do recorte (ex.: tema amplo 'abandono infantil' quando o recorte é 'desafios da adoção', sem conectar de volta). Uma frase solta fora do recorte num parágrafo que no geral desenvolve o recorte NÃO conta.
+    // compreensaoGlobal avalia o texto COMO UM TODO: se a maioria dos parágrafos desenvolve o recorte, é "adequada" mesmo com um parágrafo problemático.
   },
 
   "genero": {
-    "elementosAusentes": ["elemento constitutivo esperado que falta, ex.: título, tese explícita, refutação, fecho"],
+    "elementosAusentes": ["APENAS elementos OBRIGATÓRIOS do gênero que faltam (ex.: numa carta: vocativo, fecho; num artigo: tese). Elementos marcados como 'recomendado' ou que apenas 'fortalecem' (título recomendado, refutação) NÃO são ausência — não liste"],
     "falhasComposicionais": [ { "trecho": "...", "motivo": "estrutura/parte do gênero incompleta ou mal construída" } ],
     "falhasDeEstilo": [ { "trecho": "...", "motivo": "registro, pessoa do discurso, interlocução ou tom inadequados ao gênero" } ]
     // ex. CLÁSSICO de falha de estilo: 'Caro leitor, pense comigo' / 2ª pessoa / tom de carta num artigo de opinião; informalidade em gênero formal. SEMPRE registre aqui, nunca ignore.
@@ -154,13 +155,21 @@ function julgarProposta(a: Achados): CriterioJulgado {
 
 function julgarGenero(a: Achados): CriterioJulgado {
   const estilo = arr(a.genero?.falhasDeEstilo);
-  const compos = [...arr(a.genero?.falhasComposicionais)];
-  const ausentes = arr(a.genero?.elementosAusentes);
+  // Elementos "recomendados" (título, refutação) não são falha estrutural — filtro de segurança
+  const naoEstrutural = /recomendad|refuta|contra-argumento|t[ií]tulo/i;
+  const compos = arr(a.genero?.falhasComposicionais).filter(
+    (c) => !naoEstrutural.test(c.motivo ?? ""),
+  );
+  const ausentes = arr(a.genero?.elementosAusentes).filter(
+    (e) => !naoEstrutural.test(e),
+  );
   const temCompos = compos.length > 0 || ausentes.length > 0;
   const temEstilo = estilo.length > 0;
   let pontos: number, faixa: string, justificativa: string;
 
-  if (temEstilo && temCompos) {
+  // Faixa 5 exige falha ESTRUTURAL real (composicional) além do estilo;
+  // ausência de elemento sozinha, sem má construção, pesa como composicional leve.
+  if (temEstilo && compos.length > 0) {
     pontos = 5; faixa = "Produção insatisfatória do gênero";
     justificativa = `Falhas de composição (${[...ausentes, ...compos.map((c) => c.motivo)].slice(0, 2).join("; ")}) E de estilo (${estilo[0].motivo}).`;
   } else if (temEstilo) {
