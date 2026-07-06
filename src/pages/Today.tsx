@@ -10,9 +10,11 @@ import { useUserStats } from '@/hooks/useUserStats';
 import { useDailyTheme } from '@/hooks/useDailyTheme';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { useFreemiumUsage } from '@/hooks/useFreemiumUsage';
-import { ArrowRight, Flame, Crown } from 'lucide-react';
+import { ArrowRight, Flame, Crown, BookOpenCheck } from 'lucide-react';
 import { InstallBanner } from '@/components/pwa/InstallBanner';
 import { NotificationBanner } from '@/components/pwa/NotificationBanner';
+import { useUfuAvailability } from '@/hooks/useUfuAvailability';
+import { GoalCard } from '@/components/ufu/GoalCard';
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -29,6 +31,7 @@ const Today = () => {
   const userStats = useUserStats();
   const { theme, isLoading: isThemeLoading } = useDailyTheme();
   const { hasThemeAccess, monthlyLimit, isFree } = usePlanFeatures();
+  const { hasUfuQuestions } = useUfuAvailability();
 
   const usedEssays = isFree ? userStats.totalEssays : userStats.monthlyEssays;
   const usagePercentage = Math.min(100, Math.round((usedEssays / monthlyLimit) * 100));
