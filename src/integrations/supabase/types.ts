@@ -809,12 +809,9 @@ export type Database = {
     Views: {
       ufu_share_rate: {
         Row: {
-          calculos: number | null
-          cards_gerados: number | null
-          dia: string | null
-          downloads: number | null
+          card_generated: number | null
+          card_shares: number | null
           share_rate_pct: number | null
-          shares: number | null
         }
         Relationships: []
       }
