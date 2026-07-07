@@ -416,10 +416,16 @@ export default function Diagnostico() {
           <div className="rounded-xl border border-border bg-card shadow-sm">
             <div className="p-5 space-y-5">
               {/* Meta */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                 <span className="font-medium">Q{q.number}</span>
                 <span className="w-px h-3 bg-border" />
                 <span>ENEM {q.year}</span>
+                {topicLabel && (
+                  <>
+                    <span className="w-px h-3 bg-border" />
+                    <span className="text-muted-foreground">Tópico: <span className="text-foreground/80">{topicLabel}</span></span>
+                  </>
+                )}
               </div>
 
               {/* Statement */}
