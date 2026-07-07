@@ -6,6 +6,8 @@ export interface ContentFormat {
   color?: 'default' | 'muted';
   bold?: boolean;
   align?: 'left' | 'center' | 'right';
+  /** Texto de apoio literário (poema, letra, epígrafe): blockquote à esquerda, versos preservados. */
+  quote?: boolean;
 }
 
 export interface ContentBlock {
@@ -33,6 +35,7 @@ function TextBlock({ block }: { block: ContentBlock }) {
   if (!block.value?.trim()) return null;
   const isMuted = block.format?.color === 'muted';
   const isBold = block.format?.bold;
+  const isQuote = block.format?.quote;
   const align = block.format?.align ?? 'left';
 
   return (
@@ -41,6 +44,7 @@ function TextBlock({ block }: { block: ContentBlock }) {
         'whitespace-pre-wrap leading-relaxed',
         isMuted ? 'text-xs text-muted-foreground' : 'text-sm text-foreground',
         isBold && 'font-bold',
+        isQuote && 'border-l-2 border-border pl-4 py-0.5 text-muted-foreground',
         align === 'center' && 'text-center',
         align === 'right' && 'text-right',
       )}

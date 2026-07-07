@@ -1,0 +1,220 @@
+[
+ {
+  "questao": 2,
+  "disciplina": "lingua_portuguesa",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   4
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q02.png"
+ },
+ {
+  "questao": 4,
+  "disciplina": "lingua_portuguesa",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   5
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q04.png"
+ },
+ {
+  "questao": 6,
+  "disciplina": "lingua_portuguesa",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   6
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q06.png"
+ },
+ {
+  "questao": 11,
+  "disciplina": "literatura",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   10
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q11.png"
+ },
+ {
+  "questao": 12,
+  "disciplina": "literatura",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   11
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q12.png"
+ },
+ {
+  "questao": 13,
+  "disciplina": "literatura",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   11
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q13.png"
+ },
+ {
+  "questao": 14,
+  "disciplina": "literatura",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   12
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q14.png"
+ },
+ {
+  "questao": 15,
+  "disciplina": "literatura",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   12
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q15.png"
+ },
+ {
+  "questao": 18,
+  "disciplina": "lingua_estrangeira",
+  "foreign_language": "espanhol",
+  "paginas_possiveis": [
+   15,
+   19
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q18_espanhol.png"
+ },
+ {
+  "questao": 20,
+  "disciplina": "lingua_estrangeira",
+  "foreign_language": "ingles",
+  "paginas_possiveis": [
+   17,
+   20
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q20_ingles.png"
+ },
+ {
+  "questao": 21,
+  "disciplina": "matematica",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   21
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q21.png"
+ },
+ {
+  "questao": 22,
+  "disciplina": "matematica",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   21
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q22.png"
+ },
+ {
+  "questao": 24,
+  "disciplina": "matematica",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   22
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q24.png"
+ },
+ {
+  "questao": 26,
+  "disciplina": "matematica",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   23
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q26.png"
+ },
+ {
+  "questao": 29,
+  "disciplina": "matematica",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   24
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q29.png"
+ },
+ {
+  "questao": 30,
+  "disciplina": "matematica",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   24
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q30.png"
+ },
+ {
+  "questao": 32,
+  "disciplina": "biologia",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   25
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q32.png"
+ },
+ {
+  "questao": 36,
+  "disciplina": "fisica",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   28
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q36.png"
+ },
+ {
+  "questao": 39,
+  "disciplina": "fisica",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   30
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q39.png"
+ },
+ {
+  "questao": 40,
+  "disciplina": "fisica",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   30
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q40.png"
+ },
+ {
+  "questao": 47,
+  "disciplina": "geografia",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   34
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q47.png"
+ },
+ {
+  "questao": 48,
+  "disciplina": "geografia",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   35
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q48.png"
+ },
+ {
+  "questao": 53,
+  "disciplina": "historia",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   37
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q53.png"
+ },
+ {
+  "questao": 65,
+  "disciplina": "sociologia",
+  "foreign_language": null,
+  "paginas_possiveis": [
+   41
+  ],
+  "nome_arquivo_sugerido": "ufu2026_2_q65.png"
+ }
+]

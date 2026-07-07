@@ -52,28 +52,26 @@ function readBracketGroup(text: string, start: number): { content: string; end: 
 
 let globalKey = 0;
 
-// Aplica **negrito** e *itálico* inline a um trecho de texto puro → ReactNode[]
+// Aplica **negrito** inline a um trecho de texto puro → ReactNode[]
+// (só negrito; asterisco único NÃO vira itálico — colide com nota de rodapé/multiplicação)
 function applyInlineStyles(str: string): ReactNode[] {
   if (!str) return [str];
-  const re = /\*\*([^*]+)\*\*|\*([^*]+)\*/g;
+  const re = /\*\*([^*]+)\*\*/g;
   const parts: ReactNode[] = [];
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(str)) !== null) {
     if (m.index > last) parts.push(str.slice(last, m.index));
-    if (m[1] !== undefined) parts.push(<strong key={`b${globalKey++}`}>{m[1]}</strong>);
-    else parts.push(<em key={`i${globalKey++}`}>{m[2]}</em>);
+    parts.push(<strong key={`b${globalKey++}`}>{m[1]}</strong>);
     last = m.index + m[0].length;
   }
   if (last < str.length) parts.push(str.slice(last));
   return parts.length ? parts : [str];
 }
 
-// Versão string→HTML de **negrito**/*itálico* (para renderMathHtml)
+// Versão string→HTML de **negrito** (para renderMathHtml)
 function applyInlineStylesHtml(str: string): string {
-  return str
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1<em>$2</em>');
+  return str.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 }
 
 function Frac({ num, den }: { num: string; den: string }) {
@@ -110,6 +108,47 @@ function Sqrt({ content, index }: { content: string; index: string | null }) {
       >
         {renderMath(content)}
       </span>
+    </span>
+  );
+}
+
+// Matriz com colchetes: \matrix{a,b;c,d} → colunas por ",", linhas por ";"
+function Matrix({ body }: { body: string }) {
+  const rows = body.split(';').map((r) => r.split(',').map((c) => c.trim()));
+  const cols = Math.max(...rows.map((r) => r.length));
+  const bracket = (side: 'l' | 'r') => (
+    <span
+      aria-hidden
+      style={{
+        display: 'inline-block',
+        width: '0.5em',
+        alignSelf: 'stretch',
+        borderTop: '1.5px solid currentColor',
+        borderBottom: '1.5px solid currentColor',
+        [side === 'l' ? 'borderLeft' : 'borderRight']: '1.5px solid currentColor',
+      }}
+    />
+  );
+  return (
+    <span className="inline-flex items-stretch align-middle mx-1" style={{ verticalAlign: 'middle' }}>
+      {bracket('l')}
+      <span
+        style={{
+          display: 'inline-grid',
+          gridTemplateColumns: `repeat(${cols}, auto)`,
+          columnGap: '0.9em',
+          rowGap: '0.25em',
+          padding: '0.15em 0.35em',
+          textAlign: 'center',
+        }}
+      >
+        {rows.flatMap((r, ri) =>
+          Array.from({ length: cols }, (_, ci) => (
+            <span key={`${ri}-${ci}`}>{renderMath(r[ci] ?? '')}</span>
+          )),
+        )}
+      </span>
+      {bracket('r')}
     </span>
   );
 }
@@ -151,7 +190,15 @@ export function renderMath(rawText: string): ReactNode {
   };
 
   while (i < text.length) {
-    if (text.startsWith('\\frac', i)) {
+    if (text.startsWith('\\matrix', i)) {
+      const g = readBraceGroup(text, i + 7);
+      if (g) {
+        flush();
+        out.push(<Matrix key={`m${globalKey++}`} body={g.content} />);
+        i = g.end;
+        continue;
+      }
+    } else if (text.startsWith('\\frac', i)) {
       const numG = readBraceGroup(text, i + 5);
       if (numG) {
         const denG = readBraceGroup(text, numG.end);

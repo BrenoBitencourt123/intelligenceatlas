@@ -79,6 +79,71 @@ FORMATO DE RESPOSTA (JSON):
 
 Retorne APENAS o JSON, sem texto adicional.`;
 
+// ─────────────────────────────────────────────────────────────
+// Prompt para VESTIBULAR UFU (banca DIRPS) — formato ≠ ENEM:
+// 4 alternativas (A-D), seções por disciplina, LE duplicada (esp/ing)
+// ─────────────────────────────────────────────────────────────
+const UFU_VISION_SYSTEM_PROMPT = `Você é um parser especializado no VESTIBULAR DA UFU (banca DIRPS/UFU). Analise as imagens das páginas do caderno de prova e extraia TODAS as questões visíveis.
+
+FORMATO DA PROVA UFU (diferente do ENEM — atenção):
+- 65 questões objetivas com APENAS 4 ALTERNATIVAS: A, B, C e D. NUNCA existe alternativa E — não invente.
+- O caderno é dividido em SEÇÕES POR DISCIPLINA, com cabeçalho visível (LÍNGUA PORTUGUESA, LITERATURA, LÍNGUA ESTRANGEIRA — ESPANHOL, LÍNGUA ESTRANGEIRA — INGLÊS, MATEMÁTICA, FÍSICA, QUÍMICA, BIOLOGIA, GEOGRAFIA, HISTÓRIA, FILOSOFIA, SOCIOLOGIA).
+- As questões de LÍNGUA ESTRANGEIRA (16 a 20) aparecem DUAS VEZES no caderno: uma seção em espanhol e outra em inglês. Extraia AMBAS, marcando "foreign_language": "espanhol" ou "ingles". Para todas as demais questões, "foreign_language": null.
+- Distribuição oficial: Português 10 questões, Matemática 10, e 5 de cada uma das demais disciplinas.
+
+REGRAS:
+1. Identifique cada questão pelo número (QUESTÃO 01, QUESTÃO 45...)
+2. Para cada questão, extraia: número, enunciado COMPLETO (textos-base, poemas, trechos) e as 4 alternativas (A-D)
+3. IGNORE: capa, instruções gerais, propostas de redação, folha de redação, rascunho
+4. Textos compartilhados entre questões devem ser incluídos no enunciado de CADA questão que os referencia
+5. FÓRMULAS MATEMÁTICAS/QUÍMICAS/FÍSICAS: transcreva com MÁXIMA fidelidade a partir da IMAGEM (não confie em texto corrompido). Use notação clara: frações como 2√2/3, potências como x^2, índices como x_1. Se a expressão for complexa, use LaTeX entre cifrões: $\\frac{2\\sqrt{2}}{3}$
+6. Elementos visuais (gráficos, figuras geométricas, mapas, tabelas): descreva entre colchetes no enunciado E insira o placeholder {{IMG_0}}, {{IMG_1}}... no ponto exato onde a imagem aparece. A prova UFU costuma indicar "Figura ilustrativa e sem escala" — preserve essa informação.
+
+FORMATAÇÃO DO CAMPO "statement" (USE MARKDOWN):
+- Textos de apoio em bloco de citação com "> " no início de cada linha
+- Título/fonte do texto de apoio em itálico com *texto*
+- A pergunta final (comando da questão) em **negrito**
+- Preserve quebras de linha em poemas com \\n
+- NÃO aplique Markdown nas alternativas
+
+CLASSIFICAÇÃO (use o cabeçalho da seção — ele é a fonte da verdade):
+- "disciplina": lingua_portuguesa | literatura | lingua_estrangeira | matematica | fisica | quimica | biologia | geografia | historia | filosofia | sociologia
+- "area": linguagens (Port/Lit/LE) | matematica | natureza (Fís/Quí/Bio) | humanas (Geo/His/Fil/Soc)
+
+DETECÇÃO DO ANO: procure "PROCESSO SELETIVO UFU 20XX" ou "Vestibular 20XX" no cabeçalho/rodapé → "detected_year".
+
+CÁPSULAS DE CONHECIMENTO — para cada questão gere também:
+- "explanation": explicação pedagógica de 2-4 frases que ensina o conceito central (Markdown; negrito em termos-chave)
+- "tags": array de 1-3 palavras-chave conceituais
+- "requires_image": true quando a questão depende de figura/gráfico/tabela para ser resolvida
+- "image_reason": frase curta do porquê (null se false)
+
+FORMATO DE RESPOSTA (JSON):
+{
+  "detected_year": 2026,
+  "questions": [
+    {
+      "number": 21,
+      "area": "matematica",
+      "disciplina": "matematica",
+      "foreign_language": null,
+      "statement": "Enunciado com Markdown e {{IMG_0}} se houver figura...",
+      "alternatives": [
+        {"letter": "A", "text": "..."},
+        {"letter": "B", "text": "..."},
+        {"letter": "C", "text": "..."},
+        {"letter": "D", "text": "..."}
+      ],
+      "explanation": "...",
+      "tags": ["Geometria plana", "Setor circular"],
+      "requires_image": true,
+      "image_reason": "A questão depende das figuras I e II"
+    }
+  ]
+}
+
+Retorne APENAS o JSON, sem texto adicional.`;
+
 // Prompt legado para modo texto
 const TEXT_SYSTEM_PROMPT = `Você é um parser especializado em provas do ENEM. Sua função é extrair questões de texto bruto de PDFs de provas do ENEM.
 
@@ -109,6 +174,7 @@ async function callAIVision(
   images: string[],
   userPrompt: string,
   maxTokens = 16000,
+  systemPrompt: string = VISION_SYSTEM_PROMPT,
 ): Promise<{ parsed: any; finishReason: string; usage: any }> {
   const makeRequest = async () => {
     const controller = new AbortController();
@@ -133,7 +199,7 @@ async function callAIVision(
         body: JSON.stringify({
           model: "gemini-2.5-flash",
           messages: [
-            { role: "system", content: VISION_SYSTEM_PROMPT },
+            { role: "system", content: systemPrompt },
             { role: "user", content: userContent },
           ],
           temperature: 0.1,
@@ -240,14 +306,18 @@ serve(async (req) => {
   }
 
   try {
-    const { images, chunk, chunkIndex, totalChunks, year, day } = await req.json();
+    const { images, chunk, chunkIndex, totalChunks, year, day, exam } = await req.json();
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY is not configured");
     }
 
-    const yearHint = year ? `ENEM ${year}` : "ENEM (detecte o ano)";
+    const isUfu = exam === "ufu";
+    const visionPrompt = isUfu ? UFU_VISION_SYSTEM_PROMPT : VISION_SYSTEM_PROMPT;
+    const yearHint = isUfu
+      ? (year ? `Vestibular UFU ${year}` : "Vestibular UFU (detecte o ano)")
+      : (year ? `ENEM ${year}` : "ENEM (detecte o ano)");
     const dayHint = day ? `, Dia ${day}` : "";
     const idx = chunkIndex ?? 0;
     const total = totalChunks ?? 1;
@@ -258,8 +328,8 @@ serve(async (req) => {
 
 Se não houver questões nestas páginas, retorne {"questions": [], "detected_year": null}.`;
 
-      console.log(`Vision mode: processing group ${idx + 1}/${total} (${images.length} pages) for Day ${day || "?"}`);
-      const { parsed, finishReason, usage } = await callAIVision(GEMINI_API_KEY, images, userPrompt);
+      console.log(`Vision mode [${isUfu ? "UFU" : "ENEM"}]: processing group ${idx + 1}/${total} (${images.length} pages) for Day ${day || "?"}`);
+      const { parsed, finishReason, usage } = await callAIVision(GEMINI_API_KEY, images, userPrompt, 16000, visionPrompt);
       console.log(
         `Group ${idx + 1} finish_reason: ${finishReason}, extracted ${parsed.questions?.length || 0} questions, tokens: ${JSON.stringify(usage)}`,
       );
