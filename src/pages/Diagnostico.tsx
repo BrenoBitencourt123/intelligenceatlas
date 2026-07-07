@@ -9,6 +9,7 @@ import { computePriorityScore, nextReviewDateForLevel } from '@/lib/adaptiveStud
 import { InlineStatementRenderer } from '@/components/study/InlineStatementRenderer';
 import QuestionContent from '@/components/study/QuestionContent';
 import { ArrowRight, Check, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { QuestionImage, normalizeQuestionImages } from '@/lib/questionImages';
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
@@ -25,6 +26,7 @@ interface DiagQuestion {
   explanation: string | null;
   images: QuestionImage[];
   year: number;
+  exam: string;
   content?: any[] | null;
   command?: string | null;
 }
@@ -73,6 +75,7 @@ function mapQuestion(q: any): DiagQuestion {
     explanation: q.explanation ?? null,
     images: normalizeQuestionImages(q.images, q.image_url),
     year: q.year,
+    exam: q.exam || 'enem',
   };
 }
 
@@ -419,11 +422,11 @@ export default function Diagnostico() {
               <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                 <span className="font-medium">Q{q.number}</span>
                 <span className="w-px h-3 bg-border" />
-                <span>ENEM {q.year}</span>
+                <span>{(q.exam || 'enem').toUpperCase()} {q.year}</span>
                 {topicLabel && (
                   <>
                     <span className="w-px h-3 bg-border" />
-                    <span className="text-muted-foreground">Tópico: <span className="text-foreground/80">{topicLabel}</span></span>
+                    <Badge variant="secondary" className="text-xs">{topicLabel}</Badge>
                   </>
                 )}
               </div>
