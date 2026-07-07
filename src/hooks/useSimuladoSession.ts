@@ -110,7 +110,7 @@ export function useSimuladoSession() {
   const [meta, setMeta] = useState<{ year: number; day: number; exam: string } | null>(null);
   const [result, setResult] = useState<SimuladoResult | null>(null);
   const [hasSaved, setHasSaved] = useState(false);
-  const [savedMeta, setSavedMeta] = useState<{ year: number; day: number; currentIndex: number; total: number } | null>(null);
+  const [savedMeta, setSavedMeta] = useState<{ year: number; day: number; exam: string; currentIndex: number; total: number } | null>(null);
 
   // Detect saved simulado on mount
   useEffect(() => {
