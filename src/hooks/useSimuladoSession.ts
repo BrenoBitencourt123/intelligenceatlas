@@ -266,6 +266,7 @@ export function useSimuladoSession() {
         byArea,
         year: meta?.year ?? 0,
         day: meta?.day ?? 1,
+        exam: meta?.exam || 'ufu',
       };
 
       setResult(finalResult);
@@ -309,6 +310,7 @@ export function useSimuladoSession() {
       saveSimulado({
         year: meta!.year,
         day: meta!.day,
+        exam: meta!.exam,
         questions,
         currentIndex,
         answers: nextAnswers,
@@ -359,6 +361,7 @@ export function useSimuladoSession() {
     saveSimulado({
       year: meta!.year,
       day: meta!.day,
+      exam: meta!.exam,
       questions,
       currentIndex: nextIndex,
       answers,
