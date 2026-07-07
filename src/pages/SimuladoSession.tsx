@@ -114,10 +114,10 @@ const SimuladoSession = () => {
         <div className="container max-w-lg mx-auto px-4 py-12">
           <div className="space-y-8">
             <div className="text-center space-y-2">
-                <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wider font-medium">
-                  <FileText className="h-3 w-3" />
-                  Simulado {(result.exam || 'enem').toUpperCase()} {result.year} · Dia {result.day}
-                </div>
+              <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                <FileText className="h-3 w-3" />
+                Simulado {(result.exam || 'enem').toUpperCase()} {result.year} · Dia {result.day}
+              </div>
               <p className="text-6xl font-black tracking-tight text-foreground">{accuracy}%</p>
               <p className="text-sm text-muted-foreground">
                 {result.correct} de {result.total} questões corretas
