@@ -96,6 +96,7 @@ const Objectives = () => {
     state === 'active' && hasKnowledgeCapsules
   );
   const { user } = useAuth();
+  const { hasUfuQuestions, isLoading: ufuLoading } = useUfuAvailability();
   const [blockTransition, setBlockTransition] = useState<{
     completedBlock: number;
     correct: number;
@@ -743,7 +744,7 @@ const Objectives = () => {
     .filter((t: any) => t.priority > 0)
     .slice(0, 3);
 
-  const { hasUfuQuestions, isLoading: ufuLoading } = useUfuAvailability();
+
 
   if (!ufuLoading && !hasUfuQuestions) {
     return (
