@@ -52,6 +52,30 @@ function readBracketGroup(text: string, start: number): { content: string; end: 
 
 let globalKey = 0;
 
+// Aplica **negrito** e *itálico* inline a um trecho de texto puro → ReactNode[]
+function applyInlineStyles(str: string): ReactNode[] {
+  if (!str) return [str];
+  const re = /\*\*([^*]+)\*\*|\*([^*]+)\*/g;
+  const parts: ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(str)) !== null) {
+    if (m.index > last) parts.push(str.slice(last, m.index));
+    if (m[1] !== undefined) parts.push(<strong key={`b${globalKey++}`}>{m[1]}</strong>);
+    else parts.push(<em key={`i${globalKey++}`}>{m[2]}</em>);
+    last = m.index + m[0].length;
+  }
+  if (last < str.length) parts.push(str.slice(last));
+  return parts.length ? parts : [str];
+}
+
+// Versão string→HTML de **negrito**/*itálico* (para renderMathHtml)
+function applyInlineStylesHtml(str: string): string {
+  return str
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1<em>$2</em>');
+}
+
 function Frac({ num, den }: { num: string; den: string }) {
   return (
     <span
@@ -115,14 +139,14 @@ export function renderMath(rawText: string): ReactNode {
     let last = 0;
     let m: RegExpExecArray | null;
     while ((m = re.exec(buf)) !== null) {
-      if (m.index > last) parts.push(buf.slice(last, m.index));
+      if (m.index > last) parts.push(...applyInlineStyles(buf.slice(last, m.index)));
       const c = m[1] ?? m[2] ?? m[3] ?? m[4];
       if (m[0].startsWith('^')) parts.push(<sup key={`s${globalKey++}`}>{c}</sup>);
       else parts.push(<sub key={`s${globalKey++}`}>{c}</sub>);
       last = m.index + m[0].length;
     }
-    if (last < buf.length) parts.push(buf.slice(last));
-    out.push(...(parts.length ? parts : [buf]));
+    if (last < buf.length) parts.push(...applyInlineStyles(buf.slice(last)));
+    out.push(...(parts.length ? parts : applyInlineStyles(buf)));
     buf = '';
   };
 
@@ -195,7 +219,7 @@ export function renderMathHtml(rawText: string): string {
 
   const flush = () => {
     if (!buf) return;
-    result += applySubSupHtml(buf);
+    result += applyInlineStylesHtml(applySubSupHtml(buf));
     buf = '';
   };
 
