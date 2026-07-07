@@ -19,6 +19,7 @@ export interface SimuladoQuestion {
   images: QuestionImage[];
   year: number;
   day: number;
+  exam: string;
   content?: any[] | null;
   command?: string | null;
 }
@@ -36,11 +37,13 @@ export interface SimuladoResult {
   byArea: Record<string, { correct: number; total: number }>;
   year: number;
   day: number;
+  exam: string;
 }
 
 interface PersistedSimulado {
   year: number;
   day: number;
+  exam: string;
   questions: SimuladoQuestion[];
   currentIndex: number;
   answers: Record<number, SimuladoAnswer>;
@@ -89,6 +92,7 @@ function mapQuestion(raw: any): SimuladoQuestion {
     images: normalizeQuestionImages(raw.images, raw.image_url),
     year: raw.year,
     day: raw.day,
+    exam: raw.exam || "enem",
     content: Array.isArray(raw.content) ? raw.content : null,
     command: raw.command ?? null,
   };
