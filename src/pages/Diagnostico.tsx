@@ -123,6 +123,7 @@ export default function Diagnostico() {
     const { data, error } = await supabase
       .from('questions')
       .select('id, area, topic, subtopic, difficulty, statement, alternatives, correct_answer, explanation, tags, image_url, images, year, number, foreign_language, content, command')
+      .eq('exam', 'ufu')
       .in('area', [...AREAS])
       .limit(400);
 
@@ -378,11 +379,12 @@ export default function Diagnostico() {
 
   const answer = answers[currentIndex];
   const alternatives = q.alternatives as { letter: string; text: string; image_url?: string | null }[];
-  const ALT_LETTERS = ['A', 'B', 'C', 'D', 'E'];
+  const ALT_LETTERS = alternatives.map((_, i) => String.fromCharCode(65 + i));
   const allImages = q.images ?? [];
   const statementImages = allImages.filter(
     (img) => !img.caption || !ALT_LETTERS.includes(img.caption.trim().toUpperCase())
   );
+  const topicLabel = q.topic && q.topic.trim() && q.topic.trim().toLowerCase() !== 'geral' ? q.topic.trim() : null;
 
   const progressPct = Math.round(((currentIndex + (showFeedback ? 1 : 0)) / questions.length) * 100);
 

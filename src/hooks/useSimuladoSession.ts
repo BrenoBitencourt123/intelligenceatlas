@@ -155,6 +155,7 @@ export function useSimuladoSession() {
         const { data, error } = await supabase
           .from("questions")
           .select("*")
+          .eq('exam', 'ufu')
           .eq("year", year)
           .eq("day", day)
           .not('correct_answer', 'is', null)
