@@ -176,7 +176,7 @@ const SimuladoSession = () => {
     image_url?: string | null;
   }[];
   const allImages = currentQuestion.images || [];
-  const ALT_LETTERS = ["A", "B", "C", "D", "E"];
+  const ALT_LETTERS = alternatives.map((_, i) => String.fromCharCode(65 + i));
   const statementImages = allImages.filter(
     (img: any) => !img.caption || !ALT_LETTERS.includes(img.caption.trim().toUpperCase()),
   );
@@ -188,6 +188,7 @@ const SimuladoSession = () => {
       altImageMap.get(letter)!.push(img);
     }
   });
+  const topicLabel = currentQuestion.topic && currentQuestion.topic.trim() && currentQuestion.topic.trim().toLowerCase() !== 'geral' ? currentQuestion.topic.trim() : null;
 
   const progressPct = totalQuestions > 0 ? ((currentIndex + (showFeedback ? 1 : 0)) / totalQuestions) * 100 : 0;
 
@@ -240,12 +241,18 @@ const SimuladoSession = () => {
           {/* Question card */}
           <div className="rounded-xl border border-border bg-card shadow-sm">
             <div className="p-5 space-y-5">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                 <span className="font-medium">Q{currentQuestion.number}</span>
                 <span className="w-px h-3 bg-border" />
                 <span>ENEM {currentQuestion.year}</span>
                 <span className="w-px h-3 bg-border" />
                 <span>{AREA_LABELS[currentQuestion.area] ?? currentQuestion.area}</span>
+                {topicLabel && (
+                  <>
+                    <span className="w-px h-3 bg-border" />
+                    <span className="text-muted-foreground">Tópico: <span className="text-foreground/80">{topicLabel}</span></span>
+                  </>
+                )}
               </div>
 
               {currentQuestion.content && Array.isArray(currentQuestion.content) && currentQuestion.content.length > 0 ? (

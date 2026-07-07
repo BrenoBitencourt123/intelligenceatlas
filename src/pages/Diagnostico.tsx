@@ -123,6 +123,7 @@ export default function Diagnostico() {
     const { data, error } = await supabase
       .from('questions')
       .select('id, area, topic, subtopic, difficulty, statement, alternatives, correct_answer, explanation, tags, image_url, images, year, number, foreign_language, content, command')
+      .eq('exam', 'ufu')
       .in('area', [...AREAS])
       .limit(400);
 
@@ -378,11 +379,12 @@ export default function Diagnostico() {
 
   const answer = answers[currentIndex];
   const alternatives = q.alternatives as { letter: string; text: string; image_url?: string | null }[];
-  const ALT_LETTERS = ['A', 'B', 'C', 'D', 'E'];
+  const ALT_LETTERS = alternatives.map((_, i) => String.fromCharCode(65 + i));
   const allImages = q.images ?? [];
   const statementImages = allImages.filter(
     (img) => !img.caption || !ALT_LETTERS.includes(img.caption.trim().toUpperCase())
   );
+  const topicLabel = q.topic && q.topic.trim() && q.topic.trim().toLowerCase() !== 'geral' ? q.topic.trim() : null;
 
   const progressPct = Math.round(((currentIndex + (showFeedback ? 1 : 0)) / questions.length) * 100);
 
@@ -414,10 +416,16 @@ export default function Diagnostico() {
           <div className="rounded-xl border border-border bg-card shadow-sm">
             <div className="p-5 space-y-5">
               {/* Meta */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                 <span className="font-medium">Q{q.number}</span>
                 <span className="w-px h-3 bg-border" />
                 <span>ENEM {q.year}</span>
+                {topicLabel && (
+                  <>
+                    <span className="w-px h-3 bg-border" />
+                    <span className="text-muted-foreground">Tópico: <span className="text-foreground/80">{topicLabel}</span></span>
+                  </>
+                )}
               </div>
 
               {/* Statement */}

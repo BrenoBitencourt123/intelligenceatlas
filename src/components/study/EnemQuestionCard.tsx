@@ -8,7 +8,7 @@ import type {
   EnemAlternative,
 } from '@/types/enemQuestion';
 
-const LETTERS = ['A', 'B', 'C', 'D', 'E'];
+const letterAt = (i: number) => String.fromCharCode(65 + i);
 
 /* ── helpers ─────────────────────────────────────────── */
 
@@ -221,7 +221,7 @@ export default function EnemQuestionCard({
         {question.alternatives.map((alt, idx) => (
           <Alternative
             key={idx}
-            letter={LETTERS[idx] ?? String(idx)}
+            letter={letterAt(idx)}
             alt={alt}
             selected={selected === idx}
             onSelect={() => handleSelect(idx)}

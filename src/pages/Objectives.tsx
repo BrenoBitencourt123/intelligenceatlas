@@ -494,7 +494,7 @@ const Objectives = () => {
               <div className="p-5 space-y-5">
                 {(() => {
                   const allImages = currentQuestion.images || [];
-                  const ALT_LETTERS = ['A', 'B', 'C', 'D', 'E'];
+                  const ALT_LETTERS = alternatives.map((_, i) => String.fromCharCode(65 + i));
                   const statementImages = allImages.filter(
                     (img: any) => !img.caption || !ALT_LETTERS.includes(img.caption.trim().toUpperCase())
                   );
@@ -506,13 +506,21 @@ const Objectives = () => {
                       altImageMap.get(letter)!.push(img);
                     }
                   });
+                  const rawTopic = (currentQuestion as any).topic as string | undefined;
+                  const topicLabel = rawTopic && rawTopic.trim() && rawTopic.trim().toLowerCase() !== 'geral' ? rawTopic.trim() : null;
                   return (
                     <>
                       {/* Question meta */}
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                         <span className="font-medium">Q{currentQuestion.number}</span>
                         <span className="w-px h-3 bg-border" />
                         <span>ENEM {currentQuestion.year}</span>
+                        {topicLabel && (
+                          <>
+                            <span className="w-px h-3 bg-border" />
+                            <span className="text-muted-foreground">Tópico: <span className="text-foreground/80">{topicLabel}</span></span>
+                          </>
+                        )}
                       </div>
 
                       {/* Statement */}
