@@ -28,6 +28,7 @@ interface Question {
   image_url: string | null;
   images: QuestionImage[];
   year: number;
+  exam: string;
   content?: any[] | null;
   command?: string | null;
 }
@@ -62,7 +63,7 @@ interface PersistedDailyPlan {
 type SessionState = "idle" | "loading" | "active" | "result";
 type SessionCandidate = Pick<Question, "id" | "number" | "area" | "topic" | "subtopic" | "difficulty" | "skills" | "correct_answer" | "tags">;
 
-const QUESTION_SELECT_COLUMNS = "id,number,area,topic,subtopic,difficulty,skills,statement,alternatives,correct_answer,explanation,tags,image_url,images,year,content,command,foreign_language,disciplina" as const;
+const QUESTION_SELECT_COLUMNS = "id,number,area,topic,subtopic,difficulty,skills,statement,alternatives,correct_answer,explanation,tags,image_url,images,year,exam,content,command,foreign_language,disciplina" as const;
 const QUESTION_SELECTION_COLUMNS = "id,number,area,topic,subtopic,difficulty,skills,correct_answer,tags,foreign_language,disciplina" as const;
 
 const STORAGE_KEY = "atlas_study_session";
@@ -429,6 +430,7 @@ export function useStudySession() {
       image_url: q.image_url,
       images: normalizeQuestionImages(q.images, q.image_url),
       year: q.year,
+      exam: q.exam || 'enem',
       content: Array.isArray(q.content) ? q.content : null,
       command: q.command ?? null,
     }),

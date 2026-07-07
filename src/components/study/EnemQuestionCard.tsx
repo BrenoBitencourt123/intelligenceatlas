@@ -189,7 +189,7 @@ export default function EnemQuestionCard({
       {/* Header */}
       <div className="flex items-center gap-2 px-5 pt-5 pb-2">
         <Badge variant="secondary" className="text-xs font-medium">
-          {question.exam}
+          {(question.exam || 'enem').toUpperCase()} {question.year ?? ''}
         </Badge>
         <span className="text-xs text-muted-foreground font-medium">
           Questão {question.number}

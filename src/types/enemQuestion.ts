@@ -22,6 +22,7 @@ export interface EnemAlternative {
 
 export interface EnemQuestion {
   exam: string;
+  year?: number;
   number: string | number;
   content: EnemContentBlock[];
   command: string;

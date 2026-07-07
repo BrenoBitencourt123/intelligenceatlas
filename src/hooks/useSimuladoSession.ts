@@ -19,6 +19,7 @@ export interface SimuladoQuestion {
   images: QuestionImage[];
   year: number;
   day: number;
+  exam: string;
   content?: any[] | null;
   command?: string | null;
 }
@@ -36,11 +37,13 @@ export interface SimuladoResult {
   byArea: Record<string, { correct: number; total: number }>;
   year: number;
   day: number;
+  exam: string;
 }
 
 interface PersistedSimulado {
   year: number;
   day: number;
+  exam: string;
   questions: SimuladoQuestion[];
   currentIndex: number;
   answers: Record<number, SimuladoAnswer>;
@@ -89,6 +92,7 @@ function mapQuestion(raw: any): SimuladoQuestion {
     images: normalizeQuestionImages(raw.images, raw.image_url),
     year: raw.year,
     day: raw.day,
+    exam: raw.exam || "enem",
     content: Array.isArray(raw.content) ? raw.content : null,
     command: raw.command ?? null,
   };
@@ -103,10 +107,10 @@ export function useSimuladoSession() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [startTime, setStartTime] = useState(0);
   const [questionStartedAt, setQuestionStartedAt] = useState(0);
-  const [meta, setMeta] = useState<{ year: number; day: number } | null>(null);
+  const [meta, setMeta] = useState<{ year: number; day: number; exam: string } | null>(null);
   const [result, setResult] = useState<SimuladoResult | null>(null);
   const [hasSaved, setHasSaved] = useState(false);
-  const [savedMeta, setSavedMeta] = useState<{ year: number; day: number; currentIndex: number; total: number } | null>(null);
+  const [savedMeta, setSavedMeta] = useState<{ year: number; day: number; exam: string; currentIndex: number; total: number } | null>(null);
 
   // Detect saved simulado on mount
   useEffect(() => {
@@ -116,6 +120,7 @@ export function useSimuladoSession() {
       setSavedMeta({
         year: saved.year,
         day: saved.day,
+        exam: saved.exam,
         currentIndex: saved.currentIndex,
         total: saved.questions.length,
       });
@@ -128,6 +133,7 @@ export function useSimuladoSession() {
       saveSimulado({
         year: meta.year,
         day: meta.day,
+        exam: meta.exam,
         questions,
         currentIndex,
         answers,
@@ -184,19 +190,20 @@ export function useSimuladoSession() {
         setResult(null);
         setStartTime(now);
         setQuestionStartedAt(now);
-        setMeta({ year, day });
+        setMeta({ year, day, exam: mapped[0]?.exam || 'ufu' });
         setState("active");
 
         saveSimulado({
           year,
           day,
+          exam: mapped[0]?.exam || 'ufu',
           questions: mapped,
           currentIndex: 0,
           answers: {},
           startTime: now,
         });
         setHasSaved(true);
-        setSavedMeta({ year, day, currentIndex: 0, total: mapped.length });
+        setSavedMeta({ year, day, exam: mapped[0]?.exam || 'ufu', currentIndex: 0, total: mapped.length });
       } catch (err) {
         console.error("Error starting simulado:", err);
         toast.error("Erro ao iniciar simulado");
@@ -220,7 +227,7 @@ export function useSimuladoSession() {
     setResult(null);
     setStartTime(saved.startTime);
     setQuestionStartedAt(Date.now());
-    setMeta({ year: saved.year, day: saved.day });
+    setMeta({ year: saved.year, day: saved.day, exam: saved.exam || 'ufu' });
     setState("active");
     return true;
   }, []);
@@ -259,6 +266,7 @@ export function useSimuladoSession() {
         byArea,
         year: meta?.year ?? 0,
         day: meta?.day ?? 1,
+        exam: meta?.exam || 'ufu',
       };
 
       setResult(finalResult);
@@ -302,6 +310,7 @@ export function useSimuladoSession() {
       saveSimulado({
         year: meta!.year,
         day: meta!.day,
+        exam: meta!.exam,
         questions,
         currentIndex,
         answers: nextAnswers,
@@ -352,6 +361,7 @@ export function useSimuladoSession() {
     saveSimulado({
       year: meta!.year,
       day: meta!.day,
+      exam: meta!.exam,
       questions,
       currentIndex: nextIndex,
       answers,

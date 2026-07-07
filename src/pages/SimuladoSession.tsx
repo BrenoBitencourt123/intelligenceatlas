@@ -116,7 +116,7 @@ const SimuladoSession = () => {
             <div className="text-center space-y-2">
               <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wider font-medium">
                 <FileText className="h-3 w-3" />
-                Simulado ENEM {result.year} · Dia {result.day}
+                Simulado {(result.exam || 'enem').toUpperCase()} {result.year} · Dia {result.day}
               </div>
               <p className="text-6xl font-black tracking-tight text-foreground">{accuracy}%</p>
               <p className="text-sm text-muted-foreground">
@@ -244,13 +244,13 @@ const SimuladoSession = () => {
               <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                 <span className="font-medium">Q{currentQuestion.number}</span>
                 <span className="w-px h-3 bg-border" />
-                <span>ENEM {currentQuestion.year}</span>
+                <span>{(currentQuestion.exam || 'enem').toUpperCase()} {currentQuestion.year}</span>
                 <span className="w-px h-3 bg-border" />
                 <span>{AREA_LABELS[currentQuestion.area] ?? currentQuestion.area}</span>
                 {topicLabel && (
                   <>
                     <span className="w-px h-3 bg-border" />
-                    <span className="text-muted-foreground">Tópico: <span className="text-foreground/80">{topicLabel}</span></span>
+                    <Badge variant="secondary" className="text-xs">{topicLabel}</Badge>
                   </>
                 )}
               </div>
