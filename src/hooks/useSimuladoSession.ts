@@ -190,19 +190,20 @@ export function useSimuladoSession() {
         setResult(null);
         setStartTime(now);
         setQuestionStartedAt(now);
-        setMeta({ year, day });
+        setMeta({ year, day, exam: mapped[0]?.exam || 'ufu' });
         setState("active");
 
         saveSimulado({
           year,
           day,
+          exam: mapped[0]?.exam || 'ufu',
           questions: mapped,
           currentIndex: 0,
           answers: {},
           startTime: now,
         });
         setHasSaved(true);
-        setSavedMeta({ year, day, currentIndex: 0, total: mapped.length });
+        setSavedMeta({ year, day, exam: mapped[0]?.exam || 'ufu', currentIndex: 0, total: mapped.length });
       } catch (err) {
         console.error("Error starting simulado:", err);
         toast.error("Erro ao iniciar simulado");
@@ -226,7 +227,7 @@ export function useSimuladoSession() {
     setResult(null);
     setStartTime(saved.startTime);
     setQuestionStartedAt(Date.now());
-    setMeta({ year: saved.year, day: saved.day });
+    setMeta({ year: saved.year, day: saved.day, exam: saved.exam || 'ufu' });
     setState("active");
     return true;
   }, []);
