@@ -127,11 +127,12 @@ const App = () => (
             <Route
               path="/admin"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requireAdmin>
                   <Admin />
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/bem-vindo"
               element={

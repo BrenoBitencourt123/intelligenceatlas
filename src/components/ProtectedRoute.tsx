@@ -1,15 +1,18 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requireAdmin?: boolean;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
   const { user, profile, loading } = useAuth();
+  const { isAdmin, isLoading: isAdminLoading } = useIsAdmin();
   const location = useLocation();
 
-  if (loading) {
+  if (loading || (requireAdmin && isAdminLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -29,5 +32,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/onboarding" replace />;
   }
 
+  // Admin gate — prevents UI flash for non-admins
+  if (requireAdmin && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 }
+
