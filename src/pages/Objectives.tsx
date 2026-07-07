@@ -514,11 +514,11 @@ const Objectives = () => {
                       <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                         <span className="font-medium">Q{currentQuestion.number}</span>
                         <span className="w-px h-3 bg-border" />
-                        <span>ENEM {currentQuestion.year}</span>
+                        <span>{(currentQuestion.exam || 'enem').toUpperCase()} {currentQuestion.year}</span>
                         {topicLabel && (
                           <>
                             <span className="w-px h-3 bg-border" />
-                            <span className="text-muted-foreground">Tópico: <span className="text-foreground/80">{topicLabel}</span></span>
+                            <Badge variant="secondary" className="text-xs">{topicLabel}</Badge>
                           </>
                         )}
                       </div>
