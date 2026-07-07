@@ -107,7 +107,7 @@ export function useSimuladoSession() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [startTime, setStartTime] = useState(0);
   const [questionStartedAt, setQuestionStartedAt] = useState(0);
-  const [meta, setMeta] = useState<{ year: number; day: number } | null>(null);
+  const [meta, setMeta] = useState<{ year: number; day: number; exam: string } | null>(null);
   const [result, setResult] = useState<SimuladoResult | null>(null);
   const [hasSaved, setHasSaved] = useState(false);
   const [savedMeta, setSavedMeta] = useState<{ year: number; day: number; currentIndex: number; total: number } | null>(null);
@@ -120,6 +120,7 @@ export function useSimuladoSession() {
       setSavedMeta({
         year: saved.year,
         day: saved.day,
+        exam: saved.exam,
         currentIndex: saved.currentIndex,
         total: saved.questions.length,
       });
@@ -132,6 +133,7 @@ export function useSimuladoSession() {
       saveSimulado({
         year: meta.year,
         day: meta.day,
+        exam: meta.exam,
         questions,
         currentIndex,
         answers,
