@@ -96,6 +96,7 @@ const Objectives = () => {
     state === 'active' && hasKnowledgeCapsules
   );
   const { user } = useAuth();
+  const { hasUfuQuestions, isLoading: ufuLoading } = useUfuAvailability();
   const [blockTransition, setBlockTransition] = useState<{
     completedBlock: number;
     correct: number;
