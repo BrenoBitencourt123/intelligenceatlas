@@ -318,3 +318,40 @@ function baixarBlob(blob: Blob) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+type ResultadoType = NonNullable<ReturnType<typeof calcularResultado>>;
+
+function CtaGuiaCard({
+  resultado,
+  ctaVistoRef,
+}: {
+  resultado: ResultadoType;
+  ctaVistoRef: React.MutableRefObject<string | null>;
+}) {
+  const slug = slugCursoUfu(resultado.curso);
+  useEffect(() => {
+    if (ctaVistoRef.current === resultado.curso.id) return;
+    ctaVistoRef.current = resultado.curso.id;
+    trackUfu("calc_completed", { evento: "cta_lista_visto", curso: resultado.curso.id });
+  }, [resultado.curso.id, ctaVistoRef]);
+
+  return (
+    <Card className="border-2 border-primary">
+      <CardContent className="pt-6 space-y-3">
+        <h3 className="text-lg font-bold tracking-tight">
+          Receber o guia de folga de {resultado.curso.nome}
+        </h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Corte e meta por cota, onde cada acerto vale mais e o plano de 4 passos.
+          De graça, no seu e-mail — e você é avisado quando abrir a pré-venda fundadora
+          (20 vagas).
+        </p>
+        <Button asChild size="lg" className="w-full">
+          <Link to={`/ufu/lista?curso=${slug}&origem=calc`}>
+            Quero o guia <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
