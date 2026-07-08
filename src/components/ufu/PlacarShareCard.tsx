@@ -21,6 +21,9 @@ export function PlacarShareCard({ nota, areaFraca, nome }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gerando, setGerando] = useState(false);
 
+  useEffect(() => { desenhar(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [nota, areaFraca, nome]);
+
+
   function desenhar(): HTMLCanvasElement | null {
     const canvas = canvasRef.current;
     if (!canvas) return null;
