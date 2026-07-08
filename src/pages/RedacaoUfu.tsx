@@ -102,6 +102,10 @@ export default function RedacaoUfu() {
       toast({ title: "Escolha o gênero", description: "Na UFU, fugir do gênero zera a redação.", variant: "destructive" });
       return;
     }
+    if (semCreditos) {
+      trackUfu("calc_completed", { evento: "paywall_visto" });
+      return;
+    }
     setAnalisando(true);
     setAnalise(null);
     setEvolucao(null);
@@ -115,9 +119,20 @@ export default function RedacaoUfu() {
           proposta: proposta?.enunciado,
         },
       });
-      if (error) throw new Error((await parseFnError(error)) ?? "Erro na correção");
+      if (error) {
+        const parsed = await parseFnError(error);
+        // Edge function respondeu 402 com { code: "sem_creditos" } → mostra paywall sem toast de erro
+        if (parsed?.code === "sem_creditos") {
+          setSemCreditos(true);
+          setSaldo(0);
+          trackUfu("calc_completed", { evento: "paywall_visto" });
+          return;
+        }
+        throw new Error(parsed?.message ?? "Erro na correção");
+      }
       if (data?.error) throw new Error(data.error);
       setAnalise(data as AnaliseUfu);
+      await refetchSaldo();
 
       if (user) {
         await supabase.from("essays").insert({
