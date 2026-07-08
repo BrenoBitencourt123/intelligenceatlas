@@ -469,6 +469,7 @@ export default function RedacaoUfu() {
                       {evoluindo ? "Evoluindo sua redação..." : "Ver minha redação uma faixa acima"}
                     </Button>
                   )}
+                  <GrupoWhatsappButton />
                 </motion.div>
               )}
             </AnimatePresence>
