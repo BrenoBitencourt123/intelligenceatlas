@@ -757,7 +757,7 @@ function PaywallCard({ userEmail }: { userEmail: string }) {
       </div>
 
       <div className="rounded-lg border-2 border-dashed border-primary/40 p-4 space-y-2">
-        <p className="text-xs font-bold uppercase tracking-wide text-primary">Passe UFU 2026 — Fundador</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-primary">Passe UFU 2027 — Fundador</p>
         <p className="text-sm leading-relaxed">
           R$ 149 <span className="text-muted-foreground">·</span> correções ilimitadas + trilha + simulados até a prova.
         </p>
