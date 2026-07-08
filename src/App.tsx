@@ -31,6 +31,7 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import CalculadoraUfu from "./pages/CalculadoraUfu";
 import RedacaoUfu from "./pages/RedacaoUfu";
+import ListaUfu from "./pages/ListaUfu";
 
 const queryClient = new QueryClient();
 
