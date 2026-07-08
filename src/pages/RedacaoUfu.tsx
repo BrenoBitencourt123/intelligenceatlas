@@ -62,6 +62,23 @@ export default function RedacaoUfu() {
   const [evoluindo, setEvoluindo] = useState(false);
   const [evolucao, setEvolucao] = useState<VersaoEvoluida | null>(null);
   const [criterioAberto, setCriterioAberto] = useState<string | null>(null);
+  const [saldo, setSaldo] = useState<number | null>(null);
+  const [semCreditos, setSemCreditos] = useState(false);
+
+  const refetchSaldo = async () => {
+    if (!user) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).rpc("ufu_correcoes_saldo", { p_user: user.id });
+    if (typeof data === "number") {
+      setSaldo(data);
+      setSemCreditos(data <= 0);
+    }
+  };
+
+  useEffect(() => {
+    refetchSaldo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const genero = GENEROS_UFU.find((g) => g.id === genreId);
   const linhas = useMemo(() => estimarLinhas(text), [text]);
