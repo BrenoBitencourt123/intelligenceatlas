@@ -658,10 +658,21 @@ function PaywallCard({ userEmail }: { userEmail: string }) {
         </div>
       </div>
 
+      <div className="rounded-lg border-2 border-dashed border-primary/40 p-4 space-y-2">
+        <p className="text-xs font-bold uppercase tracking-wide text-primary">Passe UFU 2026 — Fundador</p>
+        <p className="text-sm leading-relaxed">
+          R$ 149 <span className="text-muted-foreground">·</span> correções ilimitadas + trilha + simulados até a prova.
+        </p>
+        <Button asChild variant="outline" className="w-full">
+          <a href="/ufu/passe">Ver o Passe UFU</a>
+        </Button>
+      </div>
+
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
         <span>Pagamento seguro via Stripe (cartão) · Garantia incondicional de 7 dias · Crédito liberado automaticamente</span>
       </div>
+
 
       <div className="rounded-lg bg-muted p-3 space-y-2">
         <p className="text-[13px] leading-relaxed">

@@ -8,6 +8,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Data-limite padrão do Passe: dia da prova UFU 2026 (mantido em ufu_config).
+const DEFAULT_PASSE_EXPIRA = "2026-11-08";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -45,8 +48,6 @@ serve(async (req) => {
     if (meta.user_id !== user.id) {
       throw new Error("Sessão não pertence a este usuário");
     }
-    const qtd = Number(meta.qtd || "0");
-    if (!qtd || qtd < 1) throw new Error("Metadata de quantidade inválido");
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -54,7 +55,37 @@ serve(async (req) => {
       { auth: { persistSession: false } },
     );
 
-    // Idempotência: unique index em stripe_session_id garante uma linha só por sessão.
+    // ─── Compra do Passe UFU ───
+    if (meta.tipo === "passe" || meta.plano === "passe") {
+      // Data de expiração vem de ufu_config, com fallback pra prova 2026.
+      let expira = DEFAULT_PASSE_EXPIRA;
+      const { data: cfg } = await admin
+        .from("ufu_config")
+        .select("value")
+        .eq("key", "data_prova_ufu")
+        .maybeSingle();
+      if (cfg?.value) {
+        const raw = typeof cfg.value === "string" ? cfg.value : String(cfg.value);
+        const parsed = raw.replace(/^"|"$/g, "");
+        if (/^\d{4}-\d{2}-\d{2}$/.test(parsed)) expira = parsed;
+      }
+
+      const { error: upErr } = await admin
+        .from("profiles")
+        .update({ ufu_passe_ativo: true, ufu_passe_expira_em: expira })
+        .eq("id", user.id);
+      if (upErr) throw new Error(upErr.message);
+
+      return new Response(JSON.stringify({ creditado: true, tipo: "passe", expira }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // ─── Compra de créditos de correção ───
+    const qtd = Number(meta.qtd || "0");
+    if (!qtd || qtd < 1) throw new Error("Metadata de quantidade inválido");
+
     const { error: insertErr } = await admin.from("ufu_creditos").insert({
       user_id: user.id,
       qtd,
@@ -66,7 +97,7 @@ serve(async (req) => {
       throw new Error(insertErr.message);
     }
 
-    return new Response(JSON.stringify({ creditado: true, qtd }), {
+    return new Response(JSON.stringify({ creditado: true, tipo: "credito", qtd }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
