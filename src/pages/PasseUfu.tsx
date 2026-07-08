@@ -131,6 +131,26 @@ export default function PasseUfu() {
     }
   }
 
+  async function comprarAvulsa(plano: "avulsa" | "pacote5") {
+    if (!user) {
+      window.location.href = `/cadastro?next=${encodeURIComponent("/ufu/passe")}`;
+      return;
+    }
+    trackUfu("calc_completed", { evento: "paywall_click", plano });
+    setComprandoAvulsa(plano);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout-ufu", {
+        body: { plano },
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.url) throw new Error("Checkout não retornou URL");
+      window.location.href = data.url as string;
+    } catch (e) {
+      toast({ title: "Não deu pra abrir o checkout", description: (e as Error).message, variant: "destructive" });
+      setComprandoAvulsa(null);
+    }
+  }
+
   const dataFormatada = (() => {
     try {
       return new Date(dataProva + "T00:00:00").toLocaleDateString("pt-BR", {
