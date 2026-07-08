@@ -216,6 +216,8 @@ export type Database = {
           phone: string | null
           plan_started_at: string
           plan_type: string
+          ufu_passe_ativo: boolean
+          ufu_passe_expira_em: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -231,6 +233,8 @@ export type Database = {
           phone?: string | null
           plan_started_at?: string
           plan_type?: string
+          ufu_passe_ativo?: boolean
+          ufu_passe_expira_em?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -246,6 +250,8 @@ export type Database = {
           phone?: string | null
           plan_started_at?: string
           plan_type?: string
+          ufu_passe_ativo?: boolean
+          ufu_passe_expira_em?: string | null
         }
         Relationships: []
       }
@@ -569,6 +575,24 @@ export type Database = {
         }
         Relationships: []
       }
+      ufu_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       ufu_correcoes_uso: {
         Row: {
           created_at: string
@@ -611,6 +635,48 @@ export type Database = {
           qtd?: number
           stripe_session_id?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      ufu_diagnostico_questoes: {
+        Row: {
+          alternativas: Json
+          ano: number | null
+          area: string
+          ativo: boolean
+          correta: string
+          created_at: string
+          gabarito_comentado: string | null
+          id: string
+          prova: string | null
+          statement: string
+          updated_at: string
+        }
+        Insert: {
+          alternativas: Json
+          ano?: number | null
+          area: string
+          ativo?: boolean
+          correta: string
+          created_at?: string
+          gabarito_comentado?: string | null
+          id?: string
+          prova?: string | null
+          statement: string
+          updated_at?: string
+        }
+        Update: {
+          alternativas?: Json
+          ano?: number | null
+          area?: string
+          ativo?: boolean
+          correta?: string
+          created_at?: string
+          gabarito_comentado?: string | null
+          id?: string
+          prova?: string | null
+          statement?: string
+          updated_at?: string
         }
         Relationships: []
       }
