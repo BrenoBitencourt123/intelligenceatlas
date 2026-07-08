@@ -25,6 +25,7 @@ function nomeDoCurso(slug: string | null): string {
 export default function ListaUfu() {
   const [params] = useSearchParams();
   const curso = params.get("curso");
+  const origem = params.get("origem") ?? "pseo";
   const nome = useMemo(() => nomeDoCurso(curso), [curso]);
 
   const [email, setEmail] = useState("");
@@ -56,7 +57,7 @@ export default function ListaUfu() {
             email: email.trim().toLowerCase(),
             whatsapp: whatsapp.trim() || null,
             curso: curso ?? null,
-            origem: "pseo",
+            origem,
           },
           { onConflict: "email", ignoreDuplicates: true },
         );
@@ -85,7 +86,7 @@ export default function ListaUfu() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-xl px-4 py-8 space-y-6">
         <div className="flex items-center justify-between">
-          <Link to="/ufu" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <Link to="/calculadora-ufu" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> Placar UFU
           </Link>
           {total !== null && (
@@ -144,8 +145,7 @@ export default function ListaUfu() {
                   Quero receber o guia
                 </Button>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Sem spam. Você entra na lista de interesse e recebe o guia + aviso quando abrir a
-                  pré-venda fundadora.
+                  Sem spam. O guia abre na hora + você recebe o aviso da pré-venda fundadora.
                 </p>
               </form>
             </CardContent>
@@ -168,12 +168,20 @@ export default function ListaUfu() {
                   abrirmos a pré-venda fundadora (20 vagas).
                 </p>
               ) : null}
-              <Link
-                to="/ufu"
-                className="inline-block text-sm text-foreground underline underline-offset-4 pt-2"
-              >
-                Voltar ao Placar UFU
-              </Link>
+              <div className="pt-3 space-y-2">
+                <a
+                  href={curso ? `/ufu/guia/${curso}.html` : "https://inteligenciatlas.com/ufu/"}
+                  className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+                >
+                  Abrir meu guia de folga agora →
+                </a>
+                <Link
+                  to="/calculadora-ufu"
+                  className="inline-block text-sm text-foreground underline underline-offset-4"
+                >
+                  Voltar ao Placar UFU
+                </Link>
+              </div>
             </CardContent>
           </Card>
         )}

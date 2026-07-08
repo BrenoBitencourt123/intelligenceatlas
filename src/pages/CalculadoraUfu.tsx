@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Minus, Plus, Share2, Download, Loader2 } from "lucide-react";
+import { Minus, Plus, Share2, Download, Loader2, ArrowRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   CURSOS_UFU, DISCIPLINAS_UFU, COTAS, TOTAL_QUESTOES, EDICAO, type CotaId,
@@ -12,6 +13,7 @@ import {
 import { calcularResultado, type AcertosPorDisciplina } from "@/lib/ufu/score";
 import { gerarCardPng } from "@/lib/ufu/cardImage";
 import { trackUfu } from "@/lib/ufu/track";
+import { slugCursoUfu } from "@/lib/ufu/slug";
 
 // Calculadora pública do Vestibular UFU — 100% grátis, sem cadastro.
 // Funil do produto: resultado → card compartilhável (share instrumentado).
@@ -25,6 +27,7 @@ export default function CalculadoraUfu() {
   const [acertos, setAcertos] = useState<AcertosPorDisciplina>(zerarAcertos);
   const [mostrouResultado, setMostrouResultado] = useState(false);
   const [gerando, setGerando] = useState(false);
+  const ctaVistoRef = useRef<string | null>(null);
 
   const cursosPorCampus = useMemo(() => {
     const map = new Map<string, typeof CURSOS_UFU>();
@@ -296,6 +299,9 @@ export default function CalculadoraUfu() {
           </Card>
         )}
 
+        {/* CTA lista de interesse — momento mais quente do funil */}
+        {mostrouResultado && resultado && <CtaGuiaCard resultado={resultado} ctaVistoRef={ctaVistoRef} />}
+
         <footer className="text-center text-xs text-muted-foreground pb-8">
           Dados públicos da DIRPS/UFU organizados de forma independente. Não somos afiliados à UFU.
         </footer>
@@ -311,4 +317,41 @@ function baixarBlob(blob: Blob) {
   a.download = "meu-placar-ufu.png";
   a.click();
   URL.revokeObjectURL(url);
+}
+
+type ResultadoType = NonNullable<ReturnType<typeof calcularResultado>>;
+
+function CtaGuiaCard({
+  resultado,
+  ctaVistoRef,
+}: {
+  resultado: ResultadoType;
+  ctaVistoRef: React.MutableRefObject<string | null>;
+}) {
+  const slug = slugCursoUfu(resultado.curso);
+  useEffect(() => {
+    if (ctaVistoRef.current === resultado.curso.id) return;
+    ctaVistoRef.current = resultado.curso.id;
+    trackUfu("calc_completed", { evento: "cta_lista_visto", curso: resultado.curso.id });
+  }, [resultado.curso.id, ctaVistoRef]);
+
+  return (
+    <Card className="border-2 border-primary">
+      <CardContent className="pt-6 space-y-3">
+        <h3 className="text-lg font-bold tracking-tight">
+          Receber o guia de folga de {resultado.curso.nome}
+        </h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Corte e meta por cota, onde cada acerto vale mais e o plano de 4 passos.
+          De graça, no seu e-mail — e você é avisado quando abrir a pré-venda fundadora
+          (20 vagas).
+        </p>
+        <Button asChild size="lg" className="w-full">
+          <Link to={`/ufu/lista?curso=${slug}&origem=calc`}>
+            Quero o guia <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
 }
