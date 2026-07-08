@@ -8,8 +8,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Data-limite padrão do Passe: dia da prova UFU 2026 (mantido em ufu_config).
-const DEFAULT_PASSE_EXPIRA = "2026-11-08";
+// Data-limite padrão do Passe: dia da prova UFU 2027 (mantido em ufu_config).
+const DEFAULT_PASSE_EXPIRA = "2027-06-30";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
