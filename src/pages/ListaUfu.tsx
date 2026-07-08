@@ -60,7 +60,8 @@ export default function ListaUfu() {
           },
           { onConflict: "email", ignoreDuplicates: true },
         );
-      if (error && !/duplicate|unique/i.test(error.message)) {
+      // Duplicata real (23505) = sucesso silencioso. Qualquer outro erro = falha.
+      if (error && (error as { code?: string }).code !== "23505") {
         throw error;
       }
       trackUfu("calc_completed", { evento: "lista_signup", curso });
