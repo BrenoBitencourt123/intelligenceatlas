@@ -459,15 +459,16 @@ Responda APENAS com o JSON de achados.`;
     );
 
     // ── Registrar uso server-side (consome 1 crédito) ──
-    // Só registra se NÃO foi eliminado por regra formal (não faz sentido cobrar por texto que zerou por identificação, lingua estrangeira etc)?
-    // Decisão: cobra sempre — o serviço (análise nos 5 critérios) foi entregue.
-    try {
-      const { error: usoError } = await admin
-        .from("ufu_correcoes_uso")
-        .insert({ user_id: user.id });
-      if (usoError) console.error("Failed to record ufu_correcoes_uso:", usoError);
-    } catch (e) {
-      console.error("Exception recording ufu_correcoes_uso:", e);
+    // Só registra se NÃO tem Passe UFU ativo. Passe = correções ilimitadas.
+    if (!passeValido) {
+      try {
+        const { error: usoError } = await admin
+          .from("ufu_correcoes_uso")
+          .insert({ user_id: user.id });
+        if (usoError) console.error("Failed to record ufu_correcoes_uso:", usoError);
+      } catch (e) {
+        console.error("Exception recording ufu_correcoes_uso:", e);
+      }
     }
 
     // ── Token log ──
