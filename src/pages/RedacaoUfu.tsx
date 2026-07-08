@@ -80,6 +80,48 @@ export default function RedacaoUfu() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  // Retorno do Stripe Checkout: /redacao-ufu?pago=cs_...
+  useEffect(() => {
+    if (!user) return;
+    const url = new URL(window.location.href);
+    const sessionId = url.searchParams.get("pago");
+    const cancelado = url.searchParams.get("cancelado");
+    if (cancelado) {
+      toast({ title: "Pagamento cancelado", description: "Nenhuma cobrança foi feita." });
+      url.searchParams.delete("cancelado");
+      window.history.replaceState({}, "", url.pathname + (url.search || ""));
+      return;
+    }
+    if (!sessionId || !sessionId.startsWith("cs_")) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("verify-checkout-ufu", {
+          body: { session_id: sessionId },
+        });
+        if (error) throw new Error((await parseFnError(error))?.message ?? "Erro ao confirmar pagamento");
+        if (data?.creditado) {
+          toast({
+            title: "Pagamento confirmado ✓",
+            description: `${data.qtd} ${data.qtd === 1 ? "correção liberada" : "correções liberadas"}. Bons estudos!`,
+          });
+          await refetchSaldo();
+          setSemCreditos(false);
+        } else {
+          toast({
+            title: "Pagamento em processamento",
+            description: "Assim que o Stripe confirmar, seu crédito aparece aqui.",
+          });
+        }
+      } catch (e) {
+        toast({ title: "Não deu pra confirmar", description: (e as Error).message, variant: "destructive" });
+      } finally {
+        url.searchParams.delete("pago");
+        window.history.replaceState({}, "", url.pathname + (url.search || ""));
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   const genero = GENEROS_UFU.find((g) => g.id === genreId);
   const linhas = useMemo(() => estimarLinhas(text), [text]);
   const nomeCriterio = (id: string) => CRITERIOS_UFU.find((c) => c.id === id)?.nome ?? id;
@@ -555,18 +597,29 @@ async function parseFnError(error: unknown): Promise<{ message: string | null; c
 // Paywall — 2ª correção em diante
 // ══════════════════════════════════════════════════════════════
 function PaywallCard({ userEmail }: { userEmail: string }) {
+  const [loading, setLoading] = useState<null | "avulsa" | "pacote5">(null);
+
   useEffect(() => {
     trackUfu("calc_completed", { evento: "paywall_visto" });
   }, []);
 
-  const abrir = (url: string, plano: "avulsa" | "pacote5") => {
+  async function comprar(plano: "avulsa" | "pacote5") {
     trackUfu("calc_completed", { evento: "paywall_click", plano });
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
+    setLoading(plano);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout-ufu", {
+        body: { plano },
+      });
+      if (error) throw new Error((await parseFnError(error))?.message ?? "Erro ao abrir checkout");
+      if (!data?.url) throw new Error("Checkout não retornou URL");
+      window.location.href = data.url as string;
+    } catch (e) {
+      toast({ title: "Não deu pra abrir o checkout", description: (e as Error).message, variant: "destructive" });
+      setLoading(null);
+    }
+  }
 
-  const whatsappMsg = `Oi! Comprei a correção do Placar UFU — meu e-mail de cadastro é ${userEmail || "___"}.`;
-  const avulsaOk = !!UFU_CONFIG.CHECKOUT_CORRECAO_AVULSA;
-  const pacoteOk = !!UFU_CONFIG.CHECKOUT_PACOTE_5;
+  const whatsappMsg = `Oi! Paguei a correção do Placar UFU mas ainda não liberou — meu e-mail de cadastro é ${userEmail || "___"}.`;
 
   return (
     <div className="rounded-xl border-2 border-primary bg-card p-5 space-y-4">
@@ -582,10 +635,10 @@ function PaywallCard({ userEmail }: { userEmail: string }) {
           <p className="text-xs text-muted-foreground">1 correção completa</p>
           <Button
             className="w-full"
-            disabled={!avulsaOk}
-            onClick={() => abrir(UFU_CONFIG.CHECKOUT_CORRECAO_AVULSA, "avulsa")}
+            disabled={loading !== null}
+            onClick={() => comprar("avulsa")}
           >
-            {avulsaOk ? "Comprar" : "Abrindo em breve"}
+            {loading === "avulsa" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Comprar"}
           </Button>
         </div>
         <div className="rounded-lg border-2 border-primary p-4 space-y-2 relative">
@@ -597,23 +650,22 @@ function PaywallCard({ userEmail }: { userEmail: string }) {
           <p className="text-xs text-muted-foreground">R$ 7,80 cada · 5 correções</p>
           <Button
             className="w-full"
-            disabled={!pacoteOk}
-            onClick={() => abrir(UFU_CONFIG.CHECKOUT_PACOTE_5, "pacote5")}
+            disabled={loading !== null}
+            onClick={() => comprar("pacote5")}
           >
-            {pacoteOk ? "Comprar" : "Abrindo em breve"}
+            {loading === "pacote5" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Comprar"}
           </Button>
         </div>
       </div>
 
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-        <span>Pagamento seguro (Pix ou cartão) · Garantia incondicional de 7 dias · Liberação em poucos minutos</span>
+        <span>Pagamento seguro via Stripe (cartão) · Garantia incondicional de 7 dias · Crédito liberado automaticamente</span>
       </div>
 
       <div className="rounded-lg bg-muted p-3 space-y-2">
         <p className="text-[13px] leading-relaxed">
-          <span className="font-semibold">Pagou?</span> Sua correção é liberada em poucos minutos.
-          Demorou? Me chama:
+          <span className="font-semibold">Pagou e não liberou?</span> Fala comigo direto:
         </p>
         <a
           href={whatsappBrenoUrl(whatsappMsg)}
