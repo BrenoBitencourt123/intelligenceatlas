@@ -156,7 +156,7 @@ export default function PasseUfu() {
             <Sparkles className="h-3 w-3" /> Lote fundador
           </span>
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
-            Passe UFU 2026 — tudo pra prova em um só acesso.
+            Passe UFU 2027 — tudo pra prova em um só acesso.
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
             Corretor de redação <strong className="text-foreground">ilimitado</strong>,
