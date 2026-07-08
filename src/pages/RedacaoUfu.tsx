@@ -288,31 +288,21 @@ export default function RedacaoUfu() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                     Gênero solicitado
                     <span className="text-destructive">*</span>
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {GENEROS_UFU.map((g) => {
-                      const active = g.id === genreId;
-                      return (
-                        <button
-                          key={g.id}
-                          type="button"
-                          onClick={() => setGenreId(g.id)}
-                          className={cn(
-                            "text-left rounded-lg border px-3 py-2.5 text-sm font-medium transition-all",
-                            active
-                              ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                              : "border-border bg-background hover:border-foreground/30 hover:bg-muted/40 text-foreground",
-                          )}
-                        >
-                          {g.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <Select value={genreId} onValueChange={setGenreId}>
+                    <SelectTrigger className="rounded-lg h-11">
+                      <SelectValue placeholder="Escolha o gênero (fugir dele zera)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GENEROS_UFU.map((g) => (
+                        <SelectItem key={g.id} value={g.id}>{g.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-1.5">
