@@ -1,0 +1,461 @@
+[
+ {
+  "nome": "Medicina",
+  "campus": "Umuarama",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 57,
+  "meta": 70
+ },
+ {
+  "nome": "Direito",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Matutino",
+  "peso": "humanas",
+  "ac": 45,
+  "meta": 55
+ },
+ {
+  "nome": "Engenharia Aeronáutica",
+  "campus": "Glória",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 44,
+  "meta": 54
+ },
+ {
+  "nome": "Psicologia",
+  "campus": "Umuarama",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "humanas",
+  "ac": 42,
+  "meta": 52
+ },
+ {
+  "nome": "Direito",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Noturno",
+  "peso": "humanas",
+  "ac": 40,
+  "meta": 49
+ },
+ {
+  "nome": "Engenharia de Computação com IA Aplicada",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Vespertino",
+  "peso": "exatas",
+  "ac": 40,
+  "meta": 49
+ },
+ {
+  "nome": "Ciência da Computação",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 39,
+  "meta": 48
+ },
+ {
+  "nome": "Biomedicina",
+  "campus": "Umuarama",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 39,
+  "meta": 48
+ },
+ {
+  "nome": "Odontologia",
+  "campus": "Umuarama",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 39,
+  "meta": 48
+ },
+ {
+  "nome": "Relações Internacionais",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "humanas",
+  "ac": 38,
+  "meta": 47
+ },
+ {
+  "nome": "Engenharia Mecânica",
+  "campus": "Glória",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 38,
+  "meta": 47
+ },
+ {
+  "nome": "Medicina Veterinária",
+  "campus": "Glória",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 38,
+  "meta": 47
+ },
+ {
+  "nome": "Engenharia Mecatrônica",
+  "campus": "Glória",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 37,
+  "meta": 46
+ },
+ {
+  "nome": "Engenharia Civil",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 36,
+  "meta": 44
+ },
+ {
+  "nome": "Engenharia Elétrica",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 36,
+  "meta": 44
+ },
+ {
+  "nome": "Ciências Biológicas (Bacharelado)",
+  "campus": "Umuarama",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 36,
+  "meta": 44
+ },
+ {
+  "nome": "Nutrição",
+  "campus": "Umuarama",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 36,
+  "meta": 44
+ },
+ {
+  "nome": "Agronomia",
+  "campus": "Glória",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 36,
+  "meta": 44
+ },
+ {
+  "nome": "Fisioterapia",
+  "campus": "Educação Física",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 36,
+  "meta": 44
+ },
+ {
+  "nome": "Ciências Econômicas",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "humanas",
+  "ac": 35,
+  "meta": 43
+ },
+ {
+  "nome": "Biotecnologia",
+  "campus": "Umuarama",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 33,
+  "meta": 41
+ },
+ {
+  "nome": "Engenharia Química",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 32,
+  "meta": 40
+ },
+ {
+  "nome": "Inteligência Artificial",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Matutino",
+  "peso": "exatas",
+  "ac": 32,
+  "meta": 40
+ },
+ {
+  "nome": "Sistemas de Informação",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Noturno",
+  "peso": "exatas",
+  "ac": 32,
+  "meta": 40
+ },
+ {
+  "nome": "Enfermagem",
+  "campus": "Umuarama",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "linguagens",
+  "ac": 32,
+  "meta": 40
+ },
+ {
+  "nome": "Administração",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "humanas",
+  "ac": 30,
+  "meta": 37
+ },
+ {
+  "nome": "Educação Física",
+  "campus": "Educação Física",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "edfisica",
+  "ac": 30,
+  "meta": 37
+ },
+ {
+  "nome": "Administração",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Noturno",
+  "peso": "humanas",
+  "ac": 29,
+  "meta": 36
+ },
+ {
+  "nome": "Matemática (ABI)",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 29,
+  "meta": 36
+ },
+ {
+  "nome": "Engenharia Eletrônica e de Telecomunicações",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 27,
+  "meta": 33
+ },
+ {
+  "nome": "Ciências Biológicas (Licenciatura)",
+  "campus": "Umuarama",
+  "cidade": "Uberlândia",
+  "turno": "Noturno",
+  "peso": "bio",
+  "ac": 27,
+  "meta": 33
+ },
+ {
+  "nome": "Cibersegurança",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Noturno",
+  "peso": "exatas",
+  "ac": 26,
+  "meta": 32
+ },
+ {
+  "nome": "Engenharia Biomédica",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 25,
+  "meta": 31
+ },
+ {
+  "nome": "Ciências Biológicas (Licenciatura)",
+  "campus": "Umuarama",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 25,
+  "meta": 31
+ },
+ {
+  "nome": "Zootecnia",
+  "campus": "Glória",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 25,
+  "meta": 31
+ },
+ {
+  "nome": "Engenharia de Controle e Automação",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "dados",
+  "ac": 24,
+  "meta": 30
+ },
+ {
+  "nome": "Música (ABI)",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "linguagens",
+  "ac": 24,
+  "meta": 30
+ },
+ {
+  "nome": "Engenharia de Agrimensura e Cartográfica",
+  "campus": "Monte Carmelo",
+  "cidade": "Monte Carmelo",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 21,
+  "meta": 26
+ },
+ {
+  "nome": "Química Industrial",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 17,
+  "meta": 21
+ },
+ {
+  "nome": "Sistemas de Informação",
+  "campus": "Monte Carmelo",
+  "cidade": "Monte Carmelo",
+  "turno": "Integral",
+  "peso": "si_mc",
+  "ac": 16,
+  "meta": 20
+ },
+ {
+  "nome": "Ciência de Dados e Estatística",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Noturno",
+  "peso": "dados",
+  "ac": 15,
+  "meta": 19
+ },
+ {
+  "nome": "Engenharia Ambiental e Sanitária",
+  "campus": "Glória",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 15,
+  "meta": 19
+ },
+ {
+  "nome": "Engenharia Florestal",
+  "campus": "Monte Carmelo",
+  "cidade": "Monte Carmelo",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 15,
+  "meta": 19
+ },
+ {
+  "nome": "Agronomia",
+  "campus": "Monte Carmelo",
+  "cidade": "Monte Carmelo",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 14,
+  "meta": 18
+ },
+ {
+  "nome": "Engenharia de Alimentos",
+  "campus": "Patos de Minas",
+  "cidade": "Patos de Minas",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 14,
+  "meta": 18
+ },
+ {
+  "nome": "Engenharia de Produção",
+  "campus": "Pontal",
+  "cidade": "Ituiutaba",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 13,
+  "meta": 16
+ },
+ {
+  "nome": "Ciências Contábeis",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "humanas",
+  "ac": 12,
+  "meta": 15
+ },
+ {
+  "nome": "Engenharia Eletrônica e de Telecomunicações",
+  "campus": "Patos de Minas",
+  "cidade": "Patos de Minas",
+  "turno": "Integral",
+  "peso": "exatas",
+  "ac": 12,
+  "meta": 15
+ },
+ {
+  "nome": "Gestão da Informação",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Integral",
+  "peso": "gestao",
+  "ac": 11,
+  "meta": 14
+ },
+ {
+  "nome": "Ciências Contábeis",
+  "campus": "Santa Mônica",
+  "cidade": "Uberlândia",
+  "turno": "Noturno",
+  "peso": "humanas",
+  "ac": 10,
+  "meta": 13
+ },
+ {
+  "nome": "Biotecnologia",
+  "campus": "Patos de Minas",
+  "cidade": "Patos de Minas",
+  "turno": "Integral",
+  "peso": "bio",
+  "ac": 9,
+  "meta": 11
+ }
+]
