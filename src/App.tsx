@@ -170,6 +170,7 @@ const App = () => (
             <Route path="/fundadores/cadastro" element={<FounderSignup />} />
             {/* UFU - pagina publica, sem cadastro (funil) */}
             <Route path="/ufu" element={<CalculadoraUfu />} />
+            <Route path="/ufu/lista" element={<ListaUfu />} />
             <Route path="/calculadora-ufu" element={<Navigate to="/ufu" replace />} />
             {/* UFU - corretor de redacao (produto; requer login) */}
             <Route
