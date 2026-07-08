@@ -178,6 +178,11 @@ export default function RedacaoUfu() {
             <span className="text-xs font-medium px-2.5 py-1 bg-primary/10 text-primary rounded-full">
               Banca UFU · DIRPS
             </span>
+            {saldo !== null && (
+              <span className="text-xs text-muted-foreground tabular-nums hidden sm:inline">
+                {saldo} {saldo === 1 ? "correção disponível" : "correções disponíveis"}
+              </span>
+            )}
           </div>
           {analise && !analise.eliminado && (
             <div className="flex items-baseline gap-1 tabular-nums">
@@ -285,16 +290,20 @@ export default function RedacaoUfu() {
                 className="min-h-[380px] border-0 rounded-none focus-visible:ring-0 px-5 py-4 text-[15px] leading-7 resize-y"
               />
               <div className="p-4 border-t border-border">
-                <Button
-                  className="w-full rounded-xl h-12 text-[15px]"
-                  onClick={analisar}
-                  disabled={analisando || !text.trim()}
-                >
-                  {analisando
-                    ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : <PenLine className="h-4 w-4" />}
-                  {analisando ? "Corrigindo como a banca..." : "Corrigir na rubrica da UFU"}
-                </Button>
+                {semCreditos ? (
+                  <PaywallCard userEmail={user?.email ?? ""} />
+                ) : (
+                  <Button
+                    className="w-full rounded-xl h-12 text-[15px]"
+                    onClick={analisar}
+                    disabled={analisando || !text.trim()}
+                  >
+                    {analisando
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : <PenLine className="h-4 w-4" />}
+                    {analisando ? "Corrigindo como a banca..." : "Corrigir na rubrica da UFU"}
+                  </Button>
+                )}
               </div>
             </section>
           </div>
