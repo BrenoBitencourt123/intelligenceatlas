@@ -569,6 +569,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ufu_correcoes_uso: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ufu_creditos: {
+        Row: {
+          created_at: string
+          id: string
+          motivo: string | null
+          qtd: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          qtd: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          qtd?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       ufu_events: {
         Row: {
           created_at: string
@@ -851,6 +893,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      ufu_correcoes_saldo: { Args: { p_user: string }; Returns: number }
       ufu_leads_count: { Args: never; Returns: number }
     }
     Enums: {
