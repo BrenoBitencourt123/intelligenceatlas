@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "question_images_anon_select" ON storage.objects;
