@@ -57,7 +57,7 @@ serve(async (req) => {
 
     // ─── Compra do Passe UFU ───
     if (meta.tipo === "passe" || meta.plano === "passe") {
-      // Data de expiração vem de ufu_config, com fallback pra prova 2026.
+      // Data de expiração vem de ufu_config, com fallback pra prova 2027.
       let expira = DEFAULT_PASSE_EXPIRA;
       const { data: cfg } = await admin
         .from("ufu_config")
