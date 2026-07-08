@@ -197,7 +197,7 @@ export default function PasseUfu() {
                 "Trilha da folga: simulados UFU cronometrados",
                 "Gabarito comentado no espelho da banca",
                 "Priorização automática dos seus critérios mais frágeis",
-                "Acesso vitalício ao vestibular UFU 2026",
+                "Acesso até o dia da prova do vestibular UFU 2027",
               ].map((b) => (
                 <li key={b} className="flex items-start gap-2.5">
                   <Check className="h-4 w-4 mt-0.5 text-primary shrink-0" />
