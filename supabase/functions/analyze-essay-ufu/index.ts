@@ -336,30 +336,21 @@ serve(async (req) => {
     }
     const user = claimsData.user;
 
-    // ── Quota (mesmo pool de essays) ──
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("plan_type, flexible_quota, created_at")
-      .eq("id", user.id)
-      .single();
-    const rawPlan = profile?.plan_type || "free";
-    const planType = rawPlan === "basic" ? "pro" : rawPlan;
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-    if (planType === "free") {
-      const isWelcomeBonus = profile?.created_at
-        ? new Date(profile.created_at) >= sevenDaysAgo : false;
-      const weeklyLimit = isWelcomeBonus ? 2 : 1;
-      const { count: weeklyCount } = await supabaseClient
-        .from("essays")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .not("analyzed_at", "is", null)
-        .gte("analyzed_at", sevenDaysAgo.toISOString());
-      if ((weeklyCount ?? 0) >= weeklyLimit) {
-        return json({ error: "Cota semanal de correções atingida.", code: "QUOTA_EXCEEDED", limit_type: "weekly" }, 403);
-      }
+    // ── Saldo UFU (server-side, à prova de fraude client) ──
+    const serviceKeyForCheck = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!serviceKeyForCheck) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+    const admin = createClient(supabaseUrl, serviceKeyForCheck);
+    const { data: saldoData, error: saldoError } = await admin.rpc("ufu_correcoes_saldo", { p_user: user.id });
+    if (saldoError) {
+      console.error("Failed to read ufu_correcoes_saldo:", saldoError);
+      return json({ error: "Não foi possível verificar seu saldo de correções." }, 500);
+    }
+    const saldo = typeof saldoData === "number" ? saldoData : 0;
+    if (saldo <= 0) {
+      return json(
+        { error: "Sem créditos de correção UFU.", code: "sem_creditos", saldo },
+        402,
+      );
     }
 
     // ── Input ──
