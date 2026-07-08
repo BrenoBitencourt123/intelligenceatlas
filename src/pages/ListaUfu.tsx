@@ -182,6 +182,17 @@ export default function ListaUfu() {
                 >
                   Voltar ao Placar UFU
                 </Link>
+                {UFU_CONFIG.GRUPO_WHATSAPP_URL && (
+                  <a
+                    href={UFU_CONFIG.GRUPO_WHATSAPP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 flex items-center justify-center gap-2 rounded-md border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Entrar no grupo do Placar UFU no WhatsApp
+                  </a>
+                )}
               </div>
             </CardContent>
           </Card>
