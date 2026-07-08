@@ -1,9 +1,5 @@
-// Config central UFU. Breno preenche as URLs no painel; app trata vazio como "abrindo em breve".
+// Config central UFU.
 export const UFU_CONFIG = {
-  // Links de pagamento hospedados (Mercado Pago / Stripe Payment Link) — Pix + cartão
-  CHECKOUT_CORRECAO_AVULSA: "", // R$ 9,90 — 1 correção
-  CHECKOUT_PACOTE_5: "",         // R$ 39,00 — 5 correções (R$ 7,80 cada)
-
   // Suporte / liberação rápida (formato E.164 sem +, ex.: "5534999999999")
   WHATSAPP_BRENO: "5534999999999",
 
