@@ -1,0 +1,1 @@
+update public.ufu_config set value = '"2027-06-30"'::jsonb, updated_at = now() where key = 'data_prova_ufu';
