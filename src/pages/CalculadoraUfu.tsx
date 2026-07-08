@@ -299,6 +299,9 @@ export default function CalculadoraUfu() {
           </Card>
         )}
 
+        {/* CTA lista de interesse — momento mais quente do funil */}
+        {mostrouResultado && resultado && <CtaGuiaCard resultado={resultado} ctaVistoRef={ctaVistoRef} />}
+
         <footer className="text-center text-xs text-muted-foreground pb-8">
           Dados públicos da DIRPS/UFU organizados de forma independente. Não somos afiliados à UFU.
         </footer>
