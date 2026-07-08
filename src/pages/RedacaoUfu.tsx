@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import {
   AlertTriangle, Loader2, Sparkles, PenLine, ChevronDown, ShieldAlert, Target,
+  Lock, MessageCircle, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -18,6 +19,8 @@ import {
   GENEROS_UFU, PROPOSTAS_UFU, CRITERIOS_UFU, REDACAO_TOTAL,
   LINHAS_MIN, LINHAS_MAX, estimarLinhas,
 } from "@/data/ufu/redacao";
+import { UFU_CONFIG, whatsappBrenoUrl } from "@/lib/ufu/config";
+import { trackUfu } from "@/lib/ufu/track";
 
 interface CriterioResultado {
   id: string;
