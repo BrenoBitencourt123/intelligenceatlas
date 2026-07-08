@@ -175,6 +175,17 @@ const App = () => (
             <Route path="/calculadora-ufu" element={<CalculadoraUfu />} />
             <Route path="/ufu" element={<Navigate to="/calculadora-ufu" replace />} />
             <Route path="/ufu/lista" element={<ListaUfu />} />
+            <Route path="/ufu/diagnostico" element={<DiagnosticoUfu />} />
+            <Route path="/ufu/passe" element={<PasseUfu />} />
+            <Route path="/passe" element={<Navigate to="/ufu/passe" replace />} />
+            <Route
+              path="/ufu/trilha"
+              element={
+                <ProtectedRoute>
+                  <TrilhaUfu />
+                </ProtectedRoute>
+              }
+            />
             {/* UFU - corretor de redacao (produto; requer login) */}
             <Route
               path="/redacao-ufu"
@@ -186,6 +197,7 @@ const App = () => (
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
+
           </Routes>
         </BrowserRouter>
       </AuthProvider>
