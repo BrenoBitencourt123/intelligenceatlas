@@ -23,6 +23,7 @@ export default function PasseUfu() {
   const [passeAtivo, setPasseAtivo] = useState(false);
   const [expira, setExpira] = useState<string | null>(null);
   const [comprando, setComprando] = useState(false);
+  const [comprandoAvulsa, setComprandoAvulsa] = useState<null | "avulsa" | "pacote5">(null);
 
   // Config: passe_disponivel + data_prova_ufu
   useEffect(() => {
