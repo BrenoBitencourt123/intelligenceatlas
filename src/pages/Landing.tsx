@@ -61,7 +61,7 @@ export default function Landing() {
             <Link to="/login">
               <Button variant="ghost" size="sm" className="text-sm">Entrar</Button>
             </Link>
-            <Link to="/ufu">
+            <Link to="/calculadora-ufu">
               <Button size="sm" className="text-sm font-bold rounded-full px-4">
                 Calcular acertos
               </Button>
@@ -108,7 +108,7 @@ export default function Landing() {
           </motion.p>
 
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3}>
-            <Link to="/ufu">
+            <Link to="/calculadora-ufu">
               <Button
                 size="lg"
                 className="h-13 px-8 text-base font-bold rounded-full shadow-lg active:scale-[0.98] transition-transform"
@@ -309,7 +309,7 @@ export default function Landing() {
             A calculadora é grátis e não pede cadastro. Você sai dela sabendo,
             em acertos brutos, quanto falta pra chegar no seu curso.
           </p>
-          <Link to="/ufu">
+          <Link to="/calculadora-ufu">
             <Button
               size="lg"
               className="h-13 px-8 text-base font-bold rounded-full shadow-lg"

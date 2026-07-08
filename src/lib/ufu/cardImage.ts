@@ -104,7 +104,7 @@ export function gerarCardPng(r: ResultadoCalculo): Promise<Blob> {
   ctx.fillText(`Corte oficial DIRPS ${EDICAO} (classificados p/ correção da redação)`, W / 2, 1210);
   ctx.font = font(700, 30);
   ctx.fillStyle = "rgba(255,255,255,0.6)";
-  ctx.fillText("Calcule o seu — grátis, sem cadastro", W / 2, 1260);
+  ctx.fillText("inteligenciatlas.com/calculadora-ufu — grátis, sem cadastro", W / 2, 1260);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob falhou"))), "image/png");
