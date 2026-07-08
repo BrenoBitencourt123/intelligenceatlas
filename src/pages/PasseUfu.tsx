@@ -11,14 +11,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { whatsappBrenoUrl } from "@/lib/ufu/config";
 import { trackUfu } from "@/lib/ufu/track";
 
-// Landing do Passe UFU 2026 — Fundador.
+// Landing do Passe UFU 2027 — Fundador.
 // Rotas: /ufu/passe (canônica) e /passe (atalho).
 // Fluxo de compra: create-checkout-ufu com { plano: "passe" }, sucesso volta
 // aqui com ?pago=cs_... e verify-checkout-ufu grava profile.ufu_passe_ativo.
 export default function PasseUfu() {
   const { user } = useAuth();
   const [disponivel, setDisponivel] = useState<boolean | null>(null);
-  const [dataProva, setDataProva] = useState<string>("2026-11-08");
+  const [dataProva, setDataProva] = useState<string>("2027-06-30");
   const [totalLeads, setTotalLeads] = useState<number | null>(null);
   const [passeAtivo, setPasseAtivo] = useState(false);
   const [expira, setExpira] = useState<string | null>(null);
