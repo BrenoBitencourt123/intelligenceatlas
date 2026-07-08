@@ -31,6 +31,7 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import CalculadoraUfu from "./pages/CalculadoraUfu";
 import RedacaoUfu from "./pages/RedacaoUfu";
+import ListaUfu from "./pages/ListaUfu";
 
 const queryClient = new QueryClient();
 
@@ -169,6 +170,7 @@ const App = () => (
             <Route path="/fundadores/cadastro" element={<FounderSignup />} />
             {/* UFU - pagina publica, sem cadastro (funil) */}
             <Route path="/ufu" element={<CalculadoraUfu />} />
+            <Route path="/ufu/lista" element={<ListaUfu />} />
             <Route path="/calculadora-ufu" element={<Navigate to="/ufu" replace />} />
             {/* UFU - corretor de redacao (produto; requer login) */}
             <Route

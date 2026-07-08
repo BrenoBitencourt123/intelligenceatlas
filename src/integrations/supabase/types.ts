@@ -593,6 +593,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ufu_leads: {
+        Row: {
+          created_at: string
+          curso: string | null
+          email: string
+          id: string
+          origem: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          curso?: string | null
+          email: string
+          id?: string
+          origem?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          curso?: string | null
+          email?: string
+          id?: string
+          origem?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       user_mastery: {
         Row: {
           attempts: number
@@ -824,6 +851,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      ufu_leads_count: { Args: never; Returns: number }
     }
     Enums: {
       app_role: "admin" | "user"

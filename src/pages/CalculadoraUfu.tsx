@@ -110,9 +110,12 @@ export default function CalculadoraUfu() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-xl px-4 py-8 space-y-6">
         <header className="space-y-2">
-          <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-            Vestibular UFU {EDICAO} · grátis, sem cadastro
-          </p>
+          <div className="flex items-center justify-between">
+            <span className="font-bold tracking-tight">Placar UFU</span>
+            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+              {EDICAO} · grátis
+            </p>
+          </div>
           <h1 className="text-2xl font-bold tracking-tight">
             Quantos acertos te colocam na 2ª fase da UFU?
           </h1>
