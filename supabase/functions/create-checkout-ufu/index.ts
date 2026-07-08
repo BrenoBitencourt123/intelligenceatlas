@@ -8,10 +8,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Planos do corretor de redação UFU
+// Planos do funil UFU
 const PLANOS = {
-  avulsa: { price: "price_1Tr1rpLCrHbXOvxeZA7mdOHM", qtd: 1, nome: "Correção Avulsa UFU" },
-  pacote5: { price: "price_1Tr1uILCrHbXOvxej463FCsS", qtd: 5, nome: "Pacote 5 Correções UFU" },
+  avulsa:  { price: "price_1Tr1rpLCrHbXOvxeZA7mdOHM", qtd: 1, nome: "Correção Avulsa UFU",       tipo: "credito" as const },
+  pacote5: { price: "price_1Tr1uILCrHbXOvxej463FCsS", qtd: 5, nome: "Pacote 5 Correções UFU",    tipo: "credito" as const },
+  passe:   { price: "price_1Tr2oTLCrHbXOvxer0cDMMoy", qtd: 0, nome: "Passe UFU 2026 — Fundador", tipo: "passe"   as const },
 } as const;
 
 type PlanoId = keyof typeof PLANOS;
@@ -42,11 +43,11 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Reaproveita customer existente se houver
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     const customerId = customers.data[0]?.id;
 
     const origin = req.headers.get("origin") || "https://inteligenciatlas.com";
+    const successBase = cfg.tipo === "passe" ? "/ufu/passe" : "/redacao-ufu";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -59,10 +60,11 @@ serve(async (req) => {
         user_id: user.id,
         plano,
         qtd: String(cfg.qtd),
-        produto: "ufu_correcao",
+        tipo: cfg.tipo,
+        produto: cfg.tipo === "passe" ? "ufu_passe" : "ufu_correcao",
       },
-      success_url: `${origin}/redacao-ufu?pago={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/redacao-ufu?cancelado=1`,
+      success_url: `${origin}${successBase}?pago={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}${successBase}?cancelado=1`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
