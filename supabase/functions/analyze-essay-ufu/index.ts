@@ -336,21 +336,35 @@ serve(async (req) => {
     }
     const user = claimsData.user;
 
-    // ── Saldo UFU (server-side, à prova de fraude client) ──
+    // ── Passe UFU ou saldo de créditos (server-side, à prova de fraude client) ──
     const serviceKeyForCheck = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!serviceKeyForCheck) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
     const admin = createClient(supabaseUrl, serviceKeyForCheck);
-    const { data: saldoData, error: saldoError } = await admin.rpc("ufu_correcoes_saldo", { p_user: user.id });
-    if (saldoError) {
-      console.error("Failed to read ufu_correcoes_saldo:", saldoError);
-      return json({ error: "Não foi possível verificar seu saldo de correções." }, 500);
-    }
-    const saldo = typeof saldoData === "number" ? saldoData : 0;
-    if (saldo <= 0) {
-      return json(
-        { error: "Sem créditos de correção UFU.", code: "sem_creditos", saldo },
-        402,
-      );
+
+    // Passe ativo = correções ilimitadas até a data de expiração.
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("ufu_passe_ativo, ufu_passe_expira_em")
+      .eq("id", user.id)
+      .maybeSingle();
+    const hoje = new Date().toISOString().slice(0, 10);
+    const passeValido =
+      !!profile?.ufu_passe_ativo &&
+      (!profile.ufu_passe_expira_em || profile.ufu_passe_expira_em >= hoje);
+
+    if (!passeValido) {
+      const { data: saldoData, error: saldoError } = await admin.rpc("ufu_correcoes_saldo", { p_user: user.id });
+      if (saldoError) {
+        console.error("Failed to read ufu_correcoes_saldo:", saldoError);
+        return json({ error: "Não foi possível verificar seu saldo de correções." }, 500);
+      }
+      const saldo = typeof saldoData === "number" ? saldoData : 0;
+      if (saldo <= 0) {
+        return json(
+          { error: "Sem créditos de correção UFU.", code: "sem_creditos", saldo },
+          402,
+        );
+      }
     }
 
     // ── Input ──
