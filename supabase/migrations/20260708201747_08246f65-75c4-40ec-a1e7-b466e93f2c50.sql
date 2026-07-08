@@ -1,0 +1,2 @@
+ALTER TABLE public.ufu_creditos ADD COLUMN IF NOT EXISTS stripe_session_id text;
+CREATE UNIQUE INDEX IF NOT EXISTS ufu_creditos_stripe_session_id_key ON public.ufu_creditos (stripe_session_id) WHERE stripe_session_id IS NOT NULL;
