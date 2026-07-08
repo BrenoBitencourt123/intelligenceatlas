@@ -336,30 +336,21 @@ serve(async (req) => {
     }
     const user = claimsData.user;
 
-    // ── Quota (mesmo pool de essays) ──
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("plan_type, flexible_quota, created_at")
-      .eq("id", user.id)
-      .single();
-    const rawPlan = profile?.plan_type || "free";
-    const planType = rawPlan === "basic" ? "pro" : rawPlan;
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-    if (planType === "free") {
-      const isWelcomeBonus = profile?.created_at
-        ? new Date(profile.created_at) >= sevenDaysAgo : false;
-      const weeklyLimit = isWelcomeBonus ? 2 : 1;
-      const { count: weeklyCount } = await supabaseClient
-        .from("essays")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .not("analyzed_at", "is", null)
-        .gte("analyzed_at", sevenDaysAgo.toISOString());
-      if ((weeklyCount ?? 0) >= weeklyLimit) {
-        return json({ error: "Cota semanal de correções atingida.", code: "QUOTA_EXCEEDED", limit_type: "weekly" }, 403);
-      }
+    // ── Saldo UFU (server-side, à prova de fraude client) ──
+    const serviceKeyForCheck = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!serviceKeyForCheck) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+    const admin = createClient(supabaseUrl, serviceKeyForCheck);
+    const { data: saldoData, error: saldoError } = await admin.rpc("ufu_correcoes_saldo", { p_user: user.id });
+    if (saldoError) {
+      console.error("Failed to read ufu_correcoes_saldo:", saldoError);
+      return json({ error: "Não foi possível verificar seu saldo de correções." }, 500);
+    }
+    const saldo = typeof saldoData === "number" ? saldoData : 0;
+    if (saldo <= 0) {
+      return json(
+        { error: "Sem créditos de correção UFU.", code: "sem_creditos", saldo },
+        402,
+      );
     }
 
     // ── Input ──
@@ -453,24 +444,32 @@ Responda APENAS com o JSON de achados.`;
       (d, i) => `Desvio ${i + 1} (${d.tipo}): '${d.trecho}' → '${d.correcao}'`,
     );
 
+    // ── Registrar uso server-side (consome 1 crédito) ──
+    // Só registra se NÃO foi eliminado por regra formal (não faz sentido cobrar por texto que zerou por identificação, lingua estrangeira etc)?
+    // Decisão: cobra sempre — o serviço (análise nos 5 critérios) foi entregue.
+    try {
+      const { error: usoError } = await admin
+        .from("ufu_correcoes_uso")
+        .insert({ user_id: user.id });
+      if (usoError) console.error("Failed to record ufu_correcoes_uso:", usoError);
+    } catch (e) {
+      console.error("Exception recording ufu_correcoes_uso:", e);
+    }
+
     // ── Token log ──
     let tokenUsage = null;
     if (usage) {
       const estimatedCost = calculateCost(usage.prompt_tokens, usage.completion_tokens);
       tokenUsage = { ...usage, estimated_cost_usd: estimatedCost };
       try {
-        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-        if (serviceKey) {
-          const admin = createClient(supabaseUrl, serviceKey);
-          await admin.from("token_usage").insert({
-            operation_type: "analyze-essay-ufu",
-            block_type: genreId,
-            prompt_tokens: usage.prompt_tokens,
-            completion_tokens: usage.completion_tokens,
-            total_tokens: usage.total_tokens,
-            estimated_cost_usd: estimatedCost,
-          });
-        }
+        await admin.from("token_usage").insert({
+          operation_type: "analyze-essay-ufu",
+          block_type: genreId,
+          prompt_tokens: usage.prompt_tokens,
+          completion_tokens: usage.completion_tokens,
+          total_tokens: usage.total_tokens,
+          estimated_cost_usd: estimatedCost,
+        });
       } catch (dbError) {
         console.error("Failed to log token usage:", dbError);
       }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import {
   AlertTriangle, Loader2, Sparkles, PenLine, ChevronDown, ShieldAlert, Target,
+  Lock, MessageCircle, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -18,6 +19,8 @@ import {
   GENEROS_UFU, PROPOSTAS_UFU, CRITERIOS_UFU, REDACAO_TOTAL,
   LINHAS_MIN, LINHAS_MAX, estimarLinhas,
 } from "@/data/ufu/redacao";
+import { UFU_CONFIG, whatsappBrenoUrl } from "@/lib/ufu/config";
+import { trackUfu } from "@/lib/ufu/track";
 
 interface CriterioResultado {
   id: string;
@@ -59,6 +62,23 @@ export default function RedacaoUfu() {
   const [evoluindo, setEvoluindo] = useState(false);
   const [evolucao, setEvolucao] = useState<VersaoEvoluida | null>(null);
   const [criterioAberto, setCriterioAberto] = useState<string | null>(null);
+  const [saldo, setSaldo] = useState<number | null>(null);
+  const [semCreditos, setSemCreditos] = useState(false);
+
+  const refetchSaldo = async () => {
+    if (!user) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).rpc("ufu_correcoes_saldo", { p_user: user.id });
+    if (typeof data === "number") {
+      setSaldo(data);
+      setSemCreditos(data <= 0);
+    }
+  };
+
+  useEffect(() => {
+    refetchSaldo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const genero = GENEROS_UFU.find((g) => g.id === genreId);
   const linhas = useMemo(() => estimarLinhas(text), [text]);
@@ -82,6 +102,10 @@ export default function RedacaoUfu() {
       toast({ title: "Escolha o gênero", description: "Na UFU, fugir do gênero zera a redação.", variant: "destructive" });
       return;
     }
+    if (semCreditos) {
+      trackUfu("calc_completed", { evento: "paywall_visto" });
+      return;
+    }
     setAnalisando(true);
     setAnalise(null);
     setEvolucao(null);
@@ -95,9 +119,20 @@ export default function RedacaoUfu() {
           proposta: proposta?.enunciado,
         },
       });
-      if (error) throw new Error((await parseFnError(error)) ?? "Erro na correção");
+      if (error) {
+        const parsed = await parseFnError(error);
+        // Edge function respondeu 402 com { code: "sem_creditos" } → mostra paywall sem toast de erro
+        if (parsed?.code === "sem_creditos") {
+          setSemCreditos(true);
+          setSaldo(0);
+          trackUfu("calc_completed", { evento: "paywall_visto" });
+          return;
+        }
+        throw new Error(parsed?.message ?? "Erro na correção");
+      }
       if (data?.error) throw new Error(data.error);
       setAnalise(data as AnaliseUfu);
+      await refetchSaldo();
 
       if (user) {
         await supabase.from("essays").insert({
@@ -123,7 +158,7 @@ export default function RedacaoUfu() {
       const { data, error } = await supabase.functions.invoke("improve-essay-ufu", {
         body: { text, theme, genreLabel: genero?.label, criterios: analise.criterios },
       });
-      if (error) throw new Error((await parseFnError(error)) ?? "Erro ao evoluir");
+      if (error) throw new Error((await parseFnError(error))?.message ?? "Erro ao evoluir");
       if (data?.error) throw new Error(data.error);
       setEvolucao(data as VersaoEvoluida);
     } catch (e) {
@@ -143,6 +178,11 @@ export default function RedacaoUfu() {
             <span className="text-xs font-medium px-2.5 py-1 bg-primary/10 text-primary rounded-full">
               Banca UFU · DIRPS
             </span>
+            {saldo !== null && (
+              <span className="text-xs text-muted-foreground tabular-nums hidden sm:inline">
+                {saldo} {saldo === 1 ? "correção disponível" : "correções disponíveis"}
+              </span>
+            )}
           </div>
           {analise && !analise.eliminado && (
             <div className="flex items-baseline gap-1 tabular-nums">
@@ -250,16 +290,20 @@ export default function RedacaoUfu() {
                 className="min-h-[380px] border-0 rounded-none focus-visible:ring-0 px-5 py-4 text-[15px] leading-7 resize-y"
               />
               <div className="p-4 border-t border-border">
-                <Button
-                  className="w-full rounded-xl h-12 text-[15px]"
-                  onClick={analisar}
-                  disabled={analisando || !text.trim()}
-                >
-                  {analisando
-                    ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : <PenLine className="h-4 w-4" />}
-                  {analisando ? "Corrigindo como a banca..." : "Corrigir na rubrica da UFU"}
-                </Button>
+                {semCreditos ? (
+                  <PaywallCard userEmail={user?.email ?? ""} />
+                ) : (
+                  <Button
+                    className="w-full rounded-xl h-12 text-[15px]"
+                    onClick={analisar}
+                    disabled={analisando || !text.trim()}
+                  >
+                    {analisando
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : <PenLine className="h-4 w-4" />}
+                    {analisando ? "Corrigindo como a banca..." : "Corrigir na rubrica da UFU"}
+                  </Button>
+                )}
               </div>
             </section>
           </div>
@@ -425,6 +469,7 @@ export default function RedacaoUfu() {
                       {evoluindo ? "Evoluindo sua redação..." : "Ver minha redação uma faixa acima"}
                     </Button>
                   )}
+                  <GrupoWhatsappButton />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -495,13 +540,112 @@ export default function RedacaoUfu() {
   );
 }
 
-async function parseFnError(error: unknown): Promise<string | null> {
+async function parseFnError(error: unknown): Promise<{ message: string | null; code?: string } | null> {
   try {
     const ctx = (error as { context?: Response }).context;
     if (ctx && typeof ctx.json === "function") {
       const body = await ctx.json();
-      return body?.error ?? null;
+      return { message: body?.error ?? null, code: body?.code };
     }
   } catch { /* noop */ }
-  return (error as Error)?.message ?? null;
+  return { message: (error as Error)?.message ?? null };
+}
+
+// ══════════════════════════════════════════════════════════════
+// Paywall — 2ª correção em diante
+// ══════════════════════════════════════════════════════════════
+function PaywallCard({ userEmail }: { userEmail: string }) {
+  useEffect(() => {
+    trackUfu("calc_completed", { evento: "paywall_visto" });
+  }, []);
+
+  const abrir = (url: string, plano: "avulsa" | "pacote5") => {
+    trackUfu("calc_completed", { evento: "paywall_click", plano });
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const whatsappMsg = `Oi! Comprei a correção do Placar UFU — meu e-mail de cadastro é ${userEmail || "___"}.`;
+  const avulsaOk = !!UFU_CONFIG.CHECKOUT_CORRECAO_AVULSA;
+  const pacoteOk = !!UFU_CONFIG.CHECKOUT_PACOTE_5;
+
+  return (
+    <div className="rounded-xl border-2 border-primary bg-card p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <Lock className="h-4 w-4 text-primary" />
+        <p className="text-sm font-bold">Correção completa nos 5 critérios da banca DIRPS</p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-border p-4 space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Avulsa</p>
+          <p className="text-2xl font-extrabold tabular-nums">R$ 9,90</p>
+          <p className="text-xs text-muted-foreground">1 correção completa</p>
+          <Button
+            className="w-full"
+            disabled={!avulsaOk}
+            onClick={() => abrir(UFU_CONFIG.CHECKOUT_CORRECAO_AVULSA, "avulsa")}
+          >
+            {avulsaOk ? "Comprar" : "Abrindo em breve"}
+          </Button>
+        </div>
+        <div className="rounded-lg border-2 border-primary p-4 space-y-2 relative">
+          <span className="absolute -top-2 right-3 text-[10px] font-bold uppercase tracking-wide bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+            Melhor custo
+          </span>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pacote 5</p>
+          <p className="text-2xl font-extrabold tabular-nums">R$ 39</p>
+          <p className="text-xs text-muted-foreground">R$ 7,80 cada · 5 correções</p>
+          <Button
+            className="w-full"
+            disabled={!pacoteOk}
+            onClick={() => abrir(UFU_CONFIG.CHECKOUT_PACOTE_5, "pacote5")}
+          >
+            {pacoteOk ? "Comprar" : "Abrindo em breve"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+        <span>Pagamento seguro (Pix ou cartão) · Garantia incondicional de 7 dias · Liberação em poucos minutos</span>
+      </div>
+
+      <div className="rounded-lg bg-muted p-3 space-y-2">
+        <p className="text-[13px] leading-relaxed">
+          <span className="font-semibold">Pagou?</span> Sua correção é liberada em poucos minutos.
+          Demorou? Me chama:
+        </p>
+        <a
+          href={whatsappBrenoUrl(whatsappMsg)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-xs font-medium text-foreground hover:underline"
+        >
+          <MessageCircle className="h-3.5 w-3.5" />
+          Falar no WhatsApp
+        </a>
+      </div>
+
+      <p className="text-[11px] text-center text-muted-foreground pt-1">
+        Placar UFU · um produto Inteligência Atlas
+      </p>
+    </div>
+  );
+}
+
+// Botão de convite ao grupo do WhatsApp — só renderiza se a URL estiver configurada.
+function GrupoWhatsappButton() {
+  const url = UFU_CONFIG.GRUPO_WHATSAPP_URL;
+  if (!url) return null;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-muted transition-colors"
+    >
+      <MessageCircle className="h-4 w-4" />
+      Entrar no grupo do Placar UFU no WhatsApp
+    </a>
+  );
 }

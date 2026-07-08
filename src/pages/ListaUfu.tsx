@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Check, ArrowLeft } from "lucide-react";
+import { Loader2, Check, ArrowLeft, MessageCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { trackUfu } from "@/lib/ufu/track";
+import { UFU_CONFIG } from "@/lib/ufu/config";
 
 const META = 50;
 
@@ -181,6 +182,17 @@ export default function ListaUfu() {
                 >
                   Voltar ao Placar UFU
                 </Link>
+                {UFU_CONFIG.GRUPO_WHATSAPP_URL && (
+                  <a
+                    href={UFU_CONFIG.GRUPO_WHATSAPP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 flex items-center justify-center gap-2 rounded-md border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Entrar no grupo do Placar UFU no WhatsApp
+                  </a>
+                )}
               </div>
             </CardContent>
           </Card>
