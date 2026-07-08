@@ -279,7 +279,7 @@ export default function PasseUfu() {
           <div className="text-sm">
             <p className="font-semibold">Dúvida antes de comprar?</p>
             <a
-              href={whatsappBrenoUrl("Oi Breno, quero perguntar sobre o Passe UFU 2026.")}
+              href={whatsappBrenoUrl("Oi Breno, quero perguntar sobre o Passe UFU 2027.")}
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:underline"
