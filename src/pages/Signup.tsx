@@ -72,6 +72,27 @@ export default function Signup() {
         .from('profiles')
         .update({ name: name.trim(), phone: phoneDigits })
         .eq('id', data.user.id);
+
+      // Best-effort: registrar como lead UFU (origem: corretor) para pipeline de vendas
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: leadError } = await (supabase as any)
+          .from('ufu_leads')
+          .upsert(
+            {
+              email: email.trim().toLowerCase(),
+              whatsapp: phoneDigits || null,
+              origem: 'corretor',
+            },
+            { onConflict: 'email', ignoreDuplicates: true },
+          );
+        // 23505 = já na lista; qualquer outro erro só loga
+        if (leadError && (leadError as { code?: string }).code !== '23505') {
+          console.warn('ufu_leads upsert (signup):', leadError);
+        }
+      } catch (err) {
+        console.warn('ufu_leads upsert (signup) threw:', err);
+      }
     }
 
     setSuccess(true);
