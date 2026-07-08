@@ -444,24 +444,32 @@ Responda APENAS com o JSON de achados.`;
       (d, i) => `Desvio ${i + 1} (${d.tipo}): '${d.trecho}' → '${d.correcao}'`,
     );
 
+    // ── Registrar uso server-side (consome 1 crédito) ──
+    // Só registra se NÃO foi eliminado por regra formal (não faz sentido cobrar por texto que zerou por identificação, lingua estrangeira etc)?
+    // Decisão: cobra sempre — o serviço (análise nos 5 critérios) foi entregue.
+    try {
+      const { error: usoError } = await admin
+        .from("ufu_correcoes_uso")
+        .insert({ user_id: user.id });
+      if (usoError) console.error("Failed to record ufu_correcoes_uso:", usoError);
+    } catch (e) {
+      console.error("Exception recording ufu_correcoes_uso:", e);
+    }
+
     // ── Token log ──
     let tokenUsage = null;
     if (usage) {
       const estimatedCost = calculateCost(usage.prompt_tokens, usage.completion_tokens);
       tokenUsage = { ...usage, estimated_cost_usd: estimatedCost };
       try {
-        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-        if (serviceKey) {
-          const admin = createClient(supabaseUrl, serviceKey);
-          await admin.from("token_usage").insert({
-            operation_type: "analyze-essay-ufu",
-            block_type: genreId,
-            prompt_tokens: usage.prompt_tokens,
-            completion_tokens: usage.completion_tokens,
-            total_tokens: usage.total_tokens,
-            estimated_cost_usd: estimatedCost,
-          });
-        }
+        await admin.from("token_usage").insert({
+          operation_type: "analyze-essay-ufu",
+          block_type: genreId,
+          prompt_tokens: usage.prompt_tokens,
+          completion_tokens: usage.completion_tokens,
+          total_tokens: usage.total_tokens,
+          estimated_cost_usd: estimatedCost,
+        });
       } catch (dbError) {
         console.error("Failed to log token usage:", dbError);
       }
