@@ -38,18 +38,47 @@ function TextBlock({ block }: { block: ContentBlock }) {
   const isQuote = block.format?.quote;
   const align = block.format?.align ?? 'left';
 
+  if (isQuote) {
+    return (
+      <div
+        className={cn(
+          'whitespace-pre-wrap leading-relaxed',
+          isMuted ? 'text-xs text-muted-foreground' : 'text-sm text-foreground',
+          isBold && 'font-bold',
+          'border-l-2 border-border pl-4 py-0.5 text-muted-foreground',
+          align === 'center' && 'text-center',
+          align === 'right' && 'text-right',
+        )}
+      >
+        {mathNode(block.value)}
+      </div>
+    );
+  }
+
+  const paragraphs = block.value.split(/\n\n+/);
+
   return (
     <div
       className={cn(
-        'whitespace-pre-wrap leading-relaxed',
         isMuted ? 'text-xs text-muted-foreground' : 'text-sm text-foreground',
         isBold && 'font-bold',
-        isQuote && 'border-l-2 border-border pl-4 py-0.5 text-muted-foreground',
         align === 'center' && 'text-center',
         align === 'right' && 'text-right',
       )}
     >
-      {mathNode(block.value)}
+      {paragraphs.map((para, i) => (
+        <p
+          key={i}
+          className="whitespace-pre-wrap leading-relaxed"
+          style={{
+            textIndent: align === 'left' ? '1.5em' : undefined,
+            textAlign: align === 'left' ? 'justify' : undefined,
+            margin: 0,
+          }}
+        >
+          {mathNode(para)}
+        </p>
+      ))}
     </div>
   );
 }
