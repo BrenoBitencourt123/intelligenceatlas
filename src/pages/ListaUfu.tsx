@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Check, ArrowLeft } from "lucide-react";
+import { Loader2, Check, ArrowLeft, MessageCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { trackUfu } from "@/lib/ufu/track";
+import { UFU_CONFIG } from "@/lib/ufu/config";
 
 const META = 50;
 
