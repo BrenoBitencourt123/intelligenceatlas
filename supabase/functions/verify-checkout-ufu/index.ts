@@ -8,8 +8,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Data-limite padrão do Passe: dia da prova UFU 2026 (mantido em ufu_config).
-const DEFAULT_PASSE_EXPIRA = "2026-11-08";
+// Data-limite padrão do Passe: dia da prova UFU 2027 (mantido em ufu_config).
+const DEFAULT_PASSE_EXPIRA = "2027-06-30";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -57,7 +57,7 @@ serve(async (req) => {
 
     // ─── Compra do Passe UFU ───
     if (meta.tipo === "passe" || meta.plano === "passe") {
-      // Data de expiração vem de ufu_config, com fallback pra prova 2026.
+      // Data de expiração vem de ufu_config, com fallback pra prova 2027.
       let expira = DEFAULT_PASSE_EXPIRA;
       const { data: cfg } = await admin
         .from("ufu_config")

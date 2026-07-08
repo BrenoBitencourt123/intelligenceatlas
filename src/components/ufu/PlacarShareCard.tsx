@@ -50,7 +50,7 @@ export function PlacarShareCard({ nota, areaFraca, nome }: Props) {
     ctx.fillStyle = "#ffffff";
     ctx.font = "600 28px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("PLACAR UFU 2026", W / 2, 140);
+    ctx.fillText("PLACAR UFU 2027", W / 2, 140);
 
     // Divisor
     ctx.strokeStyle = "rgba(255,255,255,0.2)";

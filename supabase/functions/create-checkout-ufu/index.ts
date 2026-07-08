@@ -12,7 +12,7 @@ const corsHeaders = {
 const PLANOS = {
   avulsa:  { price: "price_1Tr1rpLCrHbXOvxeZA7mdOHM", qtd: 1, nome: "Correção Avulsa UFU",       tipo: "credito" as const },
   pacote5: { price: "price_1Tr1uILCrHbXOvxej463FCsS", qtd: 5, nome: "Pacote 5 Correções UFU",    tipo: "credito" as const },
-  passe:   { price: "price_1Tr2oTLCrHbXOvxer0cDMMoy", qtd: 0, nome: "Passe UFU 2026 — Fundador", tipo: "passe"   as const },
+  passe:   { price: "price_1Tr2oTLCrHbXOvxer0cDMMoy", qtd: 0, nome: "Passe UFU 2027 — Fundador", tipo: "passe"   as const },
 } as const;
 
 type PlanoId = keyof typeof PLANOS;

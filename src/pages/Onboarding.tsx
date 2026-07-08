@@ -89,7 +89,7 @@ export default function Onboarding() {
         >
           <div className="text-center">
             <h1 className="text-lg font-semibold tracking-tight">Configurar Atlas</h1>
-            <p className="text-xs text-muted-foreground mt-1">Vestibular UFU 2026/2</p>
+            <p className="text-xs text-muted-foreground mt-1">Vestibular UFU 2027</p>
           </div>
 
           <div className="flex items-center justify-center gap-2">

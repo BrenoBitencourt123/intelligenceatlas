@@ -11,14 +11,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { whatsappBrenoUrl } from "@/lib/ufu/config";
 import { trackUfu } from "@/lib/ufu/track";
 
-// Landing do Passe UFU 2026 — Fundador.
+// Landing do Passe UFU 2027 — Fundador.
 // Rotas: /ufu/passe (canônica) e /passe (atalho).
 // Fluxo de compra: create-checkout-ufu com { plano: "passe" }, sucesso volta
 // aqui com ?pago=cs_... e verify-checkout-ufu grava profile.ufu_passe_ativo.
 export default function PasseUfu() {
   const { user } = useAuth();
   const [disponivel, setDisponivel] = useState<boolean | null>(null);
-  const [dataProva, setDataProva] = useState<string>("2026-11-08");
+  const [dataProva, setDataProva] = useState<string>("2027-06-30");
   const [totalLeads, setTotalLeads] = useState<number | null>(null);
   const [passeAtivo, setPasseAtivo] = useState(false);
   const [expira, setExpira] = useState<string | null>(null);
@@ -156,7 +156,7 @@ export default function PasseUfu() {
             <Sparkles className="h-3 w-3" /> Lote fundador
           </span>
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
-            Passe UFU 2026 — tudo pra prova em um só acesso.
+            Passe UFU 2027 — tudo pra prova em um só acesso.
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
             Corretor de redação <strong className="text-foreground">ilimitado</strong>,
@@ -197,7 +197,7 @@ export default function PasseUfu() {
                 "Trilha da folga: simulados UFU cronometrados",
                 "Gabarito comentado no espelho da banca",
                 "Priorização automática dos seus critérios mais frágeis",
-                "Acesso vitalício ao vestibular UFU 2026",
+                "Acesso até o dia da prova do vestibular UFU 2027",
               ].map((b) => (
                 <li key={b} className="flex items-start gap-2.5">
                   <Check className="h-4 w-4 mt-0.5 text-primary shrink-0" />
@@ -256,7 +256,7 @@ export default function PasseUfu() {
             },
             {
               q: "É assinatura?",
-              a: "Não. Pagamento único, acesso até o dia da prova UFU 2026. Nada renova.",
+              a: "Não. Pagamento único, acesso até o dia da prova UFU 2027. Nada renova.",
             },
             {
               q: "E se eu não gostar?",
@@ -279,7 +279,7 @@ export default function PasseUfu() {
           <div className="text-sm">
             <p className="font-semibold">Dúvida antes de comprar?</p>
             <a
-              href={whatsappBrenoUrl("Oi Breno, quero perguntar sobre o Passe UFU 2026.")}
+              href={whatsappBrenoUrl("Oi Breno, quero perguntar sobre o Passe UFU 2027.")}
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:underline"
