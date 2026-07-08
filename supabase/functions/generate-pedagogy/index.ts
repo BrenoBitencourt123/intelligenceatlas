@@ -94,7 +94,7 @@ Responda SOMENTE com o JSON válido, sem markdown.`;
         ]
       : prompt;
 
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
+    const callGemini = () => fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -108,10 +108,51 @@ Responda SOMENTE com o JSON válido, sem markdown.`;
       }),
     });
 
+    let response = await callGemini();
+
+    // Retry once on 503 (Gemini overloaded)
+    if (response.status === 503) {
+      console.warn('Gemini 503, retrying after 1s...');
+      await new Promise(r => setTimeout(r, 1000));
+      response = await callGemini();
+    }
+
+    // Fallback to Lovable AI Gateway on persistent Gemini failure
     if (!response.ok) {
       const errText = await response.text();
-      console.error('AI API error:', errText);
-      throw new Error(`AI API error: ${response.status}`);
+      console.error('Gemini error, trying Lovable fallback:', response.status, errText);
+      const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+      if (lovableKey) {
+        response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash-lite',
+            messages: [{ role: 'user', content: messageContent }],
+            temperature: 0.5,
+          }),
+        });
+      }
+    }
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('AI API error (final):', response.status, errText);
+      // Return 200 with fallback signal so client doesn't blank-screen
+      return new Response(
+        JSON.stringify({
+          error: 'AI_SERVICE_UNAVAILABLE',
+          fallback: true,
+          pre_concept: null,
+          cognitive_pattern: null,
+          deep_lesson: null,
+          video_suggestions: null,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const data = await response.json();
