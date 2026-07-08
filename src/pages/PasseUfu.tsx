@@ -256,7 +256,7 @@ export default function PasseUfu() {
             },
             {
               q: "É assinatura?",
-              a: "Não. Pagamento único, acesso até o dia da prova UFU 2026. Nada renova.",
+              a: "Não. Pagamento único, acesso até o dia da prova UFU 2027. Nada renova.",
             },
             {
               q: "E se eu não gostar?",
