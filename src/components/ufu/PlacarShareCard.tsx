@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Share2, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
