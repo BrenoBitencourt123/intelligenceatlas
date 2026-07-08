@@ -530,13 +530,13 @@ export default function RedacaoUfu() {
   );
 }
 
-async function parseFnError(error: unknown): Promise<string | null> {
+async function parseFnError(error: unknown): Promise<{ message: string | null; code?: string } | null> {
   try {
     const ctx = (error as { context?: Response }).context;
     if (ctx && typeof ctx.json === "function") {
       const body = await ctx.json();
-      return body?.error ?? null;
+      return { message: body?.error ?? null, code: body?.code };
     }
   } catch { /* noop */ }
-  return (error as Error)?.message ?? null;
+  return { message: (error as Error)?.message ?? null };
 }
