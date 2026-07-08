@@ -3,7 +3,8 @@
     "allow": [
       "Bash(git pull:*)",
       "Bash(git checkout:*)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(git commit *)"
     ]
   }
 }
