@@ -13,7 +13,7 @@ SRC = open(os.path.join(BASE, "src/data/ufu/vestibular.ts"), encoding="utf-8").r
 OUT = os.path.join(BASE, "public/ufu/guia")
 os.makedirs(OUT, exist_ok=True)
 
-DISCIPLINAS = [  # (label, questões) na ordem do quadro de pesos
+DISCIPLINAS = [
     ("Língua Portuguesa", 10), ("Literatura", 5), ("Língua Estrangeira", 5),
     ("Matemática", 10), ("Física", 5), ("Química", 5), ("Biologia", 5),
     ("Geografia", 5), ("História", 5), ("Filosofia", 5), ("Sociologia", 5),
@@ -33,10 +33,9 @@ def slugify(s):
     s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-zA-Z0-9]+", "-", s.lower()).strip("-")
 
-def meta(corte):  # mesma regra do pSEO e do app: corte + ~22%, arredondado pra cima
+def meta(corte):
     return math.ceil(corte * 1.22)
 
-# --- parse vestibular.ts ---
 pesos_map = {}
 m = re.search(r"const PESOS = \{(.*?)\} as const;", SRC, re.S)
 for line in m.group(1).splitlines():
@@ -57,14 +56,17 @@ for mm in re.finditer(
     ))
 assert len(cursos) == 51, f"esperava 51 cursos, achei {len(cursos)}"
 
-CSS = """body{font-family:system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px 18px;color:#1a1a2e;background:#faf9fc;line-height:1.55}
-h1{font-size:26px;margin:6px 0 4px}h2{font-size:19px;margin-top:28px}a{color:#6d28d9;font-weight:600;text-decoration:none}
+# Paleta = design system do app (src/index.css): primary preto, fundo quente.
+FONT_LINK = ('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+             '<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">')
+CSS = """body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px 18px;color:#1c2029;background:#fbfaf8;line-height:1.55}
+h1{font-size:26px;margin:6px 0 4px}h2{font-size:19px;margin-top:28px}a{color:#171717;font-weight:600;text-decoration:none}
 table{width:100%;border-collapse:collapse;font-size:15px;margin:10px 0}th,td{padding:7px 6px;border-bottom:1px solid #eee;text-align:left}
-th{color:#64748b;font-size:13px}.tag{color:#64748b;font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+th{color:#737373;font-size:13px}.tag{color:#737373;font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
 .num{font-size:34px;font-weight:800}.box{background:#fff;border:1px solid #eee;border-radius:12px;padding:16px 18px;margin:14px 0}
 .warn{background:#fffbeb;border-color:#fde68a}.ok{background:#f0fdf4;border-color:#bbf7d0}
-.cta{display:block;text-align:center;background:#6d28d9;color:#fff;border-radius:10px;padding:13px;margin:10px 0;font-weight:700}
-.cta.sec{background:#fff;color:#6d28d9;border:2px solid #6d28d9}.muted{color:#64748b;font-size:14px}td.r,th.r{text-align:right}"""
+.cta{display:block;text-align:center;background:#171717;color:#fff;border-radius:10px;padding:13px;margin:10px 0;font-weight:700}
+.cta.sec{background:#fff;color:#171717;border:2px solid #171717}.muted{color:#737373;font-size:14px}td.r,th.r{text-align:right}"""
 
 def bloco_pesos(c):
     grupos = {3: [], 2: [], 1: []}
@@ -104,7 +106,7 @@ def pagina(c):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Guia de folga de {c['nome']} — UFU 2026/2 | Placar UFU</title>
-</head><body><style>{CSS}</style>
+{FONT_LINK}</head><body><style>{CSS}</style>
 <p class="tag"><a href="https://inteligenciatlas.com/ufu/">Placar UFU</a> · guia de folga</p>
 <h1>Guia de folga de {c['nome']}</h1>
 <p class="muted">{c['turno']} · {c['cidade']} · Vestibular UFU 2026/2 · dados oficiais DIRPS</p>

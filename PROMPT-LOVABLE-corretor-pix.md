@@ -125,9 +125,15 @@ ListaUfu, (b) tela pós-correção do RedacaoUfu. Se vazio, não renderizar nada
 
 ## 8. Operação do Breno (fora da Lovable)
 
-1. Criar os 2 links de pagamento no painel (Mercado Pago recomendado: marca
-   conhecida + Pix + cartão parcelado; nome do recebedor = "Placar UFU" ou
-   "Inteligência Atlas"). Colar as URLs no config.ts.
+1. Criar os 2 Payment Links no dashboard da Stripe (conta já existe):
+   - Products → criar "Correção avulsa — Placar UFU" (R$ 9,90) e
+     "Pacote 5 correções — Placar UFU" (R$ 39) → Payment Link de cada.
+   - Settings → Payment methods: ativar **Pix** além de cartão.
+   - Settings → Public details: nome público "Placar UFU" (é o que aparece
+     no checkout e na fatura do cartão).
+   - No Payment Link, ativar campo de e-mail obrigatório (é como você acha
+     o usuário pra liberar o crédito).
+   - Colar as 2 URLs no config.ts.
 2. Quando cair pagamento (notificação do painel): achar o user pelo e-mail e
    rodar `insert into ufu_creditos (user_id, qtd, motivo) values ('<id>', 1, 'pix');`
    (qtd 5 no pacote).
