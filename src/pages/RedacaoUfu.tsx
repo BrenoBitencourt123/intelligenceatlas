@@ -158,7 +158,7 @@ export default function RedacaoUfu() {
       const { data, error } = await supabase.functions.invoke("improve-essay-ufu", {
         body: { text, theme, genreLabel: genero?.label, criterios: analise.criterios },
       });
-      if (error) throw new Error((await parseFnError(error)) ?? "Erro ao evoluir");
+      if (error) throw new Error((await parseFnError(error))?.message ?? "Erro ao evoluir");
       if (data?.error) throw new Error(data.error);
       setEvolucao(data as VersaoEvoluida);
     } catch (e) {
