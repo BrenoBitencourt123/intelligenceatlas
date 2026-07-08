@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Minus, Plus, Share2, Download, Loader2 } from "lucide-react";
+import { Minus, Plus, Share2, Download, Loader2, ArrowRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   CURSOS_UFU, DISCIPLINAS_UFU, COTAS, TOTAL_QUESTOES, EDICAO, type CotaId,
@@ -12,6 +13,7 @@ import {
 import { calcularResultado, type AcertosPorDisciplina } from "@/lib/ufu/score";
 import { gerarCardPng } from "@/lib/ufu/cardImage";
 import { trackUfu } from "@/lib/ufu/track";
+import { slugCursoUfu } from "@/lib/ufu/slug";
 
 // Calculadora pública do Vestibular UFU — 100% grátis, sem cadastro.
 // Funil do produto: resultado → card compartilhável (share instrumentado).
@@ -25,6 +27,7 @@ export default function CalculadoraUfu() {
   const [acertos, setAcertos] = useState<AcertosPorDisciplina>(zerarAcertos);
   const [mostrouResultado, setMostrouResultado] = useState(false);
   const [gerando, setGerando] = useState(false);
+  const ctaVistoRef = useRef<string | null>(null);
 
   const cursosPorCampus = useMemo(() => {
     const map = new Map<string, typeof CURSOS_UFU>();
