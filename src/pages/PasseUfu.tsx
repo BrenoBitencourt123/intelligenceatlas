@@ -260,6 +260,61 @@ export default function PasseUfu() {
           </section>
         )}
 
+        {/* SEM COMPROMISSO — compras avulsas */}
+        {!passeAtivo && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Ou compre só uma correção
+              </p>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Avulsa</p>
+                  <p className="text-3xl font-extrabold tabular-nums mt-1">R$ 9,90</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">1 correção completa DIRPS</p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full rounded-lg"
+                  onClick={() => comprarAvulsa("avulsa")}
+                  disabled={comprandoAvulsa !== null}
+                >
+                  {comprandoAvulsa === "avulsa" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Comprar avulsa"}
+                </Button>
+              </div>
+
+              <div className="rounded-xl border-2 border-primary/60 bg-card p-5 space-y-3 relative">
+                <span className="absolute -top-2 right-3 text-[10px] font-bold uppercase tracking-wide bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                  Melhor custo
+                </span>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pacote 5</p>
+                  <p className="text-3xl font-extrabold tabular-nums mt-1">R$ 39</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">R$ 7,80 por correção · 5 no total</p>
+                </div>
+                <Button
+                  className="w-full rounded-lg"
+                  onClick={() => comprarAvulsa("pacote5")}
+                  disabled={comprandoAvulsa !== null}
+                >
+                  {comprandoAvulsa === "pacote5" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Comprar pacote"}
+                </Button>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center leading-relaxed">
+              O Passe compensa a partir da 15ª correção e libera trilha + simulados até a prova.
+            </p>
+          </section>
+        )}
+
+
+
         {/* PROVA SOCIAL */}
         {totalLeads !== null && totalLeads > 0 && (
           <p className="text-center text-sm text-muted-foreground">
