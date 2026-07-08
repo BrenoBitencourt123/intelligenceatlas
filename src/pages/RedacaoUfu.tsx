@@ -550,3 +550,102 @@ async function parseFnError(error: unknown): Promise<{ message: string | null; c
   } catch { /* noop */ }
   return { message: (error as Error)?.message ?? null };
 }
+
+// ══════════════════════════════════════════════════════════════
+// Paywall — 2ª correção em diante
+// ══════════════════════════════════════════════════════════════
+function PaywallCard({ userEmail }: { userEmail: string }) {
+  useEffect(() => {
+    trackUfu("calc_completed", { evento: "paywall_visto" });
+  }, []);
+
+  const abrir = (url: string, plano: "avulsa" | "pacote5") => {
+    trackUfu("calc_completed", { evento: "paywall_click", plano });
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const whatsappMsg = `Oi! Comprei a correção do Placar UFU — meu e-mail de cadastro é ${userEmail || "___"}.`;
+  const avulsaOk = !!UFU_CONFIG.CHECKOUT_CORRECAO_AVULSA;
+  const pacoteOk = !!UFU_CONFIG.CHECKOUT_PACOTE_5;
+
+  return (
+    <div className="rounded-xl border-2 border-primary bg-card p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <Lock className="h-4 w-4 text-primary" />
+        <p className="text-sm font-bold">Correção completa nos 5 critérios da banca DIRPS</p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-border p-4 space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Avulsa</p>
+          <p className="text-2xl font-extrabold tabular-nums">R$ 9,90</p>
+          <p className="text-xs text-muted-foreground">1 correção completa</p>
+          <Button
+            className="w-full"
+            disabled={!avulsaOk}
+            onClick={() => abrir(UFU_CONFIG.CHECKOUT_CORRECAO_AVULSA, "avulsa")}
+          >
+            {avulsaOk ? "Comprar" : "Abrindo em breve"}
+          </Button>
+        </div>
+        <div className="rounded-lg border-2 border-primary p-4 space-y-2 relative">
+          <span className="absolute -top-2 right-3 text-[10px] font-bold uppercase tracking-wide bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+            Melhor custo
+          </span>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pacote 5</p>
+          <p className="text-2xl font-extrabold tabular-nums">R$ 39</p>
+          <p className="text-xs text-muted-foreground">R$ 7,80 cada · 5 correções</p>
+          <Button
+            className="w-full"
+            disabled={!pacoteOk}
+            onClick={() => abrir(UFU_CONFIG.CHECKOUT_PACOTE_5, "pacote5")}
+          >
+            {pacoteOk ? "Comprar" : "Abrindo em breve"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+        <span>Pagamento seguro (Pix ou cartão) · Garantia incondicional de 7 dias · Liberação em poucos minutos</span>
+      </div>
+
+      <div className="rounded-lg bg-muted p-3 space-y-2">
+        <p className="text-[13px] leading-relaxed">
+          <span className="font-semibold">Pagou?</span> Sua correção é liberada em poucos minutos.
+          Demorou? Me chama:
+        </p>
+        <a
+          href={whatsappBrenoUrl(whatsappMsg)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-xs font-medium text-foreground hover:underline"
+        >
+          <MessageCircle className="h-3.5 w-3.5" />
+          Falar no WhatsApp
+        </a>
+      </div>
+
+      <p className="text-[11px] text-center text-muted-foreground pt-1">
+        Placar UFU · um produto Inteligência Atlas
+      </p>
+    </div>
+  );
+}
+
+// Botão de convite ao grupo do WhatsApp — só renderiza se a URL estiver configurada.
+function GrupoWhatsappButton() {
+  const url = UFU_CONFIG.GRUPO_WHATSAPP_URL;
+  if (!url) return null;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-muted transition-colors"
+    >
+      <MessageCircle className="h-4 w-4" />
+      Entrar no grupo do Placar UFU no WhatsApp
+    </a>
+  );
+}
