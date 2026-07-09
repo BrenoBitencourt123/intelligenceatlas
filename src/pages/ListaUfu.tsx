@@ -53,16 +53,14 @@ export default function ListaUfu() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("ufu_leads")
-        .upsert(
-          {
-            email: email.trim().toLowerCase(),
-            whatsapp: whatsapp.trim() || null,
-            curso: curso ?? null,
-            origem,
-          },
-          { onConflict: "email", ignoreDuplicates: true },
-        );
-      // Duplicata real (23505) = sucesso silencioso. Qualquer outro erro = falha.
+        .insert({
+          email: email.trim().toLowerCase(),
+          whatsapp: whatsapp.trim() || null,
+          curso: curso ?? null,
+          origem,
+        });
+      // Duplicata (23505) = já está na lista, tratar como sucesso.
+      // Qualquer outro erro = falha real.
       if (error && (error as { code?: string }).code !== "23505") {
         throw error;
       }
