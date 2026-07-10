@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Arquivo morto do Atlas ENEM (backup local, fora do repo)
+_arquivo-enem/
