@@ -87,7 +87,7 @@ export function PostAnswerBlocks({ pedagogy, loading, onFindSimilar }: PedagogyB
         <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-blue-500/10">
             <Brain className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <span className="text-sm font-semibold text-foreground">O que o ENEM quis cobrar aqui?</span>
+            <span className="text-sm font-semibold text-foreground">O que essa questão quer cobrar?</span>
           </div>
           <div className="p-4">
             <MarkdownText content={pedagogy.cognitive_pattern} className="text-sm text-muted-foreground leading-relaxed" />
