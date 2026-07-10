@@ -142,30 +142,30 @@ export function GoalCard() {
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-sm bg-[hsl(var(--status-unavailable)/0.5)]" />
-                  <span className="text-muted-foreground">Abaixo</span>
+                  <span className="text-muted-foreground">Fora do corte</span>
                 </div>
                 <p className="font-medium text-foreground tabular-nums">0 – {corte - 1}</p>
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-sm bg-[hsl(var(--status-draft)/0.6)]" />
-                  <span className="text-muted-foreground">No corte</span>
+                  <span className="text-muted-foreground">Zona de risco</span>
                 </div>
                 <p className="font-medium text-foreground tabular-nums">{corte} – {meta - 1}</p>
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-sm bg-[hsl(var(--status-analyzed)/0.7)]" />
-                  <span className="text-muted-foreground">Meta</span>
+                  <span className="text-muted-foreground">Zona segura</span>
                 </div>
                 <p className="font-medium text-foreground tabular-nums">{meta} – {TOTAL_QUESTOES}</p>
               </div>
             </div>
 
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Passar no corte não garante vaga: a UFU classifica ~6× mais candidatos que vagas.
-              Sua meta ({meta} acertos) é o corte com margem de 22% para chegar com folga na
-              classificação final.
+              Passar no corte não garante vaga: pra cada vaga, ~6 candidatos passam pra 2ª fase.
+              Por isso sua meta é {meta} acertos — o corte ({corte}) mais uma margem de segurança
+              pra ficar na frente na classificação final.
             </p>
           </>
         )}

@@ -291,9 +291,9 @@ export default function CalculadoraUfu() {
               </a>
 
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Corte oficial DIRPS {EDICAO} para classificação à 2ª fase (correção da redação).
-                A classificação final usa escore padronizado (média e desvio da concorrência do curso)
-                + pesos por disciplina + redação com peso 3 — o corte aqui é da 1ª fase, não da vaga.
+                Corte oficial DIRPS {EDICAO} da 1ª fase (quem passa dele tem a redação corrigida).
+                A nota final também depende de como os outros candidatos vão na prova, dos pesos
+                de cada matéria e da redação (peso 3) — por isso, mire acima do corte, não em cima dele.
               </p>
             </CardContent>
           </Card>
@@ -339,12 +339,12 @@ function CtaGuiaCard({
     <Card className="border-2 border-primary">
       <CardContent className="pt-6 space-y-3">
         <h3 className="text-lg font-bold tracking-tight">
-          Receber o guia de folga de {resultado.curso.nome}
+          Receber o guia da vaga em {resultado.curso.nome}
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Corte e meta por cota, onde cada acerto vale mais e o plano de 4 passos.
-          De graça, no seu e-mail — e você é avisado quando abrir a pré-venda fundadora
-          (20 vagas).
+          Quantos acertos te deixam seguro (por cota), em quais matérias cada acerto vale
+          mais e o plano de 4 passos. De graça, abre na hora — e você é avisado quando
+          abrir a pré-venda fundadora (20 vagas).
         </p>
         <Button asChild size="lg" className="w-full">
           <Link to={`/ufu/lista?curso=${slug}&origem=calc`}>

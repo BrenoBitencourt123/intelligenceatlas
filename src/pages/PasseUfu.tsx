@@ -98,7 +98,7 @@ export default function PasseUfu() {
           setExpira(data.expira ?? null);
           toast({
             title: "Passe UFU liberado ✓",
-            description: "Acesso ilimitado ao corretor + trilha da folga até a prova.",
+            description: "Acesso ilimitado ao corretor + trilha da vaga até a prova.",
           });
         }
       } catch (e) {
@@ -181,7 +181,7 @@ export default function PasseUfu() {
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
             Corretor de redação <strong className="text-foreground">ilimitado</strong>,
-            trilha da folga com simulados UFU e priorização dos temas que caem no {dataFormatada}.
+            trilha da vaga com simulados UFU e priorização dos temas que caem no {dataFormatada}.
             Pagamento único. Sem mensalidade.
           </p>
         </section>
@@ -201,7 +201,7 @@ export default function PasseUfu() {
                 <Link to="/redacao-ufu"><PenLine className="h-4 w-4" /> Ir pro corretor</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="rounded-xl">
-                <Link to="/ufu/trilha"><Target className="h-4 w-4" /> Trilha da folga</Link>
+                <Link to="/ufu/trilha"><Target className="h-4 w-4" /> Trilha da vaga</Link>
               </Button>
             </div>
           </section>
@@ -215,7 +215,7 @@ export default function PasseUfu() {
             <ul className="space-y-2.5 text-[15px]">
               {[
                 "Corretor de redação DIRPS ilimitado até a prova",
-                "Trilha da folga: simulados UFU cronometrados",
+                "Trilha da vaga: simulados UFU cronometrados",
                 "Gabarito comentado no espelho da banca",
                 "Priorização automática dos seus critérios mais frágeis",
                 "Acesso até o dia da prova do vestibular UFU 2027",

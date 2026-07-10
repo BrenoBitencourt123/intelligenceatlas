@@ -139,8 +139,8 @@ export default function Landing() {
               O que ninguém te conta
             </p>
             <h2 className="text-2xl sm:text-4xl font-bold text-background leading-tight max-w-2xl mx-auto">
-              A UFU classifica <span className="text-background/60">6×</span> mais candidatos
-              que vagas para a 2ª fase.
+              Pra cada vaga, <span className="text-background/60">6 candidatos</span> passam
+              pra 2ª fase.
             </h2>
             <p className="text-background/70 mt-5 max-w-xl mx-auto text-base leading-relaxed">
               Passar no corte só te dá o direito de ter a redação corrigida.
@@ -150,7 +150,7 @@ export default function Landing() {
 
           <div className="grid sm:grid-cols-3 gap-5">
             {[
-              { n: '1ª fase', t: 'Objetiva', d: '65 questões. Classifica 6× o número de vagas.' },
+              { n: '1ª fase', t: 'Objetiva', d: '65 questões. Pra cada vaga, 6 candidatos seguem adiante.' },
               { n: '2ª fase', t: 'Redação', d: 'Corrigida só para os classificados. Peso 3 na nota final.' },
               { n: 'Vaga', t: 'Nota ponderada', d: 'Soma dos acertos × pesos do curso + nota da redação.' },
             ].map((s, i) => (

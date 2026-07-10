@@ -100,12 +100,13 @@ export default function ListaUfu() {
             Placar UFU · lista de interesse
           </p>
           <h1 className="text-2xl font-bold tracking-tight">
-            {curso ? `Guia de folga de ${nome}` : "Guia de folga do seu curso"}
+            {curso ? `Guia da vaga em ${nome}` : "Guia da vaga do seu curso"}
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Passar no corte não é vaga — a UFU classifica ~6× as vagas. O guia mostra quantos
-            acertos te dão folga real em <span className="text-foreground font-medium">{nome}</span>{" "}
-            e onde focar pelos pesos. E você é avisado quando abrir a pré-venda fundadora
+            Pra cada vaga, ~6 candidatos passam pra 2ª fase — passar do corte é só o começo.
+            O guia mostra quantos acertos te deixam seguro em{" "}
+            <span className="text-foreground font-medium">{nome}</span> e em quais matérias
+            cada acerto vale mais. E você é avisado quando abrir a pré-venda fundadora
             (20 vagas).
           </p>
         </header>
@@ -172,7 +173,7 @@ export default function ListaUfu() {
                   href={curso ? `/ufu/guia/${curso}.html` : "https://inteligenciatlas.com/ufu/"}
                   className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
                 >
-                  Abrir meu guia de folga agora →
+                  Abrir meu guia da vaga agora →
                 </a>
                 <Link
                   to="/calculadora-ufu"

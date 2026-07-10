@@ -51,7 +51,7 @@ export default function TrilhaUfu() {
           <Link to="/hoje" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> Voltar
           </Link>
-          <span className="text-xs font-medium text-muted-foreground">Trilha da folga · UFU</span>
+          <span className="text-xs font-medium text-muted-foreground">Trilha da vaga · UFU</span>
         </div>
       </header>
 
