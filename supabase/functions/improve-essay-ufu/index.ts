@@ -3,11 +3,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ============================================================
 // "Versão evoluída" — feature diferencial do modelo UFU.
-// NÃO é reescrita perfeita (anti-Grammarly): pega a redação DO aluno,
-// com as MESMAS ideias e repertório, e mira exatamente +1 FAIXA nos
-// 2 critérios mais fracos. Devolve diff anotado por critério e a
-// tarefa obrigatória: "agora reescreva você e corrija de novo".
-// O aluno fará a prova à caneta, sozinho — o produto treina, não substitui.
+// Reescreve o texto COMPLETO do aluno na melhor versão que ELE pode
+// alcançar — mantendo as ideias, o repertório e o raciocínio do aluno,
+// para ele ver o potencial do próprio texto naquele tema (decisão
+// 10/07/26, comportamento alinhado ao improve-essay do ENEM). Mantém
+// o diff anotado por critério e a tarefa de reescrita à mão.
 // ============================================================
 
 const corsHeaders = {
@@ -19,13 +19,13 @@ const corsHeaders = {
 const INPUT_COST_PER_MILLION = 0.4;
 const OUTPUT_COST_PER_MILLION = 1.6;
 
-const SYSTEM_PROMPT = `Você é um professor de redação especialista na banca DIRPS/UFU. Sua tarefa NÃO é escrever a redação perfeita. É pegar a redação DO PRÓPRIO ALUNO e mostrar como ELA, com as MESMAS ideias e o MESMO repertório, subiria EXATAMENTE UMA FAIXA na rubrica oficial nos critérios indicados.
+const SYSTEM_PROMPT = `Você é um professor de redação especialista na banca DIRPS/UFU. Sua tarefa é pegar a redação DO PRÓPRIO ALUNO e reescrevê-la por completo na MELHOR versão que ELA pode alcançar na rubrica oficial — mantendo as ideias, os argumentos, o repertório e o raciocínio do aluno. O objetivo é o aluno ver o potencial do texto DELE naquele tema, não receber um texto de outra pessoa.
 
 REGRAS INEGOCIÁVEIS:
 1. MANTENHA as ideias, os argumentos e o repertório do aluno. Não introduza dados, citações ou argumentos novos.
 2. MANTENHA o gênero e a estrutura geral. Mesmo número aproximado de parágrafos.
-3. Mire +1 FAIXA apenas nos critérios-alvo indicados. NÃO conserte tudo — se o texto tem sintaxe simples e o alvo é coesão, melhore coesão e deixe a sintaxe como está. A versão evoluída deve parecer algo que O ALUNO conseguiria escrever amanhã.
-4. Corrija desvios de convenções APENAS se convenções for critério-alvo.
+3. Melhore TODOS os critérios da rubrica em que o texto perde pontos (proposta temática, gênero/discurso, coesão/coerência, convenções da escrita, leitura dos motivadores) — priorizando os mais fracos apontados na correção.
+4. A versão deve continuar soando como um aluno bom escrevendo, não como um manual: eleve o texto sem vocabulário artificial nem períodos que o aluno nunca usaria.
 5. Respeite o limite de 15-34 linhas (~70 caracteres por linha).
 6. Cada mudança precisa ser rastreável: trecho original → trecho novo → critério → faixa que destrava.
 
@@ -108,10 +108,10 @@ ${text}
 CORREÇÃO RECEBIDA (rubrica UFU):
 ${resumoAnalise}
 
-CRITÉRIOS-ALVO (suba exatamente +1 faixa NELES, e só neles):
+CRITÉRIOS MAIS FRACOS (atenção especial neles, mas melhore o texto em todos os critérios em que perde pontos):
 ${alvos.map((a: { id: string; pontos: number }) => `- ${a.id} (hoje: ${a.pontos}/${MAX[a.id]})`).join("\n")}
 
-Produza a versão evoluída. Responda APENAS com o JSON.`;
+Produza a melhor versão completa do texto do aluno. Responda APENAS com o JSON.`;
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");

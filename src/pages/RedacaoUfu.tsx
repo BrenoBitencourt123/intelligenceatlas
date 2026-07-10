@@ -628,10 +628,10 @@ export default function RedacaoUfu() {
               <div className="bg-card rounded-xl border border-border shadow-panel overflow-hidden">
                 <div className="px-5 py-4 border-b border-border flex items-center justify-between">
                   <div>
-                    <h2 className="font-bold">Sua redação, uma faixa acima</h2>
+                    <h2 className="font-bold">Sua redação, no melhor que ela pode ser</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Mesmas ideias, mesmo repertório — evoluída em{" "}
-                      {evolucao.criteriosAlvo.map((a) => nomeCriterio(a.id)).join(" e ")}
+                      Mesmas ideias, mesmo repertório, seu raciocínio — o texto completo
+                      elevado nos critérios da banca
                     </p>
                   </div>
                   <Sparkles className="h-4 w-4 text-muted-foreground shrink-0" />
