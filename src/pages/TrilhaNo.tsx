@@ -360,7 +360,8 @@ export default function TrilhaNo() {
     const tempoMin = Math.max(1, Math.round((Date.now() - startedAt.current) / 60000));
     const pct = stats.current.total ? Math.round((stats.current.primeira / stats.current.total) * 100) : 0;
     return (
-      <TapScreen onNext={advanceCelebracao}>
+      <TapScreen onNext={advanceCelebracao} tela="resultado">
+
         <div className="grid grid-cols-3 gap-4 w-full max-w-md mb-8">
           <Stat label="itens" value={String(itens.length)} />
           <Stat label="1ª tentativa" value={`${pct}%`} />
@@ -921,7 +922,7 @@ function TapScreen({
 }: {
   children: React.ReactNode;
   onNext: () => void;
-  tela?: "perfeito" | "streak" | "placar";
+  tela?: "perfeito" | "streak" | "placar" | "resultado";
 }) {
   const t0 = useRef(Date.now());
   const disparado = useRef(false);
