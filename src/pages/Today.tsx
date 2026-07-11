@@ -118,11 +118,39 @@ const Today = () => {
     })();
   }, [user]);
 
-  // Missão
+  // Cadeado linear: por disciplina, o próximo não-dourado é o "atual"; os seguintes ficam bloqueados.
+  const { availableSet, currentByDisc } = useMemo(() => {
+    const avail = new Set<string>();
+    const curByDisc: Record<string, string> = {};
+    if (!nos) return { availableSet: avail, currentByDisc: curByDisc };
+    // nos já vem ordenado por (disciplina, ordem)
+    const grouped: Record<string, TrilhaNo[]> = {};
+    nos.forEach((n) => {
+      (grouped[n.disciplina] ??= []).push(n);
+    });
+    for (const disc of Object.keys(grouped)) {
+      let foundCurrent = false;
+      for (const n of grouped[disc]) {
+        if (progressoMap[n.id]?.dourado) {
+          avail.add(n.id);
+        } else if (!foundCurrent) {
+          avail.add(n.id);
+          curByDisc[disc] = n.id;
+          foundCurrent = true;
+        } else {
+          // bloqueado
+        }
+      }
+    }
+    return { availableSet: avail, currentByDisc: curByDisc };
+  }, [nos, progressoMap]);
+
   const activeNo = useMemo(() => {
     if (!nos) return null;
-    return nos.find((n) => !progressoMap[n.id]?.dourado) ?? null;
-  }, [nos, progressoMap]);
+    // Prioriza qualquer disciplina com nó atual (primeiro que aparecer)
+    const currentId = Object.values(currentByDisc)[0];
+    return nos.find((n) => n.id === currentId) ?? null;
+  }, [nos, currentByDisc]);
 
   const missao = useMemo(() => {
     if (isEssayDay()) {
