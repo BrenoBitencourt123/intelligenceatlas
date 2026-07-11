@@ -7,10 +7,21 @@ const supabase = supabaseTyped as unknown as {
 };
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, Check, Flame, Sparkles, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { PROPOSTAS_UFU } from "@/data/ufu/redacao";
 import { cn } from "@/lib/utils";
+import confetti from "canvas-confetti";
+import {
+  recomputePlacarTrilha,
+  atualizarPlacar,
+  META_TOTAL,
+  type PlacarFonte,
+} from "@/lib/ufu/placar";
+import { useStudyStats } from "@/hooks/useStudyStats";
+import { CURSOS_UFU, COTAS, TOTAL_QUESTOES, type CotaId } from "@/data/ufu/vestibular";
+import { PlacarShareCard } from "@/components/ufu/PlacarShareCard";
+
 
 type Opcao = { id: string; texto: string; svg?: string | null };
 type Payload = {
