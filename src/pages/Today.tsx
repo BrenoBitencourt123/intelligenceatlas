@@ -41,12 +41,31 @@ const Today = () => {
   const [essayDays, setEssayDays] = useState<Set<number>>(new Set());
   const [goalOpen, setGoalOpen] = useState(false);
 
+  // Gate: se não fez o diagnóstico, manda pra lá
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabaseTyped
+        .from('profiles')
+        .select('diagnostico_feito_at' as never)
+        .eq('id', user.id)
+        .maybeSingle();
+      const feito = (data as { diagnostico_feito_at?: string | null } | null)?.diagnostico_feito_at;
+      if (!feito) navigate('/trilha/diagnostico', { replace: true });
+    })();
+  }, [user, navigate]);
+
   // Load trail nós + user progress + week activity
   useEffect(() => {
     if (!user) return;
     (async () => {
       const [{ data: nosData }, { data: progData }] = await Promise.all([
-        supabase.from('trilha_nos').select('id,disciplina,titulo,descricao,nivel_max').eq('ativo', true),
+        supabase
+          .from('trilha_nos')
+          .select('id,disciplina,titulo,descricao,nivel_max,ordem')
+          .eq('ativo', true)
+          .order('disciplina')
+          .order('ordem'),
         supabase.from('trilha_progresso').select('no_id,nivel_atual,dourado').eq('user_id', user.id),
       ]);
       setNos((nosData as TrilhaNo[]) ?? []);
