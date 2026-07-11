@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ArrowRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AUTOAVALIACAO_FALLBACK, atualizarPlacar } from "@/lib/ufu/placar";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Trilha tables not yet in generated types
 const supabase = supabaseTyped as unknown as { from: (t: string) => any };
