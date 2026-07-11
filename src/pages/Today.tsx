@@ -14,6 +14,7 @@ import { NotificationBanner } from '@/components/pwa/NotificationBanner';
 import { GoalCard } from '@/components/ufu/GoalCard';
 import { CURSOS_UFU, COTAS, TOTAL_QUESTOES, type CotaId } from '@/data/ufu/vestibular';
 import { cn } from '@/lib/utils';
+import { trackUfu } from '@/lib/ufu/track';
 
 // Trilha tables not yet in generated types
 const supabase = supabaseTyped as unknown as { from: (t: string) => any };
