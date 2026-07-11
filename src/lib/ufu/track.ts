@@ -5,10 +5,20 @@ import { supabase } from "@/integrations/supabase/client";
 // Sem cadastro: sessão anônima via localStorage.
 
 export type UfuEvent =
-  | "calc_completed"   // usuário viu um resultado
-  | "card_generated"   // PNG gerado
-  | "card_shared"      // Web Share disparado com sucesso
-  | "card_downloaded"; // fallback de download usado
+  | "calc_completed"
+  | "card_generated"
+  | "card_shared"
+  | "card_downloaded"
+  // Retenção — loop Duolingo (prompt 03)
+  | "trilha_sessao_inicio"
+  | "trilha_sessao_fim"
+  | "trilha_sessao_abandono"
+  | "celebracao_vista"
+  | "celebracao_pulada"
+  | "combo_atingido"
+  | "placar_atualizado"
+  | "push_click";
+
 
 const SESSION_KEY = "ufu_calc_session";
 
