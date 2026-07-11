@@ -80,23 +80,57 @@ export function GoalCard() {
             A UFU não publicou nota de corte 2026/2 para esta modalidade neste curso.
             Vamos usar a média histórica assim que a base estiver classificada.
           </p>
+        ) : placarEstimado === null ? (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-dashed border-border bg-muted/30 p-5 space-y-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-3xl font-black tabular-nums leading-none text-muted-foreground">
+                    ?
+                  </span>
+                  <span className="text-sm font-bold text-muted-foreground tabular-nums">
+                    /{TOTAL_QUESTOES}
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md bg-muted text-muted-foreground">
+                  sem posição ainda
+                </span>
+              </div>
+              <p className="text-sm text-foreground leading-snug">
+                Corte é <span className="font-bold tabular-nums">{corte}</span>, meta é{' '}
+                <span className="font-bold tabular-nums">{meta}</span>. Faz o diagnóstico rápido
+                pra saber onde você tá agora.
+              </p>
+            </div>
+            <Button
+              onClick={() => navigate('/trilha/diagnostico')}
+              className="w-full gap-2 h-11 font-bold"
+            >
+              Fazer diagnóstico
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Passar no corte não garante vaga: pra cada vaga, ~6 candidatos passam pra 2ª fase.
+              Por isso sua meta é {meta} acertos — o corte ({corte}) mais uma margem pra ficar na
+              frente na classificação final.
+            </p>
+          </div>
         ) : (
           (() => {
-            const posicao = placarEstimado ?? 0;
-            const temDados = placarEstimado !== null;
+            const posicao = placarEstimado;
             const posPct = Math.min(100, Math.max(0, (posicao / TOTAL_QUESTOES) * 100));
             const cortePct = (corte / TOTAL_QUESTOES) * 100;
             const metaPct = (meta / TOTAL_QUESTOES) * 100;
             const zona: 'fora' | 'risco' | 'segura' =
               posicao >= meta ? 'segura' : posicao >= corte ? 'risco' : 'fora';
             const faltam = Math.max(0, meta - posicao);
-            const fraseCoach = !temDados
-              ? 'Faça seu primeiro treino para ver sua posição.'
-              : zona === 'segura'
-              ? 'Zona segura. Segue firme — cada acerto amplia sua folga.'
-              : zona === 'risco'
-              ? `Você já cruzou o corte. Faltam ${faltam} pra zona segura.`
-              : `Faltam ${faltam} pra chegar na zona segura. Um treino por vez.`;
+            const fraseCoach =
+              zona === 'segura'
+                ? 'Zona segura. Segue firme — cada acerto amplia sua folga.'
+                : zona === 'risco'
+                ? `Você já cruzou o corte. Faltam ${faltam} pra zona segura.`
+                : `Faltam ${faltam} pra chegar na zona segura. Um treino por vez.`;
+
 
             return (
               <div className="space-y-6">
