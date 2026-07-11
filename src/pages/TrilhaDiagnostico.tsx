@@ -8,6 +8,7 @@ import { Loader2, ArrowRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AUTOAVALIACAO_FALLBACK, atualizarPlacar } from "@/lib/ufu/placar";
+import { trackUfu } from "@/lib/ufu/track";
 
 // Trilha tables not yet in generated types
 const supabase = supabaseTyped as unknown as { from: (t: string) => any };
