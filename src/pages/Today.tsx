@@ -495,11 +495,13 @@ function TrilhaNoDot({
   no,
   status,
   firstVisitHint,
+  pulseRecent,
   onClick,
 }: {
   no: TrilhaNo;
   status: 'dourado' | 'atual' | 'bloqueado';
   firstVisitHint: boolean;
+  pulseRecent?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -523,6 +525,7 @@ function TrilhaNoDot({
             'w-20 h-20 border-4 bg-[hsl(var(--status-draft)/0.18)] border-[hsl(var(--status-draft))] text-[hsl(var(--status-draft))] shadow-md',
           status === 'bloqueado' &&
             'w-16 h-16 border-2 border-dashed border-border bg-muted/50 text-muted-foreground/50',
+          pulseRecent && 'animate-in zoom-in-95 duration-700',
         )}
       >
         {status === 'atual' && (
