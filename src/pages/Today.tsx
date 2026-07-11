@@ -423,7 +423,7 @@ const Today = () => {
             ) : linhas.length === 0 ? (
               <Card className="border-dashed border-border/60 bg-muted/20 shadow-none">
                 <CardContent className="p-6 text-sm text-muted-foreground text-center">
-                  Novos nós chegando em breve.
+                  {VOCAB.fase.novasEmBreve}
                 </CardContent>
               </Card>
             ) : (
