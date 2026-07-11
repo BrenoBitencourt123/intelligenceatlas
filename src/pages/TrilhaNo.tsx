@@ -77,7 +77,7 @@ export default function TrilhaNo() {
     (async () => {
       setLoading(true);
       const [{ data: noData, error: noErr }, { data: itensData, error: itErr }] = await Promise.all([
-        supabase.from("trilha_nos").select("id,titulo,descricao,nivel_max").eq("id", noId).maybeSingle(),
+        supabase.from("trilha_nos").select("id,titulo,descricao,nivel_max,disciplina,ordem").eq("id", noId).maybeSingle(),
         supabase.from("trilha_itens").select("id,no_id,nivel,ordem,tipo,payload").eq("no_id", noId).order("nivel").order("ordem"),
       ]);
       if (noErr || !noData) {
@@ -85,6 +85,35 @@ export default function TrilhaNo() {
         navigate("/hoje");
         return;
       }
+
+      // Guard: cadeado linear — só entra se todos os nós anteriores da mesma disciplina estão dourados.
+      const noRow = noData as No & { disciplina: string; ordem: number };
+      const { data: anteriores } = await supabase
+        .from("trilha_nos")
+        .select("id,ordem")
+        .eq("ativo", true)
+        .eq("disciplina", noRow.disciplina)
+        .lt("ordem", noRow.ordem);
+      const anterioresIds = ((anteriores as { id: string }[]) ?? []).map((r) => r.id);
+      if (anterioresIds.length > 0) {
+        const { data: progAnt } = await supabase
+          .from("trilha_progresso")
+          .select("no_id,dourado")
+          .eq("user_id", user.id)
+          .in("no_id", anterioresIds);
+        const douradosSet = new Set(
+          ((progAnt as { no_id: string; dourado: boolean }[]) ?? [])
+            .filter((r) => r.dourado)
+            .map((r) => r.no_id),
+        );
+        const falta = anterioresIds.find((id) => !douradosSet.has(id));
+        if (falta) {
+          toast.error("Termine o nó anterior primeiro.");
+          navigate("/hoje");
+          return;
+        }
+      }
+
       if (itErr || !itensData?.length) {
         toast.error("Sem itens neste nó.");
         navigate("/hoje");
