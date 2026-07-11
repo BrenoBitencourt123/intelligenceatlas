@@ -70,7 +70,8 @@ function setEq(a: string[], b: string[]) {
 export default function TrilhaNo() {
   const { noId } = useParams<{ noId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
+  const studyStats = useStudyStats();
 
   const [no, setNo] = useState<No | null>(null);
   const [itens, setItens] = useState<Item[]>([]);
@@ -78,10 +79,22 @@ export default function TrilhaNo() {
   const [idx, setIdx] = useState(0);
   const [tentativas, setTentativas] = useState(1);
   const [phase, setPhase] = useState<"answer" | "wrong" | "reveal" | "correct">("answer");
-  const [finished, setFinished] = useState<null | "wrap" | "result">(null);
+  // Sequência de celebração: wrap → result → (perfect?) → streak → (placar mudou?) → done
+  const [finishedStep, setFinishedStep] = useState<
+    null | "wrap" | "result" | "perfect" | "streak" | "placar"
+  >(null);
   const startedAt = useRef<number>(Date.now());
   const stats = useRef({ total: 0, primeira: 0 });
   const nivelAtualRef = useRef<number>(0);
+
+  // Combo: acertos de primeira consecutivos. Zera ao errar.
+  const [combo, setCombo] = useState(0);
+  const [comboBadge, setComboBadge] = useState<number | null>(null);
+
+  // Placar antes/depois desta sessão — usado na tela "bolinha andou"
+  const [placarAntes, setPlacarAntes] = useState<number | null>(null);
+  const [placarDepois, setPlacarDepois] = useState<number | null>(null);
+
 
   // Load nó + itens + progresso
   useEffect(() => {
