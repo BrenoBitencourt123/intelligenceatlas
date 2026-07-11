@@ -380,6 +380,11 @@ export default function TrilhaNo() {
             style={{ width: `${progress}%` }}
           />
         </div>
+        {comboBadge !== null && (
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100 animate-pulse tabular-nums">
+            🔥 combo x{comboBadge}
+          </span>
+        )}
         <span className="text-xs text-muted-foreground tabular-nums">
           {idx + 1}/{itens.length}
         </span>
