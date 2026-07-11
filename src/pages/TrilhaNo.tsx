@@ -989,7 +989,7 @@ function StreakScreen({
   const freezeDow = [0, 1, 2, 3, 4, 5, 6].find((d) => frozenSet.has(jsDayToDate(d)));
 
   return (
-    <TapScreen onNext={onNext}>
+    <TapScreen onNext={onNext} tela="streak">
       <div className="flex items-center gap-2 mb-2 animate-in zoom-in-50 duration-500">
         <Flame className="h-12 w-12 text-orange-500" />
         <span className="text-6xl font-black tabular-nums">{streak}</span>
