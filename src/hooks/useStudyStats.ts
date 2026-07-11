@@ -140,6 +140,12 @@ export function useStudyStats() {
         (d) => isoWeekKey(new Date(d + 'T12:00:00')) === currentWeek,
       );
 
+      // Dias ativos reais da semana em curso — usados pelas telas de streak
+      // pra nunca carimbar dia sem atividade (bug do teste real 11/07).
+      const activeDaysThisWeek = Array.from(activeDays).filter(
+        (d) => isoWeekKey(new Date(d + 'T12:00:00')) === currentWeek,
+      );
+
 
       // Total questions in bank (global, not user-specific)
       const { count: totalQuestions } = await supabase
