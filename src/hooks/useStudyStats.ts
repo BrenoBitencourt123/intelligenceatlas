@@ -225,6 +225,7 @@ export function useStudyStats() {
         topStrengths,
         areaProgress,
         overdueReviews,
+        frozenDaysThisWeek,
       };
     },
     enabled: !!user,
