@@ -177,7 +177,9 @@ const Today = () => {
     const corte = curso.cortes[cotaId] ?? null;
     const meta = corte !== null ? Math.min(TOTAL_QUESTOES, Math.ceil(corte * 1.22)) : null;
     const cota = COTAS.find((c) => c.id === cotaId);
-    const acertos = 0; // TODO: derivar de simulados quando existir
+    const acertos = (profile as { placar_estimado?: number | null } | null)?.placar_estimado ?? 0;
+    const fonte = (profile as { placar_fonte?: string | null } | null)?.placar_fonte ?? null;
+    const estimado = fonte === 'autoavaliacao';
     const zona =
       corte === null || meta === null
         ? 'sem base'
@@ -186,8 +188,8 @@ const Today = () => {
         : acertos >= corte
         ? 'zona de risco'
         : 'fora do corte';
-    return { curso, cota, corte, meta, acertos, zona };
-  }, [cursoId, cotaId]);
+    return { curso, cota, corte, meta, acertos, zona, estimado };
+  }, [cursoId, cotaId, profile]);
 
   const todayDow = new Date().getDay();
 
