@@ -34,6 +34,11 @@
 | `ordenar` | arrastar itens pra ordem certa | sequência de ids | Nível 2 — passos de resolução |
 | `completar` | escolher a opção que preenche a lacuna (`___` no enunciado) | id correto | Níveis 1-3 — fórmula/regra |
 | `multipla` | alternativa única (formato prova) | id correto | Níveis 3-5 — estilo DIRPS |
+| `info` | card de apresentação (`payload.corpo`), botão "Entendi, bora" | `[]` (sem resposta) | antes de cobrar fato novo |
+
+REGRA DE OURO (playtest 11/07): **fato arbitrário se APRESENTA antes de ser
+cobrado (item `info`); raciocínio se TENTA antes de ser explicado.** Chutar
+peso 20 vs 12 é loteria, não dificuldade desejável.
 
 Regras do player (valem pra todos):
 1. Errou → mostra `feedback_erro` (1 linha de ENSINO, nunca "errou ✗") e

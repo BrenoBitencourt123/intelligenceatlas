@@ -24,6 +24,7 @@ type Payload = {
   feedback_acerto?: string;
   explicacao_curta?: string;
   proposta_id?: string;
+  corpo?: string;
   cta?: { texto: string; href: string };
 };
 type Item = {
@@ -31,7 +32,7 @@ type Item = {
   no_id: string;
   nivel: number;
   ordem: number;
-  tipo: "tocar" | "ligar" | "ordenar" | "completar" | "multipla";
+  tipo: "tocar" | "ligar" | "ordenar" | "completar" | "multipla" | "info";
   payload: Payload;
 };
 type No = { id: string; titulo: string; descricao: string | null; nivel_max: number };
@@ -397,6 +398,23 @@ function ItemRenderer({
       )}
       {tipo === "ligar" && (
         <LigarView payload={payload} locked={locked} phase={phase} onCorrect={onCorrect} onWrong={onWrong} />
+      )}
+      {tipo === "info" && (
+        <div className="space-y-5">
+          {payload.corpo && (
+            <div className="rounded-xl border border-border bg-muted/40 p-5 text-[15px] leading-relaxed whitespace-pre-line">
+              {payload.corpo}
+            </div>
+          )}
+          {!locked ? (
+            <button
+              onClick={onCorrect}
+              className="w-full rounded-xl bg-foreground text-background font-semibold py-3.5 hover:opacity-90 transition-opacity"
+            >
+              Entendi, bora
+            </button>
+          ) : null}
+        </div>
       )}
     </div>
   );
