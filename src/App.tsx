@@ -35,6 +35,7 @@ import ListaUfu from "./pages/ListaUfu";
 import PasseUfu from "./pages/PasseUfu";
 import DiagnosticoUfu from "./pages/DiagnosticoUfu";
 import TrilhaUfu from "./pages/TrilhaUfu";
+import TrilhaNo from "./pages/TrilhaNo";
 
 const queryClient = new QueryClient();
 
