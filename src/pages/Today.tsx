@@ -24,6 +24,7 @@ type TrilhaNo = {
   titulo: string;
   descricao: string | null;
   nivel_max: number;
+  ordem: number;
 };
 type Progresso = { no_id: string; nivel_atual: number; dourado: boolean };
 
@@ -40,12 +41,31 @@ const Today = () => {
   const [essayDays, setEssayDays] = useState<Set<number>>(new Set());
   const [goalOpen, setGoalOpen] = useState(false);
 
+  // Gate: se não fez o diagnóstico, manda pra lá
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabaseTyped
+        .from('profiles')
+        .select('diagnostico_feito_at' as never)
+        .eq('id', user.id)
+        .maybeSingle();
+      const feito = (data as { diagnostico_feito_at?: string | null } | null)?.diagnostico_feito_at;
+      if (!feito) navigate('/trilha/diagnostico', { replace: true });
+    })();
+  }, [user, navigate]);
+
   // Load trail nós + user progress + week activity
   useEffect(() => {
     if (!user) return;
     (async () => {
       const [{ data: nosData }, { data: progData }] = await Promise.all([
-        supabase.from('trilha_nos').select('id,disciplina,titulo,descricao,nivel_max').eq('ativo', true),
+        supabase
+          .from('trilha_nos')
+          .select('id,disciplina,titulo,descricao,nivel_max,ordem')
+          .eq('ativo', true)
+          .order('disciplina')
+          .order('ordem'),
         supabase.from('trilha_progresso').select('no_id,nivel_atual,dourado').eq('user_id', user.id),
       ]);
       setNos((nosData as TrilhaNo[]) ?? []);
@@ -98,11 +118,39 @@ const Today = () => {
     })();
   }, [user]);
 
-  // Missão
+  // Cadeado linear: por disciplina, o próximo não-dourado é o "atual"; os seguintes ficam bloqueados.
+  const { availableSet, currentByDisc } = useMemo(() => {
+    const avail = new Set<string>();
+    const curByDisc: Record<string, string> = {};
+    if (!nos) return { availableSet: avail, currentByDisc: curByDisc };
+    // nos já vem ordenado por (disciplina, ordem)
+    const grouped: Record<string, TrilhaNo[]> = {};
+    nos.forEach((n) => {
+      (grouped[n.disciplina] ??= []).push(n);
+    });
+    for (const disc of Object.keys(grouped)) {
+      let foundCurrent = false;
+      for (const n of grouped[disc]) {
+        if (progressoMap[n.id]?.dourado) {
+          avail.add(n.id);
+        } else if (!foundCurrent) {
+          avail.add(n.id);
+          curByDisc[disc] = n.id;
+          foundCurrent = true;
+        } else {
+          // bloqueado
+        }
+      }
+    }
+    return { availableSet: avail, currentByDisc: curByDisc };
+  }, [nos, progressoMap]);
+
   const activeNo = useMemo(() => {
     if (!nos) return null;
-    return nos.find((n) => !progressoMap[n.id]?.dourado) ?? null;
-  }, [nos, progressoMap]);
+    // Prioriza qualquer disciplina com nó atual (primeiro que aparecer)
+    const currentId = Object.values(currentByDisc)[0];
+    return nos.find((n) => n.id === currentId) ?? null;
+  }, [nos, currentByDisc]);
 
   const missao = useMemo(() => {
     if (isEssayDay()) {
@@ -223,7 +271,7 @@ const Today = () => {
                 {nos.map((no, i) => {
                   const p = progressoMap[no.id];
                   const dourado = !!p?.dourado;
-                  const isCurrent = !dourado && activeNo?.id === no.id;
+                  const isCurrent = !dourado && currentByDisc[no.disciplina] === no.id;
                   const locked = !dourado && !isCurrent;
                   return (
                     <li key={no.id} className="flex flex-col items-center gap-2 text-center">

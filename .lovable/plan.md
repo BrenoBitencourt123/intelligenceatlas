@@ -1,72 +1,80 @@
-Plano para fechar o funil do diagrama, respeitando o que já existe hoje e adiando o que você marcou como "depois".
 
-## O que já está pronto (não mexo)
-- Google pSEO: 51 páginas + último aprovado.
-- Calculadora UFU (`/ufu/calculadora`).
-- Captura de lead (`/ufu/lista`) — insert anônimo em `ufu_leads` corrigido.
-- Corretor de redação (`/redacao-ufu`) com 1ª correção grátis.
-- Compra 1 · correção: R$ 9,90 avulsa e R$ 39 pacote (Stripe Checkout + `verify-checkout-ufu`).
-- Grupo WhatsApp e link do guia por e-mail já existem manualmente.
+# Trilha estilo Duolingo — MVP em 3 blocos
 
-## O que este plano constrói (âmbar do diagrama)
+Objetivo: aluno abre o app, faz um diagnóstico curto, sai posicionado num ponto da trilha, e sobe nó a nó de forma linear (cadeado no próximo até o anterior dourar). Zero fricção, 6 níveis sempre dentro de cada nó (já implementado no player).
 
-### 1. Diagnóstico "seu placar" — `/ufu/diagnostico`
-- 10 questões UFU curadas, embaralhadas por área com peso do curso escolhido (medicina, direito, etc.).
-- Nova tabela `ufu_diagnostico_questoes` (statement, alternativas jsonb, correta, area, ano, prova) alimentada pelo admin (nada de script local).
-- Sessão anônima: guarda respostas em `localStorage`; ao finalizar mostra "sua zona" (verde/amarelo/vermelho por área + nota estimada UFU) e força captura de e-mail+WhatsApp antes de liberar o gabarito comentado.
-- Grava lead em `ufu_leads` com `origem='diagnostico'` + snapshot do resultado.
-- CTA final: "Comece pelo corretor de redação — 1ª grátis" → `/signup?next=/redacao-ufu`.
+Nada disso mexe em edge functions novas nem cria motor de IA. Conteúdo continua vindo por migration (seu contrato: "no local scripts").
 
-### 2. Passe UFU — `/ufu/passe`
-- Produto Stripe novo: **Passe UFU 2026 — Fundador**, R$ 149, one-time (não recorrente), preço lançamento; segundo preço R$ 249 arquivado como "após pré-venda".
-- Entrega: acesso único até a data da prova UFU a:
-  - Corretor de redação **ilimitado** (bypassa `ufu_correcoes_saldo`).
-  - Trilha da folga + simulados (rota `/ufu/trilha`, ver item 4).
-- Landing `/ufu/passe`: hero, o-que-inclui, prova social (contador de leads), FAQ, CTA único.
-- Coluna nova em `profiles`: `ufu_passe_ativo boolean` + `ufu_passe_expira_em date` (setado por `verify-checkout-ufu` quando `metadata.plano='passe'`).
-- `analyze-essay-ufu` passa a checar passe antes de consumir crédito.
+---
 
-### 3. Página `/passe` como oferta pós-pré-venda
-- Mesma landing do item 2, mas com flag em `ufu_config` (`passe_disponivel boolean`). Enquanto false: mostra "abre em breve" + captura. Depois da pré-venda: libera o botão de checkout.
+## Bloco 1 — Diagnóstico que pinta a trilha
 
-### 4. Pós-compra — Trilha da folga + Simulados (`/ufu/trilha`)
-- Só acessível com `ufu_passe_ativo`.
-- Reaproveita motor de sessões objetivas já existente, filtrado por `ufu_topico`.
-- 3 simulados UFU (2h cada) montados a partir do banco `ufu_diagnostico_questoes` + questões UFU já classificadas em `questions`.
+Já existe `/diagnostico-ufu` (`DiagnosticoUfu.tsx`) e a tabela `ufu_diagnostico_questoes`. Vou aproveitar em vez de criar novo.
 
-### 5. Card "meu placar subiu"
-- Componente `PlacarShareCard` renderizado em canvas (1080x1350) com nome, área que mais subiu e delta de acertos.
-- Botão "Baixar imagem" + "Compartilhar" (Web Share API com fallback download).
-- Aparece no fim do Diagnóstico (após 2ª rodada) e no dashboard do passe.
-- **Sem cupom nesta fase** — só o card visual, como você pediu.
+**O que muda:**
+- Ao fim do diagnóstico, além do placar de acertos já existente, calcular o **nó de entrada** por disciplina:
+  - Regra v0 simples: para cada disciplina com nó ativo, pega a última pergunta acertada e marca todos os nós anteriores como `dourado=true` em `trilha_progresso` (endowed progress — nunca nascer em zero).
+  - O primeiro nó ainda não dourado vira o `atual` (aceso).
+- Salva num campo novo `profiles.diagnostico_feito_at` (timestamp) pra saber se já passou.
+- Se o usuário loga e nunca fez diagnóstico → redireciona pra `/diagnostico-ufu` antes de `/hoje`.
 
-## O que fica de fora (marcado no diagrama, adiado)
-- Sequência automática de 7 e-mails — adiado.
-- Cupom de amigo com tracking — adiado, entra depois do card visual provar tração.
-- Reels/TikTok: fora do escopo de código, é conteúdo.
+**Onboarding recap:** o `Onboarding.tsx` continua igual (curso/cota/meta). O diagnóstico é o passo seguinte, antes de cair na home.
 
-## Migrations (uma só, aprovada antes do código)
-1. `ufu_diagnostico_questoes` (+ GRANTs + RLS: select público, insert/update só admin).
-2. `ufu_config` (chave/valor, uma linha `passe_disponivel`).
-3. `profiles.ufu_passe_ativo` + `ufu_passe_expira_em`.
-4. Índice em `ufu_leads(origem)` para separar diagnóstico de lista.
+---
 
-## Stripe (via ferramenta, não SQL)
-- Criar produto "Passe UFU 2026 — Fundador" R$ 149,00 BRL, one-time.
-- `create-checkout-ufu` passa a aceitar `plano: 'passe' | 'avulsa' | 'pacote'` e roteia para o price_id certo.
-- `verify-checkout-ufu` grava passe em `profiles` quando `plano='passe'`, senão continua creditando `ufu_creditos`.
+## Bloco 2 — Trilha linear com cadeado
 
-## Ordem de entrega
-1. Migration (tabelas + colunas).
-2. Produto Stripe do passe + edge functions atualizadas.
-3. `/ufu/passe` (landing + checkout).
-4. `/ufu/diagnostico` (quiz + captura + resultado).
-5. `PlacarShareCard`.
-6. `/ufu/trilha` (gating por passe + reaproveitamento do motor de sessões).
-7. Ajuste `analyze-essay-ufu` para respeitar passe.
+Hoje `Today.tsx` já lista os `trilha_nos` ativos com estados dourado/current/locked, mas a regra de "locked" precisa ser real:
+
+- **Regra:** um nó só fica `disponivel` quando o nó imediatamente anterior (mesma disciplina, ordem crescente) está `dourado`. Tudo depois disso é `bloqueado` (cadeado cinza, sem clique).
+- Adicionar campo `trilha_nos.ordem` (int) e `trilha_nos.disciplina` já existe — ordenar por (disciplina, ordem).
+- Card-missão do topo aponta pro primeiro nó `disponivel` não-dourado de qualquer disciplina (priorizando a disciplina do dia se houver — regra por dia da semana já parcialmente no Today).
+- Tentar abrir `/ufu/no/:noId` de um nó bloqueado → toast "Termine {nó anterior} primeiro" + volta pra `/hoje`.
+
+Sem mapa visual complexo ainda (esse é o Bloco 6 da espec, gatilho é 30+ nós).
+
+---
+
+## Bloco 3 — Seed de nós (via migration, manual)
+
+Pra trilha fazer sentido linear, precisa de mais que 1 nó. Este bloco é só a **estrutura** — o conteúdo você/Cowork prepara e vira migration depois:
+
+- Estrutura de disciplinas iniciais: `redacao` (já tem `red-generos-zeros`), `matematica`, `linguagens`.
+- Convenção de IDs: `{disciplina}-{slug}` (ex: `mat-porcentagem-basica`).
+- Cada nó novo entra por migration com seus 14+ itens em `trilha_itens` seguindo o schema em `TRILHA-SCHEMA-ITEM.md` (já canônico).
+- Um seed inicial com **2-3 nós placeholder por disciplina** (só título + ordem, sem itens ainda) só pra visualizar a trilha crescer e testar o cadeado. Você desativa (`ativo=false`) até ter conteúdo real.
+
+---
+
+## O que fica de fora deste plano (gatilhos futuros)
+
+- **Modo Resgate + generate-ladder** → gatilho: 1º caso real de aluno travando (espec §8, item 4).
+- **Mapa visual por matéria** → gatilho: 30-40 nós com conteúdo (espec §8, item 6).
+- **Admin UI de geração de escadinhas por IA** → você pediu "só migrations manuais por enquanto".
+- **Compositor de sessão** (aquecimento/núcleo/fecho) → v0 continua sendo a regra simples atual do Today.
+
+---
 
 ## Detalhes técnicos
-- Tudo em rotas `/ufu/*` já registradas em `App.tsx`.
-- Nenhuma edição em `src/integrations/supabase/client.ts` ou `.env`.
-- Sem cron, sem webhook Stripe (mantém o padrão `verify-*` on-return).
-- Curadoria das 10 questões UFU: você popula pelo admin depois que a tabela subir; o Diagnóstico só ativa quando tiver ≥10 registros (feature flag em `ufu_config`).
+
+**Migration necessária (schema, 1 só):**
+- `ALTER TABLE trilha_nos ADD COLUMN ordem int DEFAULT 0;`
+- `ALTER TABLE profiles ADD COLUMN diagnostico_feito_at timestamptz;`
+- (opcional) Índice `(disciplina, ordem)` em `trilha_nos`.
+
+**Arquivos a tocar (frontend):**
+- `src/pages/DiagnosticoUfu.tsx` — no submit final, calcular e persistir `trilha_progresso` inicial + `diagnostico_feito_at`.
+- `src/App.tsx` ou um wrapper — gate: se logado + sem `diagnostico_feito_at` → redirect `/diagnostico-ufu`.
+- `src/pages/Today.tsx` — regra de cadeado linear real usando `ordem`.
+- `src/pages/TrilhaNo.tsx` — guard: bloquear entrada em nó não disponível.
+
+**Ordem de execução (dentro do plano):**
+1. Migration schema.
+2. Regra de cadeado + guard no player (Bloco 2).
+3. Diagnóstico que pinta trilha + gate de rota (Bloco 1).
+4. Seed placeholder de 2-3 nós por disciplina (Bloco 3) — commit separado, você popula depois.
+
+**Verificação:**
+- Usuário novo → login → cai em diagnóstico → responde → cai em `/hoje` com 1-2 nós dourados e o próximo aceso.
+- Tenta abrir nó bloqueado pela URL → toast + redirect.
+- Dourar o nó atual → o próximo destrava automaticamente na volta pra `/hoje`.

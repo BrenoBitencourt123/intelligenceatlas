@@ -36,6 +36,7 @@ import PasseUfu from "./pages/PasseUfu";
 import DiagnosticoUfu from "./pages/DiagnosticoUfu";
 import TrilhaUfu from "./pages/TrilhaUfu";
 import TrilhaNo from "./pages/TrilhaNo";
+import TrilhaDiagnostico from "./pages/TrilhaDiagnostico";
 
 const queryClient = new QueryClient();
 
@@ -192,6 +193,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <TrilhaNo />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trilha/diagnostico"
+              element={
+                <ProtectedRoute>
+                  <TrilhaDiagnostico />
                 </ProtectedRoute>
               }
             />
