@@ -99,6 +99,18 @@ export default function TrilhaDiagnostico() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .update({ diagnostico_feito_at: new Date().toISOString() } as any)
         .eq("id", user.id);
+
+      // Placar vivo: gravar fallback autoavaliacao se ainda não tem placar (nunca nasce em zero)
+      const placarAtual = (profile as { placar_estimado?: number | null } | null)?.placar_estimado ?? null;
+      const fonteAtual = (profile as { placar_fonte?: any } | null)?.placar_fonte ?? null;
+      if (placarAtual === null) {
+        // pega a resposta mais recorrente como base do fallback (média das disciplinas)
+        const valores = disciplinas.map((d) => AUTOAVALIACAO_FALLBACK[respostasFinal[d] ?? "nada"] ?? 8);
+        const media = Math.round(valores.reduce((a, b) => a + b, 0) / Math.max(1, valores.length));
+        await atualizarPlacar(user.id, media, "autoavaliacao", fonteAtual);
+        await refreshProfile();
+      }
+
       navigate("/hoje", { replace: true });
     } catch (err) {
       toast.error("Não deu pra salvar. Tenta de novo.");
