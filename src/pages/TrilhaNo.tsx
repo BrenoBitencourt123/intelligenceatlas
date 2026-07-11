@@ -947,7 +947,7 @@ function PerfectScreen({ total, onNext }: { total: number; onNext: () => void })
     if (navigator.vibrate) navigator.vibrate(50);
   }, []);
   return (
-    <TapScreen onNext={onNext}>
+    <TapScreen onNext={onNext} tela="perfeito">
       <Trophy className="h-16 w-16 text-amber-500 mb-4 animate-in zoom-in-50 duration-500" />
       <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">PERFEITO</p>
       <h1 className="text-4xl sm:text-5xl font-black text-center mb-2">
