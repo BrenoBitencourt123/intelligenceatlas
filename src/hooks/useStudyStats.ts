@@ -243,6 +243,7 @@ export function useStudyStats() {
     topStrengths: data?.topStrengths ?? [],
     areaProgress: data?.areaProgress ?? [],
     overdueReviews: data?.overdueReviews ?? 0,
+    frozenDaysThisWeek: data?.frozenDaysThisWeek ?? [],
     diagnosticThreshold: DIAGNOSTIC_QUESTIONS_PER_AREA,
     isLoading,
   };
