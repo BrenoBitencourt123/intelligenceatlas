@@ -197,3 +197,23 @@ sufocando o schema. Hoje: não.
   risco / Zona segura. "6×" sempre como "pra cada vaga, 6 candidatos".
 - Redação não exige computador (mobile-only é parte do mercado); treino à mão
   é recomendação de copy, não exigência.
+
+## 11. Modo Reta Final + Intensivão (registrado 10/07, construir em D-60)
+
+**Modo Reta Final (produto, incluso no Passe):** liga automaticamente a ~45
+dias da prova. Triagem do mapa por pontos-por-dia-restante (nós que não
+compensam ganham estado "deixa pra lá — seu tempo vale mais em X"); missão
+diária maior com re-cerimônia da meta; simulado cronometrado semanal (placar
+vira previsão); redação 2-3x/semana; revisão focada no caderno de erros
+(ErrorsByTopic já existe); countdown honesto no topo; checklist logístico de
+véspera (documento, local, o que levar).
+
+**Intensivão UFU (SKU comercial):** lançar a ~60 dias da prova para quem não
+é fundador. Acesso 45-60 dias com Modo Reta Final + corretor. Preço premium
+(R$ 197-247; âncora: intensivo presencial R$ 2.000+). O adiador em pânico é
+a segunda janela de demanda do ciclo — a primeira é a Classificação Geral.
+Fundador já tem tudo incluso (reforça a escassez verdadeira das pré-vendas
+futuras: "quem entrou cedo pagou menos e levou tudo").
+
+Gatilhos: modo automático em D-45 · decisão/monta do SKU em D-60 ·
+nada disso se constrói antes da trilha existir (seção 8).
