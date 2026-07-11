@@ -575,6 +575,150 @@ export type Database = {
         }
         Relationships: []
       }
+      trilha_itens: {
+        Row: {
+          created_at: string
+          id: string
+          needs_review: boolean
+          nivel: number
+          no_id: string
+          ordem: number
+          payload: Json
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          needs_review?: boolean
+          nivel: number
+          no_id: string
+          ordem: number
+          payload: Json
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          needs_review?: boolean
+          nivel?: number
+          no_id?: string
+          ordem?: number
+          payload?: Json
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trilha_itens_no_id_fkey"
+            columns: ["no_id"]
+            isOneToOne: false
+            referencedRelation: "trilha_nos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trilha_nos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          disciplina: string
+          id: string
+          nivel_max: number
+          peso_info: Json | null
+          pre_requisitos: string[]
+          titulo: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          disciplina: string
+          id: string
+          nivel_max?: number
+          peso_info?: Json | null
+          pre_requisitos?: string[]
+          titulo: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          disciplina?: string
+          id?: string
+          nivel_max?: number
+          peso_info?: Json | null
+          pre_requisitos?: string[]
+          titulo?: string
+        }
+        Relationships: []
+      }
+      trilha_progresso: {
+        Row: {
+          dourado: boolean
+          nivel_atual: number
+          no_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          dourado?: boolean
+          nivel_atual?: number
+          no_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          dourado?: boolean
+          nivel_atual?: number
+          no_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trilha_progresso_no_id_fkey"
+            columns: ["no_id"]
+            isOneToOne: false
+            referencedRelation: "trilha_nos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trilha_respostas: {
+        Row: {
+          acertou_primeira: boolean
+          created_at: string
+          id: string
+          item_id: string
+          tentativas: number
+          user_id: string
+        }
+        Insert: {
+          acertou_primeira: boolean
+          created_at?: string
+          id?: string
+          item_id: string
+          tentativas?: number
+          user_id: string
+        }
+        Update: {
+          acertou_primeira?: boolean
+          created_at?: string
+          id?: string
+          item_id?: string
+          tentativas?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trilha_respostas_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "trilha_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ufu_config: {
         Row: {
           key: string
@@ -598,16 +742,19 @@ export type Database = {
           created_at: string
           id: string
           user_id: string
+          via_passe: boolean
         }
         Insert: {
           created_at?: string
           id?: string
           user_id: string
+          via_passe?: boolean
         }
         Update: {
           created_at?: string
           id?: string
           user_id?: string
+          via_passe?: boolean
         }
         Relationships: []
       }
