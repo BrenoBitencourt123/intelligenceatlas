@@ -17,3 +17,14 @@ Fora da Lovable (Cowork): pacote 15/07 · curadoria das 10 questões do
 /placar · cluster redação do pSEO · seção EFT nas 51 páginas.
 Fora de tudo (Breno): grupo WhatsApp · Reels · grupos externos · vendas 1:1
 (roteiro completo no PLANO-ZERO-A-PRIMEIRA-VENDA.md).
+
+## Fila da TRILHA (11/07 — espec: ESPEC-TRILHA-PLACAR-UFU.md)
+
+| # | Prompt | Gatilho pra colar | Status |
+|---|--------|-------------------|--------|
+| T1 | PROMPT-LOVABLE-trilha-player.md | Push da migration trilha_v0 feito | ⬜ |
+| T2 | PROMPT-LOVABLE-trilha-home.md | T1 funcionando e testado | ⬜ |
+
+Conteúdo do nó v0 já está NO BANCO via migration (14 itens de redação,
+revisáveis em TRILHA-NO-REDACAO-01.md). Próximos nós: Cowork gera, Breno
+revisa, vira migration — Lovable nunca transcreve conteúdo.
