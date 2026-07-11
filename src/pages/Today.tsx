@@ -8,10 +8,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudyStats } from '@/hooks/useStudyStats';
 import { supabase as supabaseTyped } from '@/integrations/supabase/client';
-import { ArrowRight, Flame, ChevronDown, PenLine, Check, Lock, Sparkles, Clock } from 'lucide-react';
+import { ArrowRight, ChevronDown, Check, Lock, Sparkles, Clock } from 'lucide-react';
 import { InstallBanner } from '@/components/pwa/InstallBanner';
 import { NotificationBanner } from '@/components/pwa/NotificationBanner';
 import { GoalCard } from '@/components/ufu/GoalCard';
+import { WeekRewardOverlay } from '@/components/ufu/WeekRewardOverlay';
 import { CURSOS_UFU, COTAS, TOTAL_QUESTOES, type CotaId } from '@/data/ufu/vestibular';
 import { cn } from '@/lib/utils';
 import { trackUfu } from '@/lib/ufu/track';
