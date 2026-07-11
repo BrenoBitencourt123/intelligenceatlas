@@ -213,6 +213,7 @@ export function useStudyStats() {
         areaProgress,
         overdueReviews,
         frozenDaysThisWeek,
+        activeDaysThisWeek,
       };
     },
     enabled: !!user,
