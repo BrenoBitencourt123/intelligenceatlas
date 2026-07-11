@@ -38,6 +38,15 @@ export function GoalCard() {
     return { curso, cota, corte, meta };
   }, [cursoId, cotaId]);
 
+  // Sem placar ainda → manda direto pro diagnóstico (fluxo Duolingo: teste antes da tela)
+  const precisaDiagnostico =
+    !!cursoId && !!cotaId && info?.corte != null && placarEstimado === null;
+  useEffect(() => {
+    if (precisaDiagnostico) navigate('/trilha/diagnostico', { replace: true });
+  }, [precisaDiagnostico, navigate]);
+  if (precisaDiagnostico) return null;
+
+
   if (!cursoId || !cotaId) {
     return (
       <Card className="border-border/50 shadow-sm">
