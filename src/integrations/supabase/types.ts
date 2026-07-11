@@ -207,6 +207,7 @@ export type Database = {
           cota_ufu: string | null
           created_at: string
           curso_ufu: string | null
+          diagnostico_feito_at: string | null
           email: string
           enem_target_date: string | null
           flexible_quota: boolean
@@ -224,6 +225,7 @@ export type Database = {
           cota_ufu?: string | null
           created_at?: string
           curso_ufu?: string | null
+          diagnostico_feito_at?: string | null
           email: string
           enem_target_date?: string | null
           flexible_quota?: boolean
@@ -241,6 +243,7 @@ export type Database = {
           cota_ufu?: string | null
           created_at?: string
           curso_ufu?: string | null
+          diagnostico_feito_at?: string | null
           email?: string
           enem_target_date?: string | null
           flexible_quota?: boolean
@@ -624,6 +627,7 @@ export type Database = {
           disciplina: string
           id: string
           nivel_max: number
+          ordem: number
           peso_info: Json | null
           pre_requisitos: string[]
           titulo: string
@@ -635,6 +639,7 @@ export type Database = {
           disciplina: string
           id: string
           nivel_max?: number
+          ordem?: number
           peso_info?: Json | null
           pre_requisitos?: string[]
           titulo: string
@@ -646,6 +651,7 @@ export type Database = {
           disciplina?: string
           id?: string
           nivel_max?: number
+          ordem?: number
           peso_info?: Json | null
           pre_requisitos?: string[]
           titulo?: string
