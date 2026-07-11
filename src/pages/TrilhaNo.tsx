@@ -239,8 +239,11 @@ export default function TrilhaNo() {
     setTimeout(() => advance(), 1500);
   };
 
-  const finalizarNo = async () => {
+  const finalizarNo = async (dourado: boolean) => {
     if (!user) return;
+    // Marca antes de qualquer await para o listener de abandono não disparar em paralelo.
+    sessaoFinalizadaRef.current = true;
+
     // Snapshot ANTES
     const antes =
       (profile as { placar_estimado?: number | null } | null)?.placar_estimado ?? null;
@@ -254,9 +257,27 @@ export default function TrilhaNo() {
       const salvo = await atualizarPlacar(user.id, novo, "trilha", fonteAtual);
       if (salvo !== null) {
         setPlacarDepois(salvo);
+        trackUfu("placar_atualizado", {
+          fonte: "trilha",
+          antes: antes ?? 0,
+          depois: salvo,
+        });
         await refreshProfile();
       }
     }
+
+    // evento: trilha_sessao_fim
+    const total = stats.current.total;
+    const pctPrimeira = total ? Math.round((stats.current.primeira / total) * 100) : 0;
+    const tempoS = Math.round((Date.now() - startedAt.current) / 1000);
+    trackUfu("trilha_sessao_fim", {
+      no_id: noId,
+      itens: total,
+      pct_primeira: pctPrimeira,
+      tempo_s: tempoS,
+      dourado,
+    });
+
     setFinishedStep("wrap");
   };
 
