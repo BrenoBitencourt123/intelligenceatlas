@@ -137,114 +137,103 @@ export function GoalCard() {
                   </span>
                 </div>
 
-                {/* Trilha gamificada */}
-                <div className="relative pt-14 pb-8 px-1">
-                  {/* Pin CORTE (flutuando acima) */}
-                  <div
-                    className="absolute -top-0 -translate-x-1/2 flex flex-col items-center pointer-events-none"
-                    style={{ left: `${cortePct}%` }}
-                  >
-                    <motion.div
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.25, duration: 0.35 }}
-                      className="bg-background border-2 border-[hsl(var(--status-draft))] px-2 py-0.5 rounded-md shadow-sm"
+                {/* Trilha gamificada — px-6 dá espaço pro avatar/pins não estourarem as bordas */}
+                <div className="relative pt-12 pb-4 px-6">
+                  <div className="relative">
+                    {/* Pin CORTE (flutuando acima) */}
+                    <div
+                      className="absolute -top-11 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+                      style={{ left: `${cortePct}%` }}
                     >
-                      <span className="text-[10px] font-black tabular-nums text-[hsl(var(--status-draft))]">
-                        {corte} CORTE
-                      </span>
-                    </motion.div>
-                    <div className="w-0.5 h-8 bg-[hsl(var(--status-draft)/0.5)] mt-0.5" />
-                  </div>
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.25, duration: 0.35 }}
+                        className="bg-background border-2 border-[hsl(var(--status-draft))] px-2 py-0.5 rounded-md shadow-sm"
+                      >
+                        <span className="text-[10px] font-black tabular-nums text-[hsl(var(--status-draft))]">
+                          {corte} CORTE
+                        </span>
+                      </motion.div>
+                      <div className="w-0.5 h-6 bg-[hsl(var(--status-draft)/0.5)] mt-0.5" />
+                    </div>
 
-                  {/* Pin META (flutuando acima, destacado) */}
-                  <div
-                    className="absolute -top-0 -translate-x-1/2 flex flex-col items-center pointer-events-none"
-                    style={{ left: `${metaPct}%` }}
-                  >
-                    <motion.div
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4, duration: 0.35 }}
-                      className="bg-[hsl(var(--status-analyzed))] px-2.5 py-1 rounded-full shadow-md flex items-center gap-1"
+                    {/* Pin META */}
+                    <div
+                      className="absolute -top-11 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+                      style={{ left: `${metaPct}%` }}
                     >
-                      <Flag className="h-3 w-3 text-background" strokeWidth={3} />
-                      <span className="text-[10px] font-black tabular-nums text-background">
-                        {meta} META
-                      </span>
-                    </motion.div>
-                    <div className="w-0.5 h-8 bg-[hsl(var(--status-analyzed))] mt-0.5" />
-                  </div>
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4, duration: 0.35 }}
+                        className="bg-[hsl(var(--status-analyzed))] px-2.5 py-1 rounded-full shadow-md flex items-center gap-1"
+                      >
+                        <Flag className="h-3 w-3 text-background" strokeWidth={3} />
+                        <span className="text-[10px] font-black tabular-nums text-background">
+                          {meta} META
+                        </span>
+                      </motion.div>
+                      <div className="w-0.5 h-6 bg-[hsl(var(--status-analyzed))] mt-0.5" />
+                    </div>
 
-                  {/* Barra 3D com 3 zonas */}
-                  <div className="relative h-5 w-full rounded-full flex overflow-hidden border border-border shadow-inner bg-muted">
-                    <motion.div
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ transformOrigin: 'left' }}
-                      className="flex w-full h-full"
-                    >
-                      <div
-                        className="h-full bg-[hsl(var(--status-unavailable)/0.5)] relative"
-                        style={{ width: `${cortePct}%` }}
+                    {/* Barra 3D com 3 zonas */}
+                    <div className="relative h-5 w-full rounded-full flex overflow-hidden border border-border shadow-inner bg-muted">
+                      <motion.div
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                        style={{ transformOrigin: 'left' }}
+                        className="flex w-full h-full"
                       >
                         <div
-                          className="absolute inset-0 opacity-40"
-                          style={{
-                            background:
-                              'repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--background) / 0.6) 6px 8px)',
-                          }}
+                          className="h-full bg-[hsl(var(--status-unavailable)/0.5)] relative"
+                          style={{ width: `${cortePct}%` }}
+                        >
+                          <div
+                            className="absolute inset-0 opacity-40"
+                            style={{
+                              background:
+                                'repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--background) / 0.6) 6px 8px)',
+                            }}
+                          />
+                        </div>
+                        <div
+                          className="h-full bg-[hsl(var(--status-draft)/0.7)]"
+                          style={{ width: `${metaPct - cortePct}%` }}
                         />
+                        <div
+                          className="h-full bg-[hsl(var(--status-analyzed))]"
+                          style={{ width: `${100 - metaPct}%` }}
+                        />
+                      </motion.div>
+                    </div>
+
+                    {/* Avatar do aluno com número — ancorado ao topo da barra */}
+                    <motion.div
+                      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
+                      initial={{ left: '0%', opacity: 0, scale: 0.6, y: -12 }}
+                      animate={{ left: `${posPct}%`, opacity: 1, scale: 1, y: 0 }}
+                      transition={{ delay: 0.7, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                    >
+                      <div className="relative flex flex-col items-center">
+                        <div
+                          className={cn(
+                            'w-10 h-10 bg-background rounded-2xl border-[3px] shadow-lg flex items-center justify-center rotate-[-4deg] hover:rotate-0 transition-transform',
+                            zona === 'segura' && 'border-[hsl(var(--status-analyzed))]',
+                            zona === 'risco' && 'border-[hsl(var(--status-draft))]',
+                            zona === 'fora' && 'border-[hsl(var(--status-unavailable))]',
+                          )}
+                        >
+                          <span className="text-sm font-black tabular-nums text-foreground">
+                            {posicao}
+                          </span>
+                        </div>
                       </div>
-                      <div
-                        className="h-full bg-[hsl(var(--status-draft)/0.7)]"
-                        style={{ width: `${metaPct - cortePct}%` }}
-                      />
-                      <div
-                        className="h-full bg-[hsl(var(--status-analyzed))]"
-                        style={{ width: `${100 - metaPct}%` }}
-                      />
                     </motion.div>
                   </div>
-
-                  {/* Avatar do aluno com número */}
-                  <motion.div
-                    className="absolute top-1/2 mt-3 -translate-x-1/2 -translate-y-1/2 z-10"
-                    initial={{ left: '0%', opacity: 0, scale: 0.6, y: -20 }}
-                    animate={{ left: `${posPct}%`, opacity: 1, scale: 1, y: 0 }}
-                    transition={{ delay: 0.7, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                  >
-                    <div className="relative flex flex-col items-center">
-                      <div
-                        className={cn(
-                          'w-11 h-11 bg-background rounded-2xl border-[3px] shadow-lg flex items-center justify-center rotate-[-4deg] hover:rotate-0 transition-transform',
-                          zona === 'segura' && 'border-[hsl(var(--status-analyzed))]',
-                          zona === 'risco' && 'border-[hsl(var(--status-draft))]',
-                          zona === 'fora' && 'border-[hsl(var(--status-unavailable))]',
-                        )}
-                      >
-                        <span className="text-sm font-black tabular-nums text-foreground">
-                          {posicao}
-                        </span>
-                      </div>
-                      <div
-                        className={cn(
-                          'w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] -mt-0.5',
-                          zona === 'segura' && 'border-t-[hsl(var(--status-analyzed))]',
-                          zona === 'risco' && 'border-t-[hsl(var(--status-draft))]',
-                          zona === 'fora' && 'border-t-[hsl(var(--status-unavailable))]',
-                        )}
-                      />
-                    </div>
-                  </motion.div>
-
-                  {/* Escala 0 / 65 */}
-                  <div className="absolute -bottom-1 left-0 right-0 flex justify-between text-[10px] font-bold text-muted-foreground tabular-nums px-0.5">
-                    <span>0</span>
-                    <span>{TOTAL_QUESTOES}</span>
-                  </div>
                 </div>
+
 
                 {/* Frase de coach */}
                 <p className="text-sm font-medium text-foreground text-center leading-snug">
