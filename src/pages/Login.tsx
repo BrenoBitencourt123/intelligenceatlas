@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +18,18 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/hoje';
+  const savedDest = localStorage.getItem('redirect_after_auth');
+  const from =
+    (location.state?.from
+      ? `${location.state.from.pathname ?? ''}${location.state.from.search ?? ''}`
+      : null) || savedDest || '/hoje';
+
+  // Propaga o destino pro fluxo de cadastro (link Login → Signup) e pro
+  // retorno pós-confirmação de e-mail.
+  useEffect(() => {
+    if (from && from !== '/hoje') localStorage.setItem('redirect_after_auth', from);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,10 +48,12 @@ export default function Login() {
     }
 
     toast.success('Login realizado com sucesso!');
+    localStorage.removeItem('redirect_after_auth');
     navigate(from, { replace: true });
   };
 
   const handlePasskeySuccess = () => {
+    localStorage.removeItem('redirect_after_auth');
     navigate(from, { replace: true });
   };
 

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,24 @@ import { toast } from 'sonner';
 import { Mail, Phone } from 'lucide-react';
 
 export default function Signup() {
+  const location = useLocation();
+
+  // Fecha o vazamento do funil: quem chegou querendo um destino (state.from
+  // do ProtectedRoute ou ?next= do checkout) volta pra ele após confirmar
+  // o e-mail e concluir o onboarding. localStorage porque o link de
+  // confirmação abre em outra aba.
+  useEffect(() => {
+    const fromState = location.state?.from
+      ? `${location.state.from.pathname ?? ''}${location.state.from.search ?? ''}`
+      : null;
+    const fromQuery = new URLSearchParams(location.search).get('next');
+    const dest = fromState || fromQuery;
+    if (dest && dest.startsWith('/')) {
+      localStorage.setItem('redirect_after_auth', dest);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');

@@ -76,6 +76,22 @@ serve(async (req) => {
       return json({ error: "Envie o texto e a análise da correção." }, 400);
     }
 
+    // Gate mínimo: só evolui quem tem ao menos 1 correção registrada
+    // (a evolução é parte da correção, não um produto avulso gratuito).
+    {
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (serviceKey) {
+        const admin = createClient(supabaseUrl, serviceKey);
+        const { count } = await admin
+          .from("ufu_correcoes_uso")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id);
+        if (!count || count < 1) {
+          return json({ error: "Corrija sua redação primeiro — a versão evoluída nasce da correção.", code: "sem_correcao" }, 403);
+        }
+      }
+    }
+
     // 2 critérios mais fracos em % do máximo (empate: maior peso primeiro)
     const MAX: Record<string, number> = {
       proposta_tematica: 20,

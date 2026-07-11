@@ -65,6 +65,35 @@ export default function RedacaoUfu() {
   const [saldo, setSaldo] = useState<number | null>(null);
   const [semCreditos, setSemCreditos] = useState(false);
 
+  // ── Autosave do rascunho (perder 25 linhas digitadas no celular = churn) ──
+  const DRAFT_KEY = "ufu_redacao_rascunho";
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const draft = JSON.parse(raw) as { text?: string; theme?: string; propostaId?: string; genreId?: string };
+        if (draft.text && draft.text.trim().length > 40) {
+          setText(draft.text);
+          if (draft.theme) setTheme(draft.theme);
+          if (draft.propostaId) setPropostaId(draft.propostaId);
+          if (draft.genreId) setGenreId(draft.genreId);
+          toast({ title: "Rascunho recuperado", description: "Continuamos de onde você parou." });
+        }
+      }
+    } catch { /* rascunho corrompido: ignora */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    const id = setTimeout(() => {
+      try {
+        if (text.trim().length > 0) {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify({ text, theme, propostaId, genreId }));
+        }
+      } catch { /* storage cheio: ignora */ }
+    }, 800);
+    return () => clearTimeout(id);
+  }, [text, theme, propostaId, genreId]);
+
   const refetchSaldo = async () => {
     if (!user) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -174,6 +203,7 @@ export default function RedacaoUfu() {
       }
       if (data?.error) throw new Error(data.error);
       setAnalise(data as AnaliseUfu);
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
       await refetchSaldo();
 
       if (user) {

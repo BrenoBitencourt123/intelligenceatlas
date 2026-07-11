@@ -54,7 +54,8 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: cfg.price, quantity: 1 }],
       mode: "payment",
-      payment_method_types: ["card"],
+      // Métodos de pagamento herdados do dashboard Stripe (card + Pix).
+      // Não fixar payment_method_types: ativar/desativar Pix vira config, não deploy.
       client_reference_id: user.id,
       metadata: {
         user_id: user.id,

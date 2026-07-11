@@ -352,6 +352,28 @@ serve(async (req) => {
       !!profile?.ufu_passe_ativo &&
       (!profile.ufu_passe_expira_em || profile.ufu_passe_expira_em >= hoje);
 
+    if (passeValido) {
+      // Fair-use do ilimitado: teto invisível de 5 correções/dia.
+      // Nenhum vestibulando real bate nisso; quem bate é uso comercial.
+      const hoje0 = new Date(); hoje0.setUTCHours(0, 0, 0, 0);
+      const { count: usosHoje } = await admin
+        .from("ufu_correcoes_uso")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("via_passe", true)
+        .gte("created_at", hoje0.toISOString());
+      if ((usosHoje ?? 0) >= 5) {
+        return json(
+          {
+            error:
+              "Você já corrigiu 5 redações hoje — o cérebro também precisa consolidar! Volta amanhã. (Corrigindo em volume pra uma turma? Fala com a gente que temos plano pra isso.)",
+            code: "fair_use",
+          },
+          429,
+        );
+      }
+    }
+
     if (!passeValido) {
       const { data: saldoData, error: saldoError } = await admin.rpc("ufu_correcoes_saldo", { p_user: user.id });
       if (saldoError) {
@@ -458,17 +480,16 @@ Responda APENAS com o JSON de achados.`;
       (d, i) => `Desvio ${i + 1} (${d.tipo}): '${d.trecho}' → '${d.correcao}'`,
     );
 
-    // ── Registrar uso server-side (consome 1 crédito) ──
-    // Só registra se NÃO tem Passe UFU ativo. Passe = correções ilimitadas.
-    if (!passeValido) {
-      try {
-        const { error: usoError } = await admin
-          .from("ufu_correcoes_uso")
-          .insert({ user_id: user.id });
-        if (usoError) console.error("Failed to record ufu_correcoes_uso:", usoError);
-      } catch (e) {
-        console.error("Exception recording ufu_correcoes_uso:", e);
-      }
+    // ── Registrar uso server-side ──
+    // Sem passe: consome 1 crédito. Com passe: registra com via_passe=true
+    // (não afeta saldo; alimenta o teto diário de fair-use).
+    try {
+      const { error: usoError } = await admin
+        .from("ufu_correcoes_uso")
+        .insert({ user_id: user.id, via_passe: passeValido });
+      if (usoError) console.error("Failed to record ufu_correcoes_uso:", usoError);
+    } catch (e) {
+      console.error("Exception recording ufu_correcoes_uso:", e);
     }
 
     // ── Token log ──

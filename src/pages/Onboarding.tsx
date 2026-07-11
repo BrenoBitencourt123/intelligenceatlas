@@ -71,7 +71,9 @@ export default function Onboarding() {
       if (error) throw error;
 
       await refreshProfile();
-      navigate('/hoje');
+      const dest = localStorage.getItem('redirect_after_auth');
+      localStorage.removeItem('redirect_after_auth');
+      navigate(dest && dest.startsWith('/') ? dest : '/hoje', { replace: true });
     } catch (err: any) {
       toast.error(err.message || 'Erro ao salvar configurações.');
     } finally {
