@@ -8,6 +8,7 @@ import { Loader2, ArrowRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AUTOAVALIACAO_FALLBACK, atualizarPlacar } from "@/lib/ufu/placar";
+import { trackUfu } from "@/lib/ufu/track";
 
 // Trilha tables not yet in generated types
 const supabase = supabaseTyped as unknown as { from: (t: string) => any };
@@ -107,7 +108,14 @@ export default function TrilhaDiagnostico() {
         // pega a resposta mais recorrente como base do fallback (média das disciplinas)
         const valores = disciplinas.map((d) => AUTOAVALIACAO_FALLBACK[respostasFinal[d] ?? "nada"] ?? 8);
         const media = Math.round(valores.reduce((a, b) => a + b, 0) / Math.max(1, valores.length));
-        await atualizarPlacar(user.id, media, "autoavaliacao", fonteAtual);
+        const salvo = await atualizarPlacar(user.id, media, "autoavaliacao", fonteAtual);
+        if (salvo !== null) {
+          trackUfu("placar_atualizado", {
+            fonte: "autoavaliacao",
+            antes: placarAtual ?? 0,
+            depois: salvo,
+          });
+        }
         await refreshProfile();
       }
 

@@ -21,6 +21,7 @@ import {
 import { useStudyStats } from "@/hooks/useStudyStats";
 import { CURSOS_UFU, COTAS, TOTAL_QUESTOES, type CotaId } from "@/data/ufu/vestibular";
 import { PlacarShareCard } from "@/components/ufu/PlacarShareCard";
+import { trackUfu } from "@/lib/ufu/track";
 
 
 type Opcao = { id: string; texto: string; svg?: string | null };
@@ -86,6 +87,8 @@ export default function TrilhaNo() {
   const startedAt = useRef<number>(Date.now());
   const stats = useRef({ total: 0, primeira: 0 });
   const nivelAtualRef = useRef<number>(0);
+  const sessaoIniciadaRef = useRef(false);
+  const sessaoFinalizadaRef = useRef(false);
 
   // Combo: acertos de primeira consecutivos. Zera ao errar.
   const [combo, setCombo] = useState(0);
@@ -168,8 +171,41 @@ export default function TrilhaNo() {
       const startIdx = (itensData as Item[]).findIndex((it) => it.nivel >= nivelAtual);
       setIdx(startIdx >= 0 ? startIdx : 0);
       setLoading(false);
+      startedAt.current = Date.now();
+
+      // evento: trilha_sessao_inicio (guard contra re-render)
+      if (!sessaoIniciadaRef.current) {
+        sessaoIniciadaRef.current = true;
+        trackUfu("trilha_sessao_inicio", {
+          no_id: noId,
+          disciplina: (noData as { disciplina?: string }).disciplina ?? null,
+          nivel_inicial: nivelAtual,
+        });
+      }
     })();
   }, [noId, user, navigate]);
+
+  // Abandono: se sair no meio (unmount, pagehide, beforeunload) sem finalizar → evento
+  useEffect(() => {
+    const dispararAbandono = () => {
+      if (sessaoIniciadaRef.current && !sessaoFinalizadaRef.current) {
+        trackUfu("trilha_sessao_abandono", {
+          no_id: noId,
+          idx,
+          total: itens.length,
+        });
+        // Evita re-disparo em pagehide + unmount
+        sessaoFinalizadaRef.current = true;
+      }
+    };
+    window.addEventListener("pagehide", dispararAbandono);
+    window.addEventListener("beforeunload", dispararAbandono);
+    return () => {
+      window.removeEventListener("pagehide", dispararAbandono);
+      window.removeEventListener("beforeunload", dispararAbandono);
+      dispararAbandono();
+    };
+  }, [noId, idx, itens.length]);
 
   const current = itens[idx];
 
@@ -190,7 +226,7 @@ export default function TrilhaNo() {
       setCombo((c) => {
         const next = c + 1;
         if (next > 0 && next % 5 === 0) {
-          // evento: celebracao_vista { tipo: 'combo', valor: next }
+          trackUfu("combo_atingido", { valor: next });
           setComboBadge(next);
           if (navigator.vibrate) navigator.vibrate(30);
           setTimeout(() => setComboBadge(null), 2000);
@@ -203,8 +239,11 @@ export default function TrilhaNo() {
     setTimeout(() => advance(), 1500);
   };
 
-  const finalizarNo = async () => {
+  const finalizarNo = async (dourado: boolean) => {
     if (!user) return;
+    // Marca antes de qualquer await para o listener de abandono não disparar em paralelo.
+    sessaoFinalizadaRef.current = true;
+
     // Snapshot ANTES
     const antes =
       (profile as { placar_estimado?: number | null } | null)?.placar_estimado ?? null;
@@ -218,9 +257,27 @@ export default function TrilhaNo() {
       const salvo = await atualizarPlacar(user.id, novo, "trilha", fonteAtual);
       if (salvo !== null) {
         setPlacarDepois(salvo);
+        trackUfu("placar_atualizado", {
+          fonte: "trilha",
+          antes: antes ?? 0,
+          depois: salvo,
+        });
         await refreshProfile();
       }
     }
+
+    // evento: trilha_sessao_fim
+    const total = stats.current.total;
+    const pctPrimeira = total ? Math.round((stats.current.primeira / total) * 100) : 0;
+    const tempoS = Math.round((Date.now() - startedAt.current) / 1000);
+    trackUfu("trilha_sessao_fim", {
+      no_id: noId,
+      itens: total,
+      pct_primeira: pctPrimeira,
+      tempo_s: tempoS,
+      dourado,
+    });
+
     setFinishedStep("wrap");
   };
 
@@ -240,7 +297,7 @@ export default function TrilhaNo() {
         updated_at: new Date().toISOString(),
       });
       if (isEndOfNo) {
-        await finalizarNo();
+        await finalizarNo(dourado);
         return;
       }
     }
@@ -372,7 +429,17 @@ export default function TrilhaNo() {
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border">
         <button
-          onClick={() => navigate("/hoje")}
+          onClick={() => {
+            if (sessaoIniciadaRef.current && !sessaoFinalizadaRef.current) {
+              trackUfu("trilha_sessao_abandono", {
+                no_id: noId,
+                idx,
+                total: itens.length,
+              });
+              sessaoFinalizadaRef.current = true;
+            }
+            navigate("/hoje");
+          }}
           className="p-2 -ml-2 text-muted-foreground hover:text-foreground"
           aria-label="Sair"
         >
@@ -847,16 +914,36 @@ function LigarView({ payload, locked, phase, onCorrect, onWrong }: ViewProps) {
 
 const DIAS_STREAK = ["D", "S", "T", "Q", "Q", "S", "S"];
 
-function TapScreen({ children, onNext }: { children: React.ReactNode; onNext: () => void }) {
+function TapScreen({
+  children,
+  onNext,
+  tela,
+}: {
+  children: React.ReactNode;
+  onNext: () => void;
+  tela?: "perfeito" | "streak" | "placar";
+}) {
+  const t0 = useRef(Date.now());
+  const disparado = useRef(false);
+  const handle = () => {
+    if (tela && !disparado.current) {
+      disparado.current = true;
+      const dur = Date.now() - t0.current;
+      if (dur < 500) trackUfu("celebracao_pulada", { tela });
+      else trackUfu("celebracao_vista", { tela, duracao_ms: dur });
+    }
+    onNext();
+  };
   return (
     <div
-      onClick={onNext}
+      onClick={handle}
       className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background text-foreground cursor-pointer select-none"
     >
       {children}
     </div>
   );
 }
+
 
 function PerfectScreen({ total, onNext }: { total: number; onNext: () => void }) {
   useEffect(() => {
@@ -870,7 +957,7 @@ function PerfectScreen({ total, onNext }: { total: number; onNext: () => void })
     if (navigator.vibrate) navigator.vibrate(50);
   }, []);
   return (
-    <TapScreen onNext={onNext}>
+    <TapScreen onNext={onNext} tela="perfeito">
       <Trophy className="h-16 w-16 text-amber-500 mb-4 animate-in zoom-in-50 duration-500" />
       <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">PERFEITO</p>
       <h1 className="text-4xl sm:text-5xl font-black text-center mb-2">
@@ -912,7 +999,7 @@ function StreakScreen({
   const freezeDow = [0, 1, 2, 3, 4, 5, 6].find((d) => frozenSet.has(jsDayToDate(d)));
 
   return (
-    <TapScreen onNext={onNext}>
+    <TapScreen onNext={onNext} tela="streak">
       <div className="flex items-center gap-2 mb-2 animate-in zoom-in-50 duration-500">
         <Flame className="h-12 w-12 text-orange-500" />
         <span className="text-6xl font-black tabular-nums">{streak}</span>
@@ -991,6 +1078,19 @@ function PlacarScreen({
   const faltam = Math.max(0, meta - depois);
   const areaFraca = "Matemática"; // TODO: derivar de user_topic_profile no P1
 
+  const t0 = useRef(Date.now());
+  const disparado = useRef(false);
+  const handleNext = () => {
+    if (!disparado.current) {
+      disparado.current = true;
+      const dur = Date.now() - t0.current;
+      if (dur < 500) trackUfu("celebracao_pulada", { tela: "placar" });
+      else trackUfu("celebracao_vista", { tela: "placar", duracao_ms: dur });
+    }
+    onNext();
+  };
+
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background text-foreground">
       <div className="w-full max-w-md space-y-6">
@@ -1047,9 +1147,10 @@ function PlacarScreen({
 
         <PlacarShareCard nota={depois} areaFraca={areaFraca} nome={nome} />
 
-        <Button variant="ghost" className="w-full" onClick={onNext}>
+        <Button variant="ghost" className="w-full" onClick={handleNext}>
           Voltar pro Hoje
         </Button>
+
       </div>
     </div>
   );

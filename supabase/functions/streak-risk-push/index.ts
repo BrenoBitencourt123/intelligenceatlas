@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       const payload = JSON.stringify({
         title: `🔥 ${streak} dias em risco`,
         body: 'Seu fogo apaga à meia-noite. 10 minutos salvam.',
-        url: '/hoje',
+        url: '/hoje?from=push-streak',
       });
 
       try {
