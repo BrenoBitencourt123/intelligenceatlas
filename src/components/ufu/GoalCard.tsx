@@ -136,10 +136,11 @@ export function GoalCard() {
             const faltam = Math.max(0, meta - posicao);
             const fraseCoach =
               zona === 'segura'
-                ? 'Zona segura. Segue firme — cada acerto amplia sua folga.'
+                ? `Zona segura. Folga de ${posicao - meta} — segue firme, cada acerto amplia sua vantagem.`
                 : zona === 'risco'
-                ? `Você já cruzou o corte. Faltam ${faltam} pra zona segura.`
-                : `Faltam ${faltam} pra chegar na zona segura. Um treino por vez.`;
+                ? `Já cruzou o corte. Faltam ${faltam} pra zona segura.`
+                : `Faltam ${corte - posicao} pra zona de risco, ${faltam} pra zona segura.`;
+
 
 
             return (
