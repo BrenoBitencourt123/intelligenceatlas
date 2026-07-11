@@ -87,6 +87,8 @@ export default function TrilhaNo() {
   const startedAt = useRef<number>(Date.now());
   const stats = useRef({ total: 0, primeira: 0 });
   const nivelAtualRef = useRef<number>(0);
+  const sessaoIniciadaRef = useRef(false);
+  const sessaoFinalizadaRef = useRef(false);
 
   // Combo: acertos de primeira consecutivos. Zera ao errar.
   const [combo, setCombo] = useState(0);
