@@ -838,3 +838,173 @@ function LigarView({ payload, locked, phase, onCorrect, onWrong }: ViewProps) {
     </div>
   );
 }
+
+/* ---------- Celebração ---------- */
+
+const DIAS_STREAK = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+function TapScreen({ children, onNext }: { children: React.ReactNode; onNext: () => void }) {
+  return (
+    <div
+      onClick={onNext}
+      className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background text-foreground cursor-pointer select-none"
+    >
+      {children}
+    </div>
+  );
+}
+
+function PerfectScreen({ total, onNext }: { total: number; onNext: () => void }) {
+  useEffect(() => {
+    // Confete leve (~150 partículas) num único disparo pra não derrubar FPS
+    confetti({
+      particleCount: 150,
+      spread: 80,
+      origin: { y: 0.6 },
+      disableForReducedMotion: true,
+    });
+    if (navigator.vibrate) navigator.vibrate(50);
+  }, []);
+  return (
+    <TapScreen onNext={onNext}>
+      <Trophy className="h-16 w-16 text-amber-500 mb-4 animate-in zoom-in-50 duration-500" />
+      <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">PERFEITO</p>
+      <h1 className="text-4xl sm:text-5xl font-black text-center mb-2">
+        {total} de {total}
+      </h1>
+      <p className="text-lg text-muted-foreground text-center mb-6">na primeira tentativa</p>
+      <p className="text-xs text-muted-foreground">toque pra continuar</p>
+    </TapScreen>
+  );
+}
+
+function StreakScreen({ streak, onNext }: { streak: number; onNext: () => void }) {
+  const todayDow = new Date().getDay();
+  return (
+    <TapScreen onNext={onNext}>
+      <div className="flex items-center gap-2 mb-2 animate-in zoom-in-50 duration-500">
+        <Flame className="h-12 w-12 text-orange-500" />
+        <span className="text-6xl font-black tabular-nums">{streak}</span>
+      </div>
+      <p className="text-lg text-muted-foreground mb-8">dias seguidos</p>
+
+      <div className="flex items-center justify-between gap-1 w-full max-w-xs mb-6">
+        {DIAS_STREAK.map((letra, dow) => {
+          const isToday = dow === todayDow;
+          const isDone = dow <= todayDow; // aproximação visual
+          return (
+            <div key={dow} className="flex flex-col items-center gap-1.5 flex-1">
+              <span
+                className={cn(
+                  "text-[10px] uppercase tracking-wider",
+                  isToday ? "text-foreground font-bold" : "text-muted-foreground",
+                )}
+              >
+                {letra}
+              </span>
+              <div
+                className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center border",
+                  isDone
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-border",
+                  isToday && "animate-in zoom-in-50 duration-500",
+                )}
+              >
+                {isDone && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-xs text-muted-foreground">toque pra continuar</p>
+    </TapScreen>
+  );
+}
+
+function PlacarScreen({
+  antes,
+  depois,
+  corte,
+  meta,
+  nome,
+  onNext,
+}: {
+  antes: number;
+  depois: number;
+  corte: number;
+  meta: number;
+  nome?: string;
+  onNext: () => void;
+}) {
+  const posAntesPct = (antes / META_TOTAL) * 100;
+  const posDepoisPct = (depois / META_TOTAL) * 100;
+  const cortePct = (corte / META_TOTAL) * 100;
+  const metaPct = (meta / META_TOTAL) * 100;
+  const faltam = Math.max(0, meta - depois);
+  const areaFraca = "Matemática"; // TODO: derivar de user_topic_profile no P1
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background text-foreground">
+      <div className="w-full max-w-md space-y-6">
+        <div className="text-center space-y-1">
+          <div className="flex items-center justify-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Sua bolinha andou</p>
+          </div>
+          <p className="text-3xl sm:text-4xl font-black tabular-nums">
+            {antes} → {depois}
+            <span className="text-base font-medium text-muted-foreground"> de {meta}</span>
+          </p>
+        </div>
+
+        {/* Barra de zonas */}
+        <div className="space-y-2">
+          <div className="relative h-3 rounded-full overflow-hidden bg-muted">
+            <div
+              className="absolute inset-y-0 left-0 bg-[hsl(var(--status-unavailable)/0.18)]"
+              style={{ width: `${cortePct}%` }}
+            />
+            <div
+              className="absolute inset-y-0 bg-[hsl(var(--status-draft)/0.22)]"
+              style={{ left: `${cortePct}%`, width: `${metaPct - cortePct}%` }}
+            />
+            <div
+              className="absolute inset-y-0 bg-[hsl(var(--status-analyzed)/0.22)]"
+              style={{ left: `${metaPct}%`, width: `${100 - metaPct}%` }}
+            />
+            {/* Bolinha animada antes → depois */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-5 rounded-full bg-foreground ring-2 ring-background shadow-md transition-all duration-1000 ease-out"
+              style={{ left: `${posDepoisPct}%` }}
+            />
+            {/* Marcador antes (fantasma) */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-3 rounded-full border-2 border-foreground/40"
+              style={{ left: `${posAntesPct}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] text-muted-foreground tabular-nums">
+            <span>0</span>
+            <span>{corte} corte</span>
+            <span>{meta} meta</span>
+            <span>{META_TOTAL}</span>
+          </div>
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground">
+          {faltam > 0
+            ? <>faltam <span className="font-bold text-foreground">{faltam}</span> pra zona segura</>
+            : <span className="font-bold text-foreground">Zona segura! Segue firme.</span>}
+        </p>
+
+        <PlacarShareCard nota={depois} areaFraca={areaFraca} nome={nome} />
+
+        <Button variant="ghost" className="w-full" onClick={onNext}>
+          Voltar pro Hoje
+        </Button>
+      </div>
+    </div>
+  );
+}
+
