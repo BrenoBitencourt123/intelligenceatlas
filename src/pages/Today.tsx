@@ -461,6 +461,7 @@ const Today = () => {
                           firstVisitHint={
                             linha.status === 'atual' && primeiraVisitaTrilha
                           }
+                          pulseRecent={nodouradoRecente === linha.no.id}
                           onClick={() => {
                             if (linha.status !== 'bloqueado') navigate(`/ufu/no/${linha.no.id}`);
                           }}
