@@ -280,7 +280,12 @@ export default function TrilhaNo() {
       dourado,
     });
 
+    setNodouradoNesta(dourado);
     setFinishedStep("wrap");
+    // Sinaliza pro /hoje pulsar a bolinha recém-dourada na volta.
+    if (dourado && noId) {
+      try { localStorage.setItem("ufu_no_recem_dourado", noId); } catch { /* ignore */ }
+    }
   };
 
   const advance = async () => {
