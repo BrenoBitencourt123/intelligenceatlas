@@ -171,8 +171,41 @@ export default function TrilhaNo() {
       const startIdx = (itensData as Item[]).findIndex((it) => it.nivel >= nivelAtual);
       setIdx(startIdx >= 0 ? startIdx : 0);
       setLoading(false);
+      startedAt.current = Date.now();
+
+      // evento: trilha_sessao_inicio (guard contra re-render)
+      if (!sessaoIniciadaRef.current) {
+        sessaoIniciadaRef.current = true;
+        trackUfu("trilha_sessao_inicio", {
+          no_id: noId,
+          disciplina: (noData as { disciplina?: string }).disciplina ?? null,
+          nivel_inicial: nivelAtual,
+        });
+      }
     })();
   }, [noId, user, navigate]);
+
+  // Abandono: se sair no meio (unmount, pagehide, beforeunload) sem finalizar → evento
+  useEffect(() => {
+    const dispararAbandono = () => {
+      if (sessaoIniciadaRef.current && !sessaoFinalizadaRef.current) {
+        trackUfu("trilha_sessao_abandono", {
+          no_id: noId,
+          idx,
+          total: itens.length,
+        });
+        // Evita re-disparo em pagehide + unmount
+        sessaoFinalizadaRef.current = true;
+      }
+    };
+    window.addEventListener("pagehide", dispararAbandono);
+    window.addEventListener("beforeunload", dispararAbandono);
+    return () => {
+      window.removeEventListener("pagehide", dispararAbandono);
+      window.removeEventListener("beforeunload", dispararAbandono);
+      dispararAbandono();
+    };
+  }, [noId, idx, itens.length]);
 
   const current = itens[idx];
 
