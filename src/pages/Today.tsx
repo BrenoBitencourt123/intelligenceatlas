@@ -42,6 +42,18 @@ const Today = () => {
   const [essayDays, setEssayDays] = useState<Set<number>>(new Set());
   const [goalOpen, setGoalOpen] = useState(false);
 
+  // Push click: se veio de push de streak em risco, registra e limpa a URL.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get('from');
+    if (from === 'push-streak') {
+      trackUfu('push_click', { tipo: 'streak_risk' });
+      params.delete('from');
+      const qs = params.toString();
+      window.history.replaceState({}, '', `/hoje${qs ? `?${qs}` : ''}`);
+    }
+  }, []);
+
   // Gate: se não fez o diagnóstico, manda pra lá
   useEffect(() => {
     if (!user) return;
