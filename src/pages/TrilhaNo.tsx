@@ -137,14 +137,14 @@ export default function TrilhaNo() {
         );
         const falta = anterioresIds.find((id) => !douradosSet.has(id));
         if (falta) {
-          toast.error("Termine o nó anterior primeiro.");
+          toast.error(VOCAB.fase.termineAnterior);
           navigate("/hoje");
           return;
         }
       }
 
       if (itErr || !itensData?.length) {
-        toast.error("Sem itens neste nó.");
+        toast.error(VOCAB.fase.semItens);
         navigate("/hoje");
         return;
       }
