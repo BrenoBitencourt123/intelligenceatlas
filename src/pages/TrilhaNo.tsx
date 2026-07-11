@@ -922,7 +922,7 @@ function TapScreen({
 }: {
   children: React.ReactNode;
   onNext: () => void;
-  tela?: "perfeito" | "streak" | "placar";
+  tela?: "perfeito" | "streak" | "placar" | "resultado";
 }) {
   const t0 = useRef(Date.now());
   const disparado = useRef(false);
