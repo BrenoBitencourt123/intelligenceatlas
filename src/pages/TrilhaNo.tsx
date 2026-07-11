@@ -297,7 +297,7 @@ export default function TrilhaNo() {
         updated_at: new Date().toISOString(),
       });
       if (isEndOfNo) {
-        await finalizarNo();
+        await finalizarNo(dourado);
         return;
       }
     }
