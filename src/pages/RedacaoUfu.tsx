@@ -796,9 +796,45 @@ function PaywallCard({ userEmail }: { userEmail: string }) {
         </Button>
       </div>
 
+      {UFU_CONFIG.PIX_LINK_AVULSA && (
+        <div className="rounded-lg border border-border p-4 space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Prefere Pix?
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <a
+                href={UFU_CONFIG.PIX_LINK_AVULSA}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackUfu("calc_completed", { evento: "paywall_pix_click", plano: "avulsa" })}
+              >
+                Avulsa R$ 9,90 no Pix
+              </a>
+            </Button>
+            {UFU_CONFIG.PIX_LINK_PACOTE5 && (
+              <Button asChild variant="outline" size="sm">
+                <a
+                  href={UFU_CONFIG.PIX_LINK_PACOTE5}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => trackUfu("calc_completed", { evento: "paywall_pix_click", plano: "pacote5" })}
+                >
+                  Pacote 5 R$ 39 no Pix
+                </a>
+              </Button>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Pagamento via Mercado Pago · crédito liberado em até 1h no horário
+            comercial — te confirmo no WhatsApp.
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-        <span>Pagamento seguro via Stripe (cartão) · Garantia incondicional de 7 dias · Crédito liberado automaticamente</span>
+        <span>Pagamento seguro · Garantia incondicional de 7 dias · Cartão libera na hora</span>
       </div>
 
 

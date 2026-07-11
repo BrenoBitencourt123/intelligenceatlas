@@ -7,6 +7,13 @@ export const UFU_CONFIG = {
   GRUPO_WHATSAPP_URL: "",
 
   CORRECOES_GRATIS: 1,
+
+  // Pix de contingência via link de pagamento (Mercado Pago) enquanto o
+  // Pix da Stripe não é liberado (é por convite + 60 dias de histórico).
+  // Deixe "" para esconder o bloco no paywall. Liberação manual:
+  // insert into ufu_creditos (user_id, qtd, motivo) values ('<id>', 1, 'pix');
+  PIX_LINK_AVULSA: "",
+  PIX_LINK_PACOTE5: "",
 } as const;
 
 /** URL wa.me com mensagem pré-preenchida (encodeURIComponent aplicado). */
