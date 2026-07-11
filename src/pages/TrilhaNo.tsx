@@ -335,9 +335,13 @@ export default function TrilhaNo() {
   const perfeito = stats.current.total > 0 && stats.current.primeira === stats.current.total;
   const placarMudou = placarDepois !== null && placarAntes !== placarDepois;
 
-  // Ordem: wrap → result → (perfect?) → streak → (placar?) → /hoje
+  // Ordem: wrap → (coroacao se dourou) → result → (perfect?) → streak → (placar?) → /hoje
   const advanceCelebracao = () => {
-    if (finishedStep === "wrap") return setFinishedStep("result");
+    if (finishedStep === "wrap") {
+      if (nodouradoNesta) return setFinishedStep("coroacao");
+      return setFinishedStep("result");
+    }
+    if (finishedStep === "coroacao") return setFinishedStep("result");
     if (finishedStep === "result") {
       if (perfeito) return setFinishedStep("perfect");
       return setFinishedStep("streak");
@@ -352,26 +356,30 @@ export default function TrilhaNo() {
 
   if (finishedStep === "wrap") {
     return (
-      <TapScreen onNext={advanceCelebracao}>
-        <div className="text-6xl mb-4">🏅</div>
-        <h1 className="text-3xl font-bold mb-2 text-center">Nó completo</h1>
-        <p className="text-muted-foreground mb-8 text-center">{no?.titulo}</p>
-        <Button size="lg" className="w-full max-w-sm" onClick={advanceCelebracao}>
-          VER MEU RESULTADO
-        </Button>
-      </TapScreen>
+      <WrapScreen
+        titulo={no?.titulo ?? ""}
+        onNext={advanceCelebracao}
+      />
+    );
+  }
+
+  if (finishedStep === "coroacao") {
+    return (
+      <CoroacaoScreen
+        titulo={no?.titulo ?? ""}
+        onNext={advanceCelebracao}
+      />
     );
   }
 
   if (finishedStep === "result") {
     const tempoMin = Math.max(1, Math.round((Date.now() - startedAt.current) / 60000));
-    const pct = stats.current.total ? Math.round((stats.current.primeira / stats.current.total) * 100) : 0;
+    // Só números que crescem — % de acerto vai pros eventos (métrica), não pra tela (celebração).
     return (
       <TapScreen onNext={advanceCelebracao} tela="resultado">
-
         <div className="grid grid-cols-3 gap-4 w-full max-w-md mb-8">
-          <Stat label="itens" value={String(itens.length)} />
-          <Stat label="1ª tentativa" value={`${pct}%`} />
+          <Stat label="acertos de primeira" value={String(stats.current.primeira)} />
+          <Stat label="degraus subidos" value={String(itens.length)} />
           <Stat label="tempo" value={`${tempoMin}min`} />
         </div>
         <h2 className="text-2xl font-bold text-center mb-8 max-w-md">
