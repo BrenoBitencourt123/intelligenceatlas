@@ -157,19 +157,10 @@ const Today = () => {
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-foreground">Redação</h3>
-                {!isFree && (
-                  <span className="text-xs text-muted-foreground">{usedEssays}/{monthlyLimit}</span>
-                )}
               </div>
-
-              {!isFree && !userStats.isLoading && (
-                <div className="space-y-1">
-                  <Progress value={usagePercentage} className="h-1" />
-                  <p className="text-xs text-muted-foreground">
-                    {usedEssays} de {monthlyLimit} correções este mês
-                  </p>
-                </div>
-              )}
+              <p className="text-xs text-muted-foreground">
+                Correção nos 5 critérios oficiais da banca DIRPS — a primeira é grátis.
+              </p>
 
               <Button onClick={() => navigate('/redacao-ufu')} className="w-full gap-2">
                 {dayPlan.isEssayDay ? 'Escrever Redação' : 'Praticar Redação'}
@@ -195,33 +186,6 @@ const Today = () => {
             </div>
           )}
 
-          {/* ── Card PRO (free users) ── */}
-          {isFree && !freemium.isLoading && (
-            <Card className="border-amber-500/30 bg-amber-500/5">
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Crown className="h-4 w-4 text-amber-500 shrink-0" />
-                  <p className="text-sm font-semibold text-foreground">
-                    {freemium.isWelcomeBonus
-                      ? `Bônus de boas-vindas ativo · ${freemium.essaysRemainingThisWeek} correção restante`
-                      : `Plano grátis · ${freemium.questionsRemainingToday} questões hoje`}
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  No PRO: questões ilimitadas, correção de redação e plano diário personalizado.
-                </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full gap-2 border-amber-500/40 hover:bg-amber-500/10"
-                  onClick={() => navigate('/plano')}
-                >
-                  <Crown className="h-3.5 w-3.5 text-amber-500" />
-                  Ver plano PRO
-                </Button>
-              </CardContent>
-            </Card>
-          )}
 
         </div>
       </div>
