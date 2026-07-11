@@ -904,16 +904,36 @@ function LigarView({ payload, locked, phase, onCorrect, onWrong }: ViewProps) {
 
 const DIAS_STREAK = ["D", "S", "T", "Q", "Q", "S", "S"];
 
-function TapScreen({ children, onNext }: { children: React.ReactNode; onNext: () => void }) {
+function TapScreen({
+  children,
+  onNext,
+  tela,
+}: {
+  children: React.ReactNode;
+  onNext: () => void;
+  tela?: "perfeito" | "streak" | "placar";
+}) {
+  const t0 = useRef(Date.now());
+  const disparado = useRef(false);
+  const handle = () => {
+    if (tela && !disparado.current) {
+      disparado.current = true;
+      const dur = Date.now() - t0.current;
+      if (dur < 500) trackUfu("celebracao_pulada", { tela });
+      else trackUfu("celebracao_vista", { tela, duracao_ms: dur });
+    }
+    onNext();
+  };
   return (
     <div
-      onClick={onNext}
+      onClick={handle}
       className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background text-foreground cursor-pointer select-none"
     >
       {children}
     </div>
   );
 }
+
 
 function PerfectScreen({ total, onNext }: { total: number; onNext: () => void }) {
   useEffect(() => {
