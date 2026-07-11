@@ -36,7 +36,7 @@ const OPCOES: { id: Nivel; titulo: string; sub: string; dourados: number }[] = [
 ];
 
 export default function TrilhaDiagnostico() {
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [nos, setNos] = useState<TrilhaNo[] | null>(null);
   const [respostas, setRespostas] = useState<Record<string, Nivel>>({});
