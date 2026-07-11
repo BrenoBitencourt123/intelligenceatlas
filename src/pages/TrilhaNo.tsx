@@ -1068,6 +1068,19 @@ function PlacarScreen({
   const faltam = Math.max(0, meta - depois);
   const areaFraca = "Matemática"; // TODO: derivar de user_topic_profile no P1
 
+  const t0 = useRef(Date.now());
+  const disparado = useRef(false);
+  const handleNext = () => {
+    if (!disparado.current) {
+      disparado.current = true;
+      const dur = Date.now() - t0.current;
+      if (dur < 500) trackUfu("celebracao_pulada", { tela: "placar" });
+      else trackUfu("celebracao_vista", { tela: "placar", duracao_ms: dur });
+    }
+    onNext();
+  };
+
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background text-foreground">
       <div className="w-full max-w-md space-y-6">
