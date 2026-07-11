@@ -1,12 +1,11 @@
-import { CalendarCheck, ListChecks, PenLine } from 'lucide-react';
+import { Map, PenLine } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProfileMenu } from './ProfileMenu';
 
 const navItems = [
-  { title: 'Hoje', path: '/hoje', icon: CalendarCheck },
-  { title: 'Questões', path: '/objetivas', icon: ListChecks },
+  { title: 'Trilha', path: '/hoje', icon: Map },
   { title: 'Redação', path: '/redacao-ufu', icon: PenLine },
 ];
 
