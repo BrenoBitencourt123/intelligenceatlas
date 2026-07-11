@@ -24,6 +24,7 @@ type TrilhaNo = {
   titulo: string;
   descricao: string | null;
   nivel_max: number;
+  ordem: number;
 };
 type Progresso = { no_id: string; nivel_atual: number; dourado: boolean };
 
