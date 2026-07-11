@@ -7,7 +7,7 @@ const supabase = supabaseTyped as unknown as {
 };
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { X, Check, Flame, Sparkles, Trophy } from "lucide-react";
+import { X, Check, Flame, Sparkles, Trophy, Snowflake } from "lucide-react";
 import { toast } from "sonner";
 import { PROPOSTAS_UFU } from "@/data/ufu/redacao";
 import { cn } from "@/lib/utils";
@@ -330,7 +330,11 @@ export default function TrilhaNo() {
   if (finishedStep === "streak") {
     // evento: celebracao_vista { tipo: 'streak' }
     return (
-      <StreakScreen streak={studyStats.streak} onNext={advanceCelebracao} />
+      <StreakScreen
+        streak={studyStats.streak}
+        frozenDaysThisWeek={studyStats.frozenDaysThisWeek}
+        onNext={advanceCelebracao}
+      />
     );
   }
 
@@ -878,8 +882,35 @@ function PerfectScreen({ total, onNext }: { total: number; onNext: () => void })
   );
 }
 
-function StreakScreen({ streak, onNext }: { streak: number; onNext: () => void }) {
-  const todayDow = new Date().getDay();
+function StreakScreen({
+  streak,
+  frozenDaysThisWeek,
+  onNext,
+}: {
+  streak: number;
+  frozenDaysThisWeek: string[];
+  onNext: () => void;
+}) {
+  const now = new Date();
+  const todayDow = now.getDay();
+  const jsDayToDate = (dow: number) => {
+    // dow: 0=domingo..6=sábado. Reconstroi a data desta semana (semana comum baseada em domingo).
+    const d = new Date(now);
+    d.setDate(now.getDate() - todayDow + dow);
+    return d.toISOString().split("T")[0];
+  };
+  const nomeDia: Record<number, string> = {
+    0: "domingo",
+    1: "segunda",
+    2: "terça",
+    3: "quarta",
+    4: "quinta",
+    5: "sexta",
+    6: "sábado",
+  };
+  const frozenSet = new Set(frozenDaysThisWeek);
+  const freezeDow = [0, 1, 2, 3, 4, 5, 6].find((d) => frozenSet.has(jsDayToDate(d)));
+
   return (
     <TapScreen onNext={onNext}>
       <div className="flex items-center gap-2 mb-2 animate-in zoom-in-50 duration-500">
@@ -888,10 +919,13 @@ function StreakScreen({ streak, onNext }: { streak: number; onNext: () => void }
       </div>
       <p className="text-lg text-muted-foreground mb-8">dias seguidos</p>
 
-      <div className="flex items-center justify-between gap-1 w-full max-w-xs mb-6">
+      <div className="flex items-center justify-between gap-1 w-full max-w-xs mb-4">
         {DIAS_STREAK.map((letra, dow) => {
           const isToday = dow === todayDow;
-          const isDone = dow <= todayDow; // aproximação visual
+          const dateStr = jsDayToDate(dow);
+          const isFrozen = frozenSet.has(dateStr);
+          const isPast = dow <= todayDow;
+          const isDone = isPast && !isFrozen;
           return (
             <div key={dow} className="flex flex-col items-center gap-1.5 flex-1">
               <span
@@ -905,18 +939,31 @@ function StreakScreen({ streak, onNext }: { streak: number; onNext: () => void }
               <div
                 className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center border",
-                  isDone
+                  isFrozen
+                    ? "bg-sky-100 border-sky-300 text-sky-700 dark:bg-sky-900/40 dark:border-sky-700 dark:text-sky-200"
+                    : isDone
                     ? "bg-foreground text-background border-foreground"
                     : "border-border",
                   isToday && "animate-in zoom-in-50 duration-500",
                 )}
               >
-                {isDone && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                {isFrozen ? (
+                  <Snowflake className="h-3.5 w-3.5" />
+                ) : isDone ? (
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                ) : null}
               </div>
             </div>
           );
         })}
       </div>
+
+      {freezeDow !== undefined && (
+        <p className="text-xs text-sky-700 dark:text-sky-300 mb-4 text-center">
+          Te segurei na {nomeDia[freezeDow]}. Tamo junto.
+        </p>
+      )}
+
       <p className="text-xs text-muted-foreground">toque pra continuar</p>
     </TapScreen>
   );

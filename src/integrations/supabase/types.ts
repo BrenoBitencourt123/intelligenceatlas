@@ -264,6 +264,27 @@ export type Database = {
         }
         Relationships: []
       }
+      push_log: {
+        Row: {
+          id: string
+          sent_at: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          sent_at?: string
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          sent_at?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -509,6 +530,30 @@ export type Database = {
           topics?: string[] | null
           user_id?: string
           year?: number
+        }
+        Relationships: []
+      }
+      streak_freezes: {
+        Row: {
+          created_at: string
+          id: string
+          iso_week: string
+          used_on: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          iso_week: string
+          used_on: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          iso_week?: string
+          used_on?: string
+          user_id?: string
         }
         Relationships: []
       }
