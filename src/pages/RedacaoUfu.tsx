@@ -754,7 +754,7 @@ export default function RedacaoUfu() {
                 </div>
               </div>
 
-              <div className="space-y-4 lg:sticky lg:top-24">
+              <div className="space-y-4">
                 <section className="bg-card rounded-xl border border-border shadow-card divide-y divide-border overflow-hidden">
                   <p className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     O que mudou (e por quê)
