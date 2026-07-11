@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Target, ArrowRight } from 'lucide-react';
+import { Target, ArrowRight, Flag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CURSOS_UFU, COTAS, TOTAL_QUESTOES, type CotaId } from '@/data/ufu/vestibular';
+import { cn } from '@/lib/utils';
 
 /**
- * Renders the student's target for the UFU 2ª fase:
- * meta = corte × 1.22 (comfort margin over the official cutoff).
- * Splits the 0..TOTAL_QUESTOES scale in 3 zones (abaixo do corte, no corte, meta).
+ * Placar vivo (nível Duolingo): barra gráfica com avatar do aluno,
+ * pins "CORTE" e "META" pendurados, sem legenda tricolor embaixo.
+ * meta = corte × 1.22.
  */
 export function GoalCard() {
   const navigate = useNavigate();
@@ -18,6 +19,13 @@ export function GoalCard() {
 
   const cursoId = (profile as any)?.curso_ufu as string | undefined;
   const cotaId = (profile as any)?.cota_ufu as CotaId | undefined;
+  const placarEstimado = ((profile as any)?.placar_estimado ?? null) as number | null;
+  const placarFonte = ((profile as any)?.placar_fonte ?? null) as
+    | 'quiz'
+    | 'autoavaliacao'
+    | 'trilha'
+    | 'simulado'
+    | null;
 
   const info = useMemo(() => {
     if (!cursoId || !cotaId) return null;
@@ -29,7 +37,6 @@ export function GoalCard() {
     return { curso, cota, corte, meta };
   }, [cursoId, cotaId]);
 
-  // No course selected → CTA to onboarding
   if (!cursoId || !cotaId) {
     return (
       <Card className="border-border/50 shadow-sm">
@@ -57,13 +64,13 @@ export function GoalCard() {
 
   return (
     <Card className="border-border/50 shadow-sm">
-      <CardContent className="p-6 space-y-4">
+      <CardContent className="p-6 space-y-5">
         <div className="space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
             Sua meta na UFU
           </p>
-          <h3 className="text-xl font-bold text-foreground">{curso.nome}</h3>
-          <p className="text-sm text-muted-foreground">
+          <h3 className="text-2xl font-black text-foreground leading-tight">{curso.nome}</h3>
+          <p className="text-sm font-medium text-muted-foreground">
             {curso.campus} · {curso.turno} · {cota?.label}
           </p>
         </div>
@@ -74,100 +81,185 @@ export function GoalCard() {
             Vamos usar a média histórica assim que a base estiver classificada.
           </p>
         ) : (
-          <>
-            {/* Zones bar with animated position marker.
-                No simulado data yet → marker at 0 with helper text. */}
-            {(() => {
-              const posicaoAtual = 0; // TODO: hook up to último simulado quando existir
-              const temDados = false;
-              const posPct = (posicaoAtual / TOTAL_QUESTOES) * 100;
-              return (
-                <div className="space-y-2">
-                  <div className="relative h-2.5 rounded-full overflow-hidden bg-muted">
-                    {/* Zona abaixo — vermelho suave */}
-                    <div
-                      className="absolute inset-y-0 left-0 bg-[hsl(var(--status-unavailable)/0.18)]"
-                      style={{ width: `${(corte / TOTAL_QUESTOES) * 100}%` }}
-                    />
-                    {/* Zona no corte — âmbar */}
-                    <div
-                      className="absolute inset-y-0 bg-[hsl(var(--status-draft)/0.22)]"
-                      style={{
-                        left: `${(corte / TOTAL_QUESTOES) * 100}%`,
-                        width: `${((meta - corte) / TOTAL_QUESTOES) * 100}%`,
-                      }}
-                    />
-                    {/* Zona meta — verde */}
-                    <div
-                      className="absolute inset-y-0 bg-[hsl(var(--status-analyzed)/0.22)]"
-                      style={{
-                        left: `${(meta / TOTAL_QUESTOES) * 100}%`,
-                        width: `${((TOTAL_QUESTOES - meta) / TOTAL_QUESTOES) * 100}%`,
-                      }}
-                    />
-                    {/* Marcos verticais: corte e meta */}
-                    <div
-                      className="absolute inset-y-0 w-px bg-[hsl(var(--status-draft))]"
-                      style={{ left: `${(corte / TOTAL_QUESTOES) * 100}%` }}
-                    />
-                    <div
-                      className="absolute inset-y-0 w-px bg-[hsl(var(--status-analyzed))]"
-                      style={{ left: `${(meta / TOTAL_QUESTOES) * 100}%` }}
-                    />
-                    {/* Marcador da posição atual */}
-                    <motion.div
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-4 w-4 rounded-full bg-foreground ring-2 ring-background shadow-sm"
-                      initial={{ left: '0%', opacity: 0, scale: 0.4 }}
-                      animate={{ left: `${posPct}%`, opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-                    />
+          (() => {
+            const posicao = placarEstimado ?? 0;
+            const temDados = placarEstimado !== null;
+            const posPct = Math.min(100, Math.max(0, (posicao / TOTAL_QUESTOES) * 100));
+            const cortePct = (corte / TOTAL_QUESTOES) * 100;
+            const metaPct = (meta / TOTAL_QUESTOES) * 100;
+            const zona: 'fora' | 'risco' | 'segura' =
+              posicao >= meta ? 'segura' : posicao >= corte ? 'risco' : 'fora';
+            const faltam = Math.max(0, meta - posicao);
+            const fraseCoach = !temDados
+              ? 'Faça seu primeiro treino para ver sua posição.'
+              : zona === 'segura'
+              ? 'Zona segura. Segue firme — cada acerto amplia sua folga.'
+              : zona === 'risco'
+              ? `Você já cruzou o corte. Faltam ${faltam} pra zona segura.`
+              : `Faltam ${faltam} pra chegar na zona segura. Um treino por vez.`;
+
+            return (
+              <div className="space-y-6">
+                {/* Placar numérico */}
+                <div className="flex items-baseline justify-between gap-3">
+                  <div className="flex items-baseline gap-1.5">
+                    <span
+                      className={cn(
+                        'text-5xl font-black tabular-nums leading-none',
+                        zona === 'segura' && 'text-[hsl(var(--status-analyzed))]',
+                        zona === 'risco' && 'text-[hsl(var(--status-draft))]',
+                        zona === 'fora' && 'text-foreground',
+                      )}
+                    >
+                      {posicao}
+                    </span>
+                    <span className="text-lg font-bold text-muted-foreground tabular-nums">
+                      /{TOTAL_QUESTOES}
+                    </span>
                   </div>
-                  <div className="flex justify-between text-[10px] text-muted-foreground tabular-nums">
+                  <span
+                    className={cn(
+                      'text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md',
+                      zona === 'segura' &&
+                        'bg-[hsl(var(--status-analyzed)/0.15)] text-[hsl(var(--status-analyzed))]',
+                      zona === 'risco' &&
+                        'bg-[hsl(var(--status-draft)/0.18)] text-[hsl(var(--status-draft))]',
+                      zona === 'fora' &&
+                        'bg-[hsl(var(--status-unavailable)/0.15)] text-[hsl(var(--status-unavailable))]',
+                    )}
+                  >
+                    {zona === 'segura'
+                      ? 'zona segura'
+                      : zona === 'risco'
+                      ? 'zona de risco'
+                      : 'fora do corte'}
+                    {placarFonte === 'autoavaliacao' && ' · estimado'}
+                  </span>
+                </div>
+
+                {/* Trilha gamificada */}
+                <div className="relative pt-14 pb-8 px-1">
+                  {/* Pin CORTE (flutuando acima) */}
+                  <div
+                    className="absolute -top-0 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+                    style={{ left: `${cortePct}%` }}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25, duration: 0.35 }}
+                      className="bg-background border-2 border-[hsl(var(--status-draft))] px-2 py-0.5 rounded-md shadow-sm"
+                    >
+                      <span className="text-[10px] font-black tabular-nums text-[hsl(var(--status-draft))]">
+                        {corte} CORTE
+                      </span>
+                    </motion.div>
+                    <div className="w-0.5 h-8 bg-[hsl(var(--status-draft)/0.5)] mt-0.5" />
+                  </div>
+
+                  {/* Pin META (flutuando acima, destacado) */}
+                  <div
+                    className="absolute -top-0 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+                    style={{ left: `${metaPct}%` }}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4, duration: 0.35 }}
+                      className="bg-[hsl(var(--status-analyzed))] px-2.5 py-1 rounded-full shadow-md flex items-center gap-1"
+                    >
+                      <Flag className="h-3 w-3 text-background" strokeWidth={3} />
+                      <span className="text-[10px] font-black tabular-nums text-background">
+                        {meta} META
+                      </span>
+                    </motion.div>
+                    <div className="w-0.5 h-8 bg-[hsl(var(--status-analyzed))] mt-0.5" />
+                  </div>
+
+                  {/* Barra 3D com 3 zonas */}
+                  <div className="relative h-5 w-full rounded-full flex overflow-hidden border border-border shadow-inner bg-muted">
+                    <motion.div
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                      style={{ transformOrigin: 'left' }}
+                      className="flex w-full h-full"
+                    >
+                      <div
+                        className="h-full bg-[hsl(var(--status-unavailable)/0.5)] relative"
+                        style={{ width: `${cortePct}%` }}
+                      >
+                        <div
+                          className="absolute inset-0 opacity-40"
+                          style={{
+                            background:
+                              'repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--background) / 0.6) 6px 8px)',
+                          }}
+                        />
+                      </div>
+                      <div
+                        className="h-full bg-[hsl(var(--status-draft)/0.7)]"
+                        style={{ width: `${metaPct - cortePct}%` }}
+                      />
+                      <div
+                        className="h-full bg-[hsl(var(--status-analyzed))]"
+                        style={{ width: `${100 - metaPct}%` }}
+                      />
+                    </motion.div>
+                  </div>
+
+                  {/* Avatar do aluno com número */}
+                  <motion.div
+                    className="absolute top-1/2 mt-3 -translate-x-1/2 -translate-y-1/2 z-10"
+                    initial={{ left: '0%', opacity: 0, scale: 0.6, y: -20 }}
+                    animate={{ left: `${posPct}%`, opacity: 1, scale: 1, y: 0 }}
+                    transition={{ delay: 0.7, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <div className="relative flex flex-col items-center">
+                      <div
+                        className={cn(
+                          'w-11 h-11 bg-background rounded-2xl border-[3px] shadow-lg flex items-center justify-center rotate-[-4deg] hover:rotate-0 transition-transform',
+                          zona === 'segura' && 'border-[hsl(var(--status-analyzed))]',
+                          zona === 'risco' && 'border-[hsl(var(--status-draft))]',
+                          zona === 'fora' && 'border-[hsl(var(--status-unavailable))]',
+                        )}
+                      >
+                        <span className="text-sm font-black tabular-nums text-foreground">
+                          {posicao}
+                        </span>
+                      </div>
+                      <div
+                        className={cn(
+                          'w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] -mt-0.5',
+                          zona === 'segura' && 'border-t-[hsl(var(--status-analyzed))]',
+                          zona === 'risco' && 'border-t-[hsl(var(--status-draft))]',
+                          zona === 'fora' && 'border-t-[hsl(var(--status-unavailable))]',
+                        )}
+                      />
+                    </div>
+                  </motion.div>
+
+                  {/* Escala 0 / 65 */}
+                  <div className="absolute -bottom-1 left-0 right-0 flex justify-between text-[10px] font-bold text-muted-foreground tabular-nums px-0.5">
                     <span>0</span>
-                    <span>{corte} corte</span>
-                    <span>{meta} meta</span>
                     <span>{TOTAL_QUESTOES}</span>
                   </div>
-                  {!temDados && (
-                    <p className="text-xs text-muted-foreground pt-1">
-                      Faça seu primeiro treino para ver sua posição.
-                    </p>
-                  )}
                 </div>
-              );
-            })()}
 
-            {/* Zones legend */}
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-sm bg-[hsl(var(--status-unavailable)/0.5)]" />
-                  <span className="text-muted-foreground">Fora do corte</span>
-                </div>
-                <p className="font-medium text-foreground tabular-nums">0 – {corte - 1}</p>
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-sm bg-[hsl(var(--status-draft)/0.6)]" />
-                  <span className="text-muted-foreground">Zona de risco</span>
-                </div>
-                <p className="font-medium text-foreground tabular-nums">{corte} – {meta - 1}</p>
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-sm bg-[hsl(var(--status-analyzed)/0.7)]" />
-                  <span className="text-muted-foreground">Zona segura</span>
-                </div>
-                <p className="font-medium text-foreground tabular-nums">{meta} – {TOTAL_QUESTOES}</p>
-              </div>
-            </div>
+                {/* Frase de coach */}
+                <p className="text-sm font-medium text-foreground text-center leading-snug">
+                  {fraseCoach}
+                </p>
 
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Passar no corte não garante vaga: pra cada vaga, ~6 candidatos passam pra 2ª fase.
-              Por isso sua meta é {meta} acertos — o corte ({corte}) mais uma margem de segurança
-              pra ficar na frente na classificação final.
-            </p>
-          </>
+                {/* Contexto — por que a meta é maior que o corte */}
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Passar no corte não garante vaga: pra cada vaga, ~6 candidatos passam pra 2ª
+                  fase. Por isso sua meta é {meta} acertos — o corte ({corte}) mais uma margem
+                  pra ficar na frente na classificação final.
+                </p>
+              </div>
+            );
+          })()
         )}
       </CardContent>
     </Card>
