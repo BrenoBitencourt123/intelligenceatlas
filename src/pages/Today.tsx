@@ -185,7 +185,7 @@ const Today = () => {
         ? 'zona segura'
         : acertos >= corte
         ? 'zona de risco'
-        : 'abaixo do corte';
+        : 'fora do corte';
     return { curso, cota, corte, meta, acertos, zona };
   }, [cursoId, cotaId]);
 
@@ -301,7 +301,7 @@ const Today = () => {
                           {no.titulo}
                         </p>
                         <p className="text-[11px] uppercase tracking-wider text-muted-foreground mt-0.5">
-                          {no.disciplina}
+                          {no.disciplina === 'redacao' ? 'Redação' : no.disciplina}
                         </p>
                       </div>
                       {i < nos.length - 1 && <div className="h-6 w-px bg-border mt-1" />}
