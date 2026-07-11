@@ -353,19 +353,6 @@ const Today = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  {!stats.isLoading && (
-                    <span className="flex items-center gap-1 text-sm">
-                      <Flame className={cn('h-3.5 w-3.5', streakClass)} />
-                      <span
-                        className={cn(
-                          'tabular-nums',
-                          stats.streak >= 1 ? 'text-foreground font-semibold' : 'text-muted-foreground',
-                        )}
-                      >
-                        {stats.streak}
-                      </span>
-                    </span>
-                  )}
                   <ChevronDown
                     className={cn('h-4 w-4 text-muted-foreground transition-transform', goalOpen && 'rotate-180')}
                   />
