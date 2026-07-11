@@ -8,10 +8,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudyStats } from '@/hooks/useStudyStats';
 import { supabase as supabaseTyped } from '@/integrations/supabase/client';
-import { ArrowRight, Flame, ChevronDown, PenLine, Check, Lock, Sparkles, Clock } from 'lucide-react';
+import { ArrowRight, ChevronDown, Check, Lock, Sparkles, Clock } from 'lucide-react';
 import { InstallBanner } from '@/components/pwa/InstallBanner';
 import { NotificationBanner } from '@/components/pwa/NotificationBanner';
 import { GoalCard } from '@/components/ufu/GoalCard';
+import { WeekRewardOverlay } from '@/components/ufu/WeekRewardOverlay';
 import { CURSOS_UFU, COTAS, TOTAL_QUESTOES, type CotaId } from '@/data/ufu/vestibular';
 import { cn } from '@/lib/utils';
 import { trackUfu } from '@/lib/ufu/track';
@@ -30,7 +31,6 @@ type TrilhaNo = {
 };
 type Progresso = { no_id: string; nivel_atual: number; dourado: boolean };
 
-const DIAS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 const isEssayDay = () => new Date().getDay() === 6; // sábado
 
 const DISC_LABEL: Record<string, string> = {
@@ -279,14 +279,22 @@ const Today = () => {
 
   const todayDow = new Date().getDay();
 
-  // Fogo do streak — cor por nível
-  const streakClass = stats.isLoading
-    ? 'text-muted-foreground'
-    : stats.streak >= 3
-    ? 'text-orange-500 animate-pulse'
-    : stats.streak >= 1
-    ? 'text-orange-500'
-    : 'text-muted-foreground';
+  // Recompensa da semana — aparece uma vez por dia quando hoje já foi feito.
+  // Duolingo-style: tela cheia, ~2s de dopamina, some.
+  const [showReward, setShowReward] = useState(false);
+  useEffect(() => {
+    if (stats.isLoading) return;
+    if (!weekDone.has(todayDow)) return;
+    const key = `ufu_semana_recompensa_${new Date().toISOString().slice(0, 10)}`;
+    try {
+      if (localStorage.getItem(key)) return;
+      setShowReward(true);
+      localStorage.setItem(key, '1');
+    } catch {
+      /* storage bloqueado — skip */
+    }
+  }, [stats.isLoading, weekDone, todayDow]);
+
 
   return (
     <MainLayout>
@@ -458,70 +466,20 @@ const Today = () => {
             )}
           </section>
 
-          {/* ── Calendário da semana + streak ── */}
-          <section className="pt-2 space-y-2">
-            <div className="flex items-center justify-between px-1">
-              <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Sua semana
-              </h3>
-              {!stats.isLoading && (
-                <span className="flex items-center gap-1.5 text-sm">
-                  <Flame className={cn('h-4 w-4', streakClass)} />
-                  <span
-                    className={cn(
-                      'tabular-nums font-semibold',
-                      stats.streak >= 1 ? 'text-foreground' : 'text-muted-foreground',
-                    )}
-                  >
-                    {stats.streak}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {stats.streak === 1 ? 'dia seguido' : 'dias seguidos'}
-                  </span>
-                </span>
-              )}
-            </div>
-            <div className="flex items-center justify-between gap-1 px-1">
-              {DIAS.map((letra, dow) => {
-                const done = weekDone.has(dow);
-                const essay = essayDays.has(dow);
-                const isToday = dow === todayDow;
-                return (
-                  <div key={dow} className="flex flex-col items-center gap-1.5 flex-1">
-                    <span
-                      className={cn(
-                        'text-[10px] uppercase tracking-wider',
-                        isToday ? 'text-foreground font-bold' : 'text-muted-foreground',
-                      )}
-                    >
-                      {letra}
-                    </span>
-                    <div
-                      className={cn(
-                        'w-8 h-8 rounded-full flex items-center justify-center border',
-                        done
-                          ? 'bg-foreground text-background border-foreground'
-                          : isToday
-                          ? 'border-foreground border-dashed'
-                          : 'border-border',
-                      )}
-                    >
-                      {essay ? (
-                        <PenLine className="h-3.5 w-3.5" />
-                      ) : done ? (
-                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
         </div>
       </div>
+      {showReward && (
+        <WeekRewardOverlay
+          streak={stats.streak}
+          weekDone={weekDone}
+          essayDays={essayDays}
+          onClose={() => setShowReward(false)}
+        />
+      )}
     </MainLayout>
   );
 };
+
 
 function TrilhaNoDot({
   no,
