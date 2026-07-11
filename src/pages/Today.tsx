@@ -64,12 +64,20 @@ const Today = () => {
 
   // "COMEÇAR AQUI" — mostra só na primeira visita à trilha
   const [primeiraVisitaTrilha, setPrimeiraVisitaTrilha] = useState(false);
+  // Bolinha recém-dourada faz um pulso único ao voltar — costura a memória
+  // "eu vi dourar → aqui está dourado".
+  const [nodouradoRecente, setNodouradoRecente] = useState<string | null>(null);
   useEffect(() => {
     try {
       const visto = localStorage.getItem('ufu_trilha_visto');
       if (!visto) {
         setPrimeiraVisitaTrilha(true);
         localStorage.setItem('ufu_trilha_visto', new Date().toISOString());
+      }
+      const recem = localStorage.getItem('ufu_no_recem_dourado');
+      if (recem) {
+        setNodouradoRecente(recem);
+        localStorage.removeItem('ufu_no_recem_dourado');
       }
     } catch {
       /* storage bloqueado — sem tag, sem crise */
