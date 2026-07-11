@@ -458,8 +458,29 @@ const Today = () => {
             )}
           </section>
 
-          {/* ── Calendário da semana ── */}
-          <section className="pt-2">
+          {/* ── Calendário da semana + streak ── */}
+          <section className="pt-2 space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Sua semana
+              </h3>
+              {!stats.isLoading && (
+                <span className="flex items-center gap-1.5 text-sm">
+                  <Flame className={cn('h-4 w-4', streakClass)} />
+                  <span
+                    className={cn(
+                      'tabular-nums font-semibold',
+                      stats.streak >= 1 ? 'text-foreground' : 'text-muted-foreground',
+                    )}
+                  >
+                    {stats.streak}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {stats.streak === 1 ? 'dia seguido' : 'dias seguidos'}
+                  </span>
+                </span>
+              )}
+            </div>
             <div className="flex items-center justify-between gap-1 px-1">
               {DIAS.map((letra, dow) => {
                 const done = weekDone.has(dow);
