@@ -153,7 +153,7 @@ export function GoalCard() {
                         'text-5xl font-black tabular-nums leading-none',
                         zona === 'segura' && 'text-[hsl(var(--status-analyzed))]',
                         zona === 'risco' && 'text-[hsl(var(--status-draft))]',
-                        zona === 'fora' && 'text-foreground',
+                        zona === 'fora' && 'text-[hsl(var(--status-unavailable))]',
                       )}
                     >
                       {posicao}
