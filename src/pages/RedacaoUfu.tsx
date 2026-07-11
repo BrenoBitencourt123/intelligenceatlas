@@ -242,111 +242,94 @@ export default function RedacaoUfu() {
 
   const pctLinhas = Math.min(100, (analise?.totalScore ?? 0) / REDACAO_TOTAL * 100);
 
+  // status pill dinâmico
+  const statusPill = analise
+    ? analise.eliminado
+      ? { label: "Eliminado", tone: "danger" as const }
+      : { label: "Corrigida", tone: "ok" as const }
+    : text.trim().length === 0
+      ? { label: "Em rascunho", tone: "neutral" as const }
+      : linhasOk && !!genero
+        ? { label: "Pronto pra corrigir", tone: "ok" as const }
+        : { label: "Em rascunho", tone: "neutral" as const };
+
   return (
     <MainLayout>
-      {/* ─── Header editorial ─── */}
-      <header className="border-b border-border bg-background">
-        <div className="container max-w-6xl mx-auto px-4 py-5">
-          <div className="flex items-start justify-between gap-6 flex-wrap">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  Banca UFU · DIRPS
-                </span>
-                <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
-                <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  80 pontos · 34 linhas
-                </span>
+      <main className="container mx-auto px-4 py-8 sm:py-10">
+        <div className="max-w-2xl mx-auto">
+          {/* ─── Quest header ─── */}
+          <header className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-foreground text-background rounded-xl flex items-center justify-center font-extrabold text-base sm:text-lg shrink-0">
+                UFU
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-                Corretor de redação UFU
-              </h1>
-              <p className="text-sm text-muted-foreground max-w-xl leading-relaxed">
-                Rubrica oficial da DIRPS, faixas reais (a banca não dá 17) e o caminho para subir uma faixa em cada critério.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              {saldo !== null && (
-                <div className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium tabular-nums">
-                  <span className="text-foreground">{saldo}</span>
-                  <span className="text-muted-foreground ml-1">
-                    {saldo === 1 ? "correção" : "correções"}
-                  </span>
-                </div>
-              )}
-              {analise && !analise.eliminado && (
-                <div className="rounded-xl border border-border bg-card px-4 py-2 flex items-baseline gap-1 tabular-nums">
-                  <span className="text-2xl font-extrabold text-foreground">{analise.totalScore}</span>
-                  <span className="text-sm text-muted-foreground">/{REDACAO_TOTAL}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="container max-w-6xl mx-auto px-4 py-8">
-        <div className="grid gap-6 lg:grid-cols-[1fr_400px] items-start">
-          {/* ═══ Coluna esquerda ═══ */}
-          <div className="space-y-6">
-            {/* ─── Setup: proposta + gênero + tema ─── */}
-            <section className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
-              <div className="px-5 pt-5 pb-4 border-b border-border/60">
-                <div className="flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center">1</span>
-                  <h2 className="text-sm font-bold text-foreground">Configure a proposta</h2>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 ml-8">
-                  O gênero é obrigatório — fugir dele zera na hora.
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-extrabold tracking-tight uppercase leading-tight">
+                  Missão Redação
+                </h1>
+                <p className="text-muted-foreground text-xs sm:text-sm font-medium truncate">
+                  Rubrica oficial DIRPS · 80 pontos
                 </p>
               </div>
+            </div>
+            <div className="text-right shrink-0">
+              <span className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                Status
+              </span>
+              <span
+                className={cn(
+                  "text-[11px] sm:text-xs font-bold px-2.5 py-1 rounded-full border tabular-nums",
+                  statusPill.tone === "ok" &&
+                    "text-status-analyzed border-status-analyzed/40 bg-status-analyzed/10",
+                  statusPill.tone === "danger" &&
+                    "text-destructive border-destructive/40 bg-destructive/10",
+                  statusPill.tone === "neutral" &&
+                    "text-foreground border-border bg-muted",
+                )}
+              >
+                {statusPill.label}
+                {saldo !== null && !analise && (
+                  <span className="text-muted-foreground font-medium ml-2">
+                    · {saldo} {saldo === 1 ? "correção" : "correções"}
+                  </span>
+                )}
+              </span>
+            </div>
+          </header>
 
-              <div className="p-5 space-y-5">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Proposta real da UFU <span className="text-muted-foreground/60 normal-case tracking-normal font-normal">(opcional)</span>
-                  </label>
-                  <Select value={propostaId} onValueChange={aplicarProposta}>
-                    <SelectTrigger className="rounded-lg h-11">
-                      <SelectValue placeholder="Escolher uma proposta que já caiu" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PROPOSTAS_UFU.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.titulo}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+          {/* ─── Quest card: só na fase de escrita ─── */}
+          {!analise && (
+            <div className="bg-card border-2 border-border rounded-3xl p-5 sm:p-8 shadow-[0_8px_0_0_hsl(var(--border))]">
+              {/* Step 1 — Gênero (obrigatório) */}
+              <div className="mb-8 sm:mb-10">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <span className="w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-bold shrink-0">
+                    1
+                  </span>
+                  <h2 className="font-extrabold text-foreground uppercase text-sm tracking-wide">
+                    Escolha o gênero
+                  </h2>
+                  <span className="ml-auto text-[10px] font-black text-destructive bg-destructive/10 px-2 py-0.5 rounded border border-destructive/20 uppercase tracking-wider">
+                    Obrigatório
+                  </span>
                 </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    Gênero solicitado
-                    <span className="text-destructive">*</span>
-                  </label>
-                  <Select value={genreId} onValueChange={setGenreId}>
-                    <SelectTrigger className="rounded-lg h-11">
-                      <SelectValue placeholder="Escolha o gênero (fugir dele zera)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GENEROS_UFU.map((g) => (
-                        <SelectItem key={g.id} value={g.id}>{g.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Tema / recorte da proposta
-                  </label>
-                  <Input
-                    className="rounded-lg h-11"
-                    value={theme}
-                    onChange={(e) => setTheme(e.target.value)}
-                    placeholder="Ex.: desafios da adoção no Brasil"
-                  />
-                </div>
-
+                <Select value={genreId} onValueChange={setGenreId}>
+                  <SelectTrigger
+                    className={cn(
+                      "rounded-2xl h-12 border-2 font-bold text-[15px] shadow-[0_4px_0_0_hsl(var(--border))]",
+                      genreId ? "border-foreground" : "border-border",
+                    )}
+                  >
+                    <SelectValue placeholder="Selecionar gênero (fugir dele zera)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GENEROS_UFU.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <AnimatePresence>
                   {genero && (
                     <motion.div
@@ -355,296 +338,396 @@ export default function RedacaoUfu() {
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="rounded-lg bg-muted/50 border border-border/60 p-3.5">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                          A banca vai procurar em {genero.label.toLowerCase()}
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {genero.elementos.map((el, i) => (
-                            <span key={i} className="text-xs px-2.5 py-1 rounded-md bg-background border border-border text-foreground">
-                              {el}
-                            </span>
-                          ))}
-                        </div>
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {genero.elementos.map((el, i) => (
+                          <span
+                            key={i}
+                            className="text-[11px] font-semibold px-2 py-1 rounded-md bg-muted border border-border text-foreground"
+                          >
+                            {el}
+                          </span>
+                        ))}
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
-            </section>
 
-            {/* ─── Editor: folha de redação ─── */}
-            <section className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
-              <div className="px-5 pt-5 pb-4 border-b border-border/60">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="h-6 w-6 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center">2</span>
-                    <h2 className="text-sm font-bold text-foreground">Sua redação</h2>
-                  </div>
-                  <span
-                    className={cn(
-                      "text-xs tabular-nums font-semibold px-2.5 py-1 rounded-full border",
-                      linhas === 0 && "text-muted-foreground border-border bg-muted/40",
-                      linhas > 0 && !linhasOk && "text-destructive border-destructive/30 bg-destructive/5",
-                      linhasOk && "text-status-analyzed border-status-analyzed/30 bg-status-analyzed/5",
-                    )}
-                  >
-                    {linhas}/{LINHAS_MAX} linhas
+              {/* Step 2 — Tema (proposta opcional embutida) */}
+              <div className="mb-8 sm:mb-10 p-4 sm:p-5 bg-muted/40 rounded-2xl border-2 border-dashed border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="w-6 h-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-bold shrink-0">
+                    2
+                  </span>
+                  <h2 className="font-extrabold text-muted-foreground uppercase text-sm tracking-wide">
+                    Tema da proposta
+                  </h2>
+                  <span className="ml-auto text-[10px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:inline">
+                    Opcional
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 ml-8">
-                  Folha oficial: 34 linhas. Menos de {LINHAS_MIN} zera e elimina.
-                </p>
+                <Input
+                  className="rounded-xl h-11 border-border bg-background font-medium"
+                  value={theme}
+                  onChange={(e) => setTheme(e.target.value)}
+                  placeholder="Ex.: desafios da adoção no Brasil"
+                />
+                <div className="mt-3">
+                  <Select value={propostaId} onValueChange={aplicarProposta}>
+                    <SelectTrigger className="rounded-xl h-10 text-[13px] border-border bg-background/60">
+                      <SelectValue placeholder="Ou usar uma proposta real da UFU que já caiu" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROPOSTAS_UFU.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.titulo}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              {/* régua fina */}
-              <div className="h-[3px] bg-muted">
+              {/* Step 3 — Sua produção */}
+              <div>
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <span className="w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-bold shrink-0">
+                    3
+                  </span>
+                  <h2 className="font-extrabold text-foreground uppercase text-sm tracking-wide">
+                    Sua produção
+                  </h2>
+                  <span className="ml-auto text-[11px] tabular-nums font-bold text-muted-foreground">
+                    linha <span className="text-foreground">{Math.max(1, linhas || 1)}</span>
+                  </span>
+                </div>
+
                 <div
                   className={cn(
-                    "h-full transition-all",
-                    linhas > 0 && !linhasOk ? "bg-destructive" : "bg-primary",
+                    "relative flex bg-background border-2 rounded-2xl overflow-hidden transition-colors",
+                    linhas > 0 && !linhasOk
+                      ? "border-destructive/40 focus-within:border-destructive"
+                      : linhasOk
+                        ? "border-status-analyzed/40 focus-within:border-status-analyzed"
+                        : "border-border focus-within:border-foreground",
                   )}
-                  style={{ width: `${linhasPct}%` }}
-                />
-              </div>
-
-              <div className="relative bg-[linear-gradient(to_bottom,transparent_calc(1.75rem-1px),hsl(var(--border)/0.35)_calc(1.75rem-1px),hsl(var(--border)/0.35)_1.75rem)] bg-[length:100%_1.75rem]">
-                <Textarea
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  placeholder="Escreva ou cole sua redação aqui..."
-                  className="min-h-[420px] border-0 rounded-none focus-visible:ring-0 bg-transparent px-6 py-3 text-[15px] leading-7 resize-y font-serif placeholder:font-sans placeholder:text-muted-foreground/70"
-                />
-              </div>
-
-              <div className="p-5 border-t border-border/60 bg-muted/30">
-                {semCreditos ? (
-                  <PaywallCard userEmail={user?.email ?? ""} />
-                ) : (
-                  <Button
-                    className="w-full rounded-xl h-12 text-[15px] font-semibold"
-                    onClick={analisar}
-                    disabled={analisando || !text.trim()}
+                >
+                  {/* Régua de linhas */}
+                  <div
+                    aria-hidden
+                    className="w-9 shrink-0 bg-muted/40 border-r border-border/60 flex flex-col items-center pt-3 pb-3 text-[10px] font-mono text-muted-foreground/70 select-none gap-[0.35rem]"
                   >
-                    {analisando
-                      ? <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      : <PenLine className="h-4 w-4 mr-2" />}
-                    {analisando ? "Corrigindo como a banca..." : "Corrigir na rubrica da UFU"}
-                  </Button>
-                )}
-                {!semCreditos && (
-                  <p className="text-[11px] text-muted-foreground text-center mt-3 leading-relaxed">
-                    Correção em ~30s · avalia os 5 critérios oficiais e as 7 condições de nota zero
-                  </p>
-                )}
-              </div>
-            </section>
-          </div>
-
-          {/* ═══ Coluna direita — resultado ═══ */}
-          <aside className="lg:sticky lg:top-24 space-y-5">
-            <AnimatePresence mode="wait">
-              {!analise && (
-                <motion.section
-                  key="placeholder"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="bg-card rounded-2xl border border-dashed border-border p-6 space-y-4"
-                >
-                  <div className="flex items-center gap-2">
-                    <Target className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm font-bold">O que você vai receber</p>
+                    {Array.from({ length: LINHAS_MAX }).map((_, i) => {
+                      const n = i + 1;
+                      const atual = linhas >= n;
+                      const marco = n === LINHAS_MIN || n === LINHAS_MAX;
+                      return (
+                        <span
+                          key={n}
+                          className={cn(
+                            "tabular-nums leading-[1.15rem]",
+                            atual && "text-foreground font-bold",
+                            marco && "text-foreground",
+                          )}
+                        >
+                          {n.toString().padStart(2, "0")}
+                        </span>
+                      );
+                    })}
                   </div>
-                  <ul className="space-y-2.5 text-sm">
-                    {[
-                      "Nota por faixa nos 5 critérios oficiais",
-                      "Checagem das 7 condições de nota zero",
-                      "Evidências do seu texto (não só opinião)",
-                      "O caminho para subir uma faixa em cada critério",
-                      "Versão evoluída com as mesmas ideias",
-                    ].map((item, i) => (
-                      <li key={i} className="flex gap-2.5 text-muted-foreground leading-relaxed">
-                        <span className="text-primary shrink-0 mt-0.5">→</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.section>
-              )}
+                  <Textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="Inicie sua escrita aqui..."
+                    className="flex-1 p-4 sm:p-5 min-h-[360px] outline-none text-foreground leading-[1.15rem] font-serif text-[15px] placeholder:font-sans placeholder:text-muted-foreground/60 resize-y border-0 rounded-none focus-visible:ring-0 bg-transparent"
+                  />
+                </div>
 
-              {analise && (
-                <motion.div
-                  key="resultado"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35 }}
-                  className="space-y-5"
-                >
-                  {/* Score hero / eliminação */}
-                  {analise.eliminado ? (
-                    <section className="rounded-2xl border-2 border-destructive bg-destructive/5 p-5 space-y-3">
-                      <div className="flex items-center gap-2 text-destructive font-bold">
-                        <ShieldAlert className="h-5 w-5" />
-                        NOTA ZERO — eliminado
-                      </div>
-                      <ul className="text-sm space-y-1.5 list-disc pl-5 text-foreground/90">
-                        {analise.motivosEliminacao.map((m, i) => <li key={i}>{m}</li>)}
-                      </ul>
-                    </section>
+                {/* Barra gordo de progresso — XP bar B&W */}
+                <div className="mt-6 sm:mt-7">
+                  <div className="flex justify-between items-end mb-2">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-tighter">
+                        Progresso de linhas
+                      </span>
+                      <span className="text-2xl font-black text-foreground tracking-tight tabular-nums">
+                        {linhas}{" "}
+                        <span className="text-muted-foreground/40">
+                          / {LINHAS_MAX}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
+                        Mínimo
+                      </span>
+                      <span className="block font-bold text-muted-foreground text-sm tabular-nums">
+                        {LINHAS_MIN} linhas
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-5 w-full bg-muted rounded-full border-2 border-border relative overflow-hidden">
+                    <motion.div
+                      className={cn(
+                        "h-full rounded-full relative",
+                        linhas === 0 && "bg-muted",
+                        linhas > 0 && linhas < LINHAS_MIN && "bg-foreground/70",
+                        linhasOk && "bg-status-analyzed",
+                      )}
+                      initial={false}
+                      animate={{ width: `${Math.min(100, linhasPct)}%` }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                    >
+                      <div className="absolute inset-0 bg-background/10" />
+                    </motion.div>
+                    {/* Marco do mínimo (30 linhas) */}
+                    <div
+                      className="absolute top-0 w-1 h-full bg-destructive/30 border-x border-destructive/20"
+                      style={{ left: `${(LINHAS_MIN / LINHAS_MAX) * 100}%` }}
+                      aria-label={`Marco mínimo ${LINHAS_MIN} linhas`}
+                    />
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <div className="mt-8 sm:mt-10 pt-6 sm:pt-8 border-t-2 border-border/60">
+                  {semCreditos ? (
+                    <PaywallCard userEmail={user?.email ?? ""} />
                   ) : (
-                    <section className="bg-card rounded-2xl border border-border shadow-panel p-6 text-center">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2">
-                        Nota final DIRPS
-                      </p>
-                      <p className="text-7xl font-extrabold tabular-nums tracking-tight leading-none">
-                        {analise.totalScore}
-                        <span className="text-2xl font-semibold text-muted-foreground align-top ml-1">/{REDACAO_TOTAL}</span>
-                      </p>
-                      <div className="mt-5 h-1.5 rounded-full bg-muted overflow-hidden">
-                        <motion.div
-                          className="h-full bg-primary rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${pctLinhas}%` }}
-                          transition={{ duration: 0.6, delay: 0.15 }}
-                        />
-                      </div>
-                      <p className="text-[11px] text-muted-foreground mt-2 tabular-nums">
-                        {analise.linhasEstimadas} linhas escritas
-                      </p>
-                    </section>
+                    <button
+                      type="button"
+                      onClick={analisar}
+                      disabled={analisando || !text.trim() || !genero}
+                      className="w-full group relative disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="absolute inset-0 bg-foreground rounded-2xl translate-y-1.5 transition-transform group-enabled:group-hover:translate-y-2 group-active:translate-y-0" />
+                      <span className="relative flex items-center justify-center gap-3 w-full bg-foreground text-background font-extrabold text-base sm:text-lg py-4 sm:py-5 rounded-2xl border-2 border-foreground transition-transform group-active:translate-y-1.5 uppercase tracking-wide">
+                        {analisando ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            Corrigindo como a banca…
+                          </>
+                        ) : (
+                          <>
+                            <PenLine className="h-5 w-5" />
+                            Corrigir redação
+                          </>
+                        )}
+                      </span>
+                    </button>
                   )}
-
-                  {analise.alertas.length > 0 && !analise.eliminado && (
-                    <section className="rounded-xl border border-status-draft/40 bg-status-draft/10 p-4 space-y-1.5">
-                      <p className="flex items-center gap-2 text-sm font-semibold">
-                        <AlertTriangle className="h-4 w-4" /> Alertas da banca
-                      </p>
-                      {analise.alertas.map((a, i) => (
-                        <p key={i} className="text-sm text-muted-foreground leading-relaxed">{a}</p>
-                      ))}
-                    </section>
-                  )}
-
-                  {analise.prioridadeUnica && (
-                    <section className="rounded-2xl bg-foreground text-background p-5 space-y-1.5">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] opacity-70">
-                        Se melhorar uma coisa
-                      </p>
-                      <p className="text-sm leading-relaxed">{analise.prioridadeUnica}</p>
-                    </section>
-                  )}
-
-                  {/* Critérios */}
-                  <section className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
-                    <div className="px-5 py-3 border-b border-border/60">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Os 5 critérios
-                      </p>
-                    </div>
-                    <div className="divide-y divide-border/60">
-                      {analise.criterios.map((cr) => {
-                        const max = maxCriterio(cr.id);
-                        const aberto = criterioAberto === cr.id;
-                        const pct = max ? (cr.pontos / max) * 100 : 0;
-                        return (
-                          <div key={cr.id}>
-                            <button
-                              className="w-full px-5 py-4 text-left hover:bg-muted/40 transition-colors"
-                              onClick={() => setCriterioAberto(aberto ? null : cr.id)}
-                            >
-                              <div className="flex items-center justify-between gap-3 mb-2">
-                                <span className="text-sm font-medium text-foreground">{nomeCriterio(cr.id)}</span>
-                                <span className="flex items-center gap-2 shrink-0">
-                                  <span className="text-sm font-bold tabular-nums">
-                                    {cr.pontos}<span className="text-muted-foreground font-normal">/{max}</span>
-                                  </span>
-                                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", aberto && "rotate-180")} />
-                                </span>
-                              </div>
-                              <div className="h-1 rounded-full bg-muted overflow-hidden">
-                                <motion.div
-                                  className="h-full bg-foreground rounded-full"
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${pct}%` }}
-                                  transition={{ duration: 0.5 }}
-                                />
-                              </div>
-                              {cr.faixa && (
-                                <p className="mt-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{cr.faixa}</p>
-                              )}
-                            </button>
-                            <AnimatePresence>
-                              {aberto && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.2 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="px-5 pb-4 space-y-3 text-sm">
-                                    {cr.justificativa && (
-                                      <p className="text-muted-foreground leading-relaxed">{cr.justificativa}</p>
-                                    )}
-                                    {cr.evidencias?.map((ev, i) => (
-                                      <p key={i} className="border-l-2 border-foreground/30 pl-3 italic text-muted-foreground text-[13px] leading-relaxed">
-                                        "{ev}"
-                                      </p>
-                                    ))}
-                                    {cr.comoSubirUmaFaixa && (
-                                      <div className="rounded-lg bg-muted p-3.5 space-y-1">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                          Pra subir uma faixa
-                                        </p>
-                                        <p className="text-[13px] leading-relaxed text-foreground">
-                                          {cr.comoSubirUmaFaixa}
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {analise.desviosContados.length > 0 && (
-                      <div className="px-5 py-4 border-t border-border/60 bg-muted/30">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                          Desvios contados ({analise.desviosContados.length})
-                        </p>
-                        <div className="space-y-1 text-[13px] text-muted-foreground leading-relaxed">
-                          {analise.desviosContados.map((d, i) => <p key={i}>{d}</p>)}
-                        </div>
-                      </div>
-                    )}
-                  </section>
-
-                  {analise.feedbackGeral && (
-                    <p className="text-sm leading-relaxed text-muted-foreground px-1">
-                      {analise.feedbackGeral}
+                  {!semCreditos && (
+                    <p className="text-center mt-5 sm:mt-6 text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                      {genero ? "Gênero configurado" : "Selecione o gênero"} ·
+                      Mínimo de {LINHAS_MIN} linhas · Correção em ~30s
                     </p>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
 
-                  {!analise.eliminado && !evolucao && (
-                    <Button
-                      className="w-full rounded-xl h-12 font-semibold"
-                      variant="outline"
-                      onClick={gerarEvolucao}
-                      disabled={evoluindo}
-                    >
-                      {evoluindo ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                      {evoluindo ? "Evoluindo sua redação..." : "Ver minha redação uma faixa acima"}
-                    </Button>
+          {/* ═══ Resultado da correção ═══ */}
+          <AnimatePresence>
+            {analise && (
+              <motion.div
+                key="resultado"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35 }}
+                className="space-y-5"
+              >
+                {analise.eliminado ? (
+                  <section className="rounded-2xl border-2 border-destructive bg-destructive/5 p-5 space-y-3">
+                    <div className="flex items-center gap-2 text-destructive font-bold">
+                      <ShieldAlert className="h-5 w-5" />
+                      NOTA ZERO — eliminado
+                    </div>
+                    <ul className="text-sm space-y-1.5 list-disc pl-5 text-foreground/90">
+                      {analise.motivosEliminacao.map((m, i) => (
+                        <li key={i}>{m}</li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : (
+                  <section className="bg-card rounded-2xl border-2 border-border shadow-[0_8px_0_0_hsl(var(--border))] p-6 text-center">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2">
+                      Nota final DIRPS
+                    </p>
+                    <p className="text-7xl font-extrabold tabular-nums tracking-tight leading-none">
+                      {analise.totalScore}
+                      <span className="text-2xl font-semibold text-muted-foreground align-top ml-1">
+                        /{REDACAO_TOTAL}
+                      </span>
+                    </p>
+                    <div className="mt-5 h-1.5 rounded-full bg-muted overflow-hidden">
+                      <motion.div
+                        className="h-full bg-foreground rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pctLinhas}%` }}
+                        transition={{ duration: 0.6, delay: 0.15 }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-2 tabular-nums">
+                      {analise.linhasEstimadas} linhas escritas
+                    </p>
+                  </section>
+                )}
+
+                {analise.alertas.length > 0 && !analise.eliminado && (
+                  <section className="rounded-xl border border-status-draft/40 bg-status-draft/10 p-4 space-y-1.5">
+                    <p className="flex items-center gap-2 text-sm font-semibold">
+                      <AlertTriangle className="h-4 w-4" /> Alertas da banca
+                    </p>
+                    {analise.alertas.map((a, i) => (
+                      <p key={i} className="text-sm text-muted-foreground leading-relaxed">
+                        {a}
+                      </p>
+                    ))}
+                  </section>
+                )}
+
+                {analise.prioridadeUnica && (
+                  <section className="rounded-2xl bg-foreground text-background p-5 space-y-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] opacity-70">
+                      Se melhorar uma coisa
+                    </p>
+                    <p className="text-sm leading-relaxed">{analise.prioridadeUnica}</p>
+                  </section>
+                )}
+
+                <section className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
+                  <div className="px-5 py-3 border-b border-border/60">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Os 5 critérios
+                    </p>
+                  </div>
+                  <div className="divide-y divide-border/60">
+                    {analise.criterios.map((cr) => {
+                      const max = maxCriterio(cr.id);
+                      const aberto = criterioAberto === cr.id;
+                      const pct = max ? (cr.pontos / max) * 100 : 0;
+                      return (
+                        <div key={cr.id}>
+                          <button
+                            className="w-full px-5 py-4 text-left hover:bg-muted/40 transition-colors"
+                            onClick={() => setCriterioAberto(aberto ? null : cr.id)}
+                          >
+                            <div className="flex items-center justify-between gap-3 mb-2">
+                              <span className="text-sm font-medium text-foreground">
+                                {nomeCriterio(cr.id)}
+                              </span>
+                              <span className="flex items-center gap-2 shrink-0">
+                                <span className="text-sm font-bold tabular-nums">
+                                  {cr.pontos}
+                                  <span className="text-muted-foreground font-normal">/{max}</span>
+                                </span>
+                                <ChevronDown
+                                  className={cn(
+                                    "h-4 w-4 text-muted-foreground transition-transform",
+                                    aberto && "rotate-180",
+                                  )}
+                                />
+                              </span>
+                            </div>
+                            <div className="h-1 rounded-full bg-muted overflow-hidden">
+                              <motion.div
+                                className="h-full bg-foreground rounded-full"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pct}%` }}
+                                transition={{ duration: 0.5 }}
+                              />
+                            </div>
+                            {cr.faixa && (
+                              <p className="mt-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                                {cr.faixa}
+                              </p>
+                            )}
+                          </button>
+                          <AnimatePresence>
+                            {aberto && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="px-5 pb-4 space-y-3 text-sm">
+                                  {cr.justificativa && (
+                                    <p className="text-muted-foreground leading-relaxed">
+                                      {cr.justificativa}
+                                    </p>
+                                  )}
+                                  {cr.evidencias?.map((ev, i) => (
+                                    <p
+                                      key={i}
+                                      className="border-l-2 border-foreground/30 pl-3 italic text-muted-foreground text-[13px] leading-relaxed"
+                                    >
+                                      "{ev}"
+                                    </p>
+                                  ))}
+                                  {cr.comoSubirUmaFaixa && (
+                                    <div className="rounded-lg bg-muted p-3.5 space-y-1">
+                                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                        Pra subir uma faixa
+                                      </p>
+                                      <p className="text-[13px] leading-relaxed text-foreground">
+                                        {cr.comoSubirUmaFaixa}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {analise.desviosContados.length > 0 && (
+                    <div className="px-5 py-4 border-t border-border/60 bg-muted/30">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                        Desvios contados ({analise.desviosContados.length})
+                      </p>
+                      <div className="space-y-1 text-[13px] text-muted-foreground leading-relaxed">
+                        {analise.desviosContados.map((d, i) => (
+                          <p key={i}>{d}</p>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                  <GrupoWhatsappButton />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </aside>
+                </section>
+
+                {analise.feedbackGeral && (
+                  <p className="text-sm leading-relaxed text-muted-foreground px-1">
+                    {analise.feedbackGeral}
+                  </p>
+                )}
+
+                {!analise.eliminado && !evolucao && (
+                  <Button
+                    className="w-full rounded-xl h-12 font-semibold"
+                    variant="outline"
+                    onClick={gerarEvolucao}
+                    disabled={evoluindo}
+                  >
+                    {evoluindo ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Sparkles className="h-4 w-4 mr-2" />
+                    )}
+                    {evoluindo
+                      ? "Evoluindo sua redação..."
+                      : "Ver minha redação uma faixa acima"}
+                  </Button>
+                )}
+                <GrupoWhatsappButton />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+
 
         {/* ═══ Versão evoluída (largura total) ═══ */}
         <AnimatePresence>
