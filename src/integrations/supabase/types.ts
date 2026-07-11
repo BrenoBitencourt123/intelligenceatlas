@@ -1149,6 +1149,54 @@ export type Database = {
       }
     }
     Views: {
+      ufu_celebracao: {
+        Row: {
+          pct_pulo: number | null
+          puladas: number | null
+          tela: string | null
+          vistas: number | null
+        }
+        Relationships: []
+      }
+      ufu_funil_sessao: {
+        Row: {
+          abandonos: number | null
+          dia: string | null
+          fins: number | null
+          inicios: number | null
+          media_pct_primeira: number | null
+          pct_conclusao: number | null
+        }
+        Relationships: []
+      }
+      ufu_push_eficacia: {
+        Row: {
+          cliques: number | null
+          destinatarios: number | null
+          dia: string | null
+          enviados: number | null
+          tipo: string | null
+        }
+        Relationships: []
+      }
+      ufu_retencao_d1: {
+        Row: {
+          dia: string | null
+          pct: number | null
+          retornaram: number | null
+          usuarios: number | null
+        }
+        Relationships: []
+      }
+      ufu_retencao_d7: {
+        Row: {
+          dia: string | null
+          pct: number | null
+          retornaram: number | null
+          usuarios: number | null
+        }
+        Relationships: []
+      }
       ufu_share_rate: {
         Row: {
           card_generated: number | null
