@@ -330,7 +330,11 @@ export default function TrilhaNo() {
   if (finishedStep === "streak") {
     // evento: celebracao_vista { tipo: 'streak' }
     return (
-      <StreakScreen streak={studyStats.streak} onNext={advanceCelebracao} />
+      <StreakScreen
+        streak={studyStats.streak}
+        frozenDaysThisWeek={studyStats.frozenDaysThisWeek}
+        onNext={advanceCelebracao}
+      />
     );
   }
 
