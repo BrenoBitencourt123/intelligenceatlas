@@ -406,6 +406,7 @@ export default function TrilhaNo() {
       <StreakScreen
         streak={studyStats.streak}
         frozenDaysThisWeek={studyStats.frozenDaysThisWeek}
+        activeDaysThisWeek={studyStats.activeDaysThisWeek}
         onNext={advanceCelebracao}
       />
     );
