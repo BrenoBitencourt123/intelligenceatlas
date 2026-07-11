@@ -7,10 +7,21 @@ const supabase = supabaseTyped as unknown as {
 };
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, Check, Flame, Sparkles, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { PROPOSTAS_UFU } from "@/data/ufu/redacao";
 import { cn } from "@/lib/utils";
+import confetti from "canvas-confetti";
+import {
+  recomputePlacarTrilha,
+  atualizarPlacar,
+  META_TOTAL,
+  type PlacarFonte,
+} from "@/lib/ufu/placar";
+import { useStudyStats } from "@/hooks/useStudyStats";
+import { CURSOS_UFU, COTAS, TOTAL_QUESTOES, type CotaId } from "@/data/ufu/vestibular";
+import { PlacarShareCard } from "@/components/ufu/PlacarShareCard";
+
 
 type Opcao = { id: string; texto: string; svg?: string | null };
 type Payload = {
@@ -59,7 +70,8 @@ function setEq(a: string[], b: string[]) {
 export default function TrilhaNo() {
   const { noId } = useParams<{ noId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
+  const studyStats = useStudyStats();
 
   const [no, setNo] = useState<No | null>(null);
   const [itens, setItens] = useState<Item[]>([]);
@@ -67,10 +79,22 @@ export default function TrilhaNo() {
   const [idx, setIdx] = useState(0);
   const [tentativas, setTentativas] = useState(1);
   const [phase, setPhase] = useState<"answer" | "wrong" | "reveal" | "correct">("answer");
-  const [finished, setFinished] = useState<null | "wrap" | "result">(null);
+  // Sequência de celebração: wrap → result → (perfect?) → streak → (placar mudou?) → done
+  const [finishedStep, setFinishedStep] = useState<
+    null | "wrap" | "result" | "perfect" | "streak" | "placar"
+  >(null);
   const startedAt = useRef<number>(Date.now());
   const stats = useRef({ total: 0, primeira: 0 });
   const nivelAtualRef = useRef<number>(0);
+
+  // Combo: acertos de primeira consecutivos. Zera ao errar.
+  const [combo, setCombo] = useState(0);
+  const [comboBadge, setComboBadge] = useState<number | null>(null);
+
+  // Placar antes/depois desta sessão — usado na tela "bolinha andou"
+  const [placarAntes, setPlacarAntes] = useState<number | null>(null);
+  const [placarDepois, setPlacarDepois] = useState<number | null>(null);
+
 
   // Load nó + itens + progresso
   useEffect(() => {
@@ -152,15 +176,52 @@ export default function TrilhaNo() {
   const handleCorrect = async () => {
     if (!user || !current) return;
     stats.current.total += 1;
-    if (tentativas === 1) stats.current.primeira += 1;
+    const acertouPrimeira = tentativas === 1;
+    if (acertouPrimeira) stats.current.primeira += 1;
     await supabase.from("trilha_respostas").insert({
       user_id: user.id,
       item_id: current.id,
-      acertou_primeira: tentativas === 1,
+      acertou_primeira: acertouPrimeira,
       tentativas,
     });
+
+    // Combo: só sobe se acertou de primeira. Vibra e mostra badge nos múltiplos de 5.
+    if (acertouPrimeira) {
+      setCombo((c) => {
+        const next = c + 1;
+        if (next > 0 && next % 5 === 0) {
+          // evento: celebracao_vista { tipo: 'combo', valor: next }
+          setComboBadge(next);
+          if (navigator.vibrate) navigator.vibrate(30);
+          setTimeout(() => setComboBadge(null), 2000);
+        }
+        return next;
+      });
+    }
+
     setPhase("correct");
     setTimeout(() => advance(), 1500);
+  };
+
+  const finalizarNo = async () => {
+    if (!user) return;
+    // Snapshot ANTES
+    const antes =
+      (profile as { placar_estimado?: number | null } | null)?.placar_estimado ?? null;
+    const fonteAtual =
+      ((profile as { placar_fonte?: PlacarFonte | null } | null)?.placar_fonte) ?? null;
+    setPlacarAntes(antes);
+
+    // Tenta recalcular via trilha (≥ 8 respostas reais)
+    const novo = await recomputePlacarTrilha(user.id);
+    if (novo !== null) {
+      const salvo = await atualizarPlacar(user.id, novo, "trilha", fonteAtual);
+      if (salvo !== null) {
+        setPlacarDepois(salvo);
+        await refreshProfile();
+      }
+    }
+    setFinishedStep("wrap");
   };
 
   const advance = async () => {
@@ -179,7 +240,7 @@ export default function TrilhaNo() {
         updated_at: new Date().toISOString(),
       });
       if (isEndOfNo) {
-        setFinished("wrap");
+        await finalizarNo();
         return;
       }
     }
@@ -189,6 +250,7 @@ export default function TrilhaNo() {
   };
 
   const handleWrong = () => {
+    setCombo(0); // errou → combo zera
     if (tentativas >= 2) {
       setPhase("reveal");
       return;
@@ -205,26 +267,43 @@ export default function TrilhaNo() {
     );
   }
 
-  if (finished === "wrap") {
+  // ============= Sequência de celebração =============
+  const perfeito = stats.current.total > 0 && stats.current.primeira === stats.current.total;
+  const placarMudou = placarDepois !== null && placarAntes !== placarDepois;
+
+  // Ordem: wrap → result → (perfect?) → streak → (placar?) → /hoje
+  const advanceCelebracao = () => {
+    if (finishedStep === "wrap") return setFinishedStep("result");
+    if (finishedStep === "result") {
+      if (perfeito) return setFinishedStep("perfect");
+      return setFinishedStep("streak");
+    }
+    if (finishedStep === "perfect") return setFinishedStep("streak");
+    if (finishedStep === "streak") {
+      if (placarMudou) return setFinishedStep("placar");
+      return navigate("/hoje");
+    }
+    if (finishedStep === "placar") return navigate("/hoje");
+  };
+
+  if (finishedStep === "wrap") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-background text-foreground">
+      <TapScreen onNext={advanceCelebracao}>
         <div className="text-6xl mb-4">🏅</div>
         <h1 className="text-3xl font-bold mb-2 text-center">Nó completo</h1>
         <p className="text-muted-foreground mb-8 text-center">{no?.titulo}</p>
-        <Button size="lg" className="w-full max-w-sm" onClick={() => setFinished("result")}>
+        <Button size="lg" className="w-full max-w-sm" onClick={advanceCelebracao}>
           VER MEU RESULTADO
         </Button>
-      </div>
+      </TapScreen>
     );
   }
 
-  if (finished === "result") {
+  if (finishedStep === "result") {
     const tempoMin = Math.max(1, Math.round((Date.now() - startedAt.current) / 60000));
     const pct = stats.current.total ? Math.round((stats.current.primeira / stats.current.total) * 100) : 0;
-    const last = itens[itens.length - 1];
-    const cta = last?.payload?.cta;
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background text-foreground">
+      <TapScreen onNext={advanceCelebracao}>
         <div className="grid grid-cols-3 gap-4 w-full max-w-md mb-8">
           <Stat label="itens" value={String(itens.length)} />
           <Stat label="1ª tentativa" value={`${pct}%`} />
@@ -233,19 +312,50 @@ export default function TrilhaNo() {
         <h2 className="text-2xl font-bold text-center mb-8 max-w-md">
           Você subiu do "quais são os gêneros" até a proposta real.
         </h2>
-        <div className="flex flex-col gap-3 w-full max-w-sm">
-          {cta && (
-            <Button size="lg" className="w-full" onClick={() => navigate(cta.href)}>
-              {cta.texto}
-            </Button>
-          )}
-          <Button variant="ghost" size="lg" className="w-full" onClick={() => navigate("/hoje")}>
-            Voltar
-          </Button>
-        </div>
-      </div>
+        <p className="text-xs text-muted-foreground">toque pra continuar</p>
+      </TapScreen>
     );
   }
+
+  if (finishedStep === "perfect") {
+    // evento: celebracao_vista { tipo: 'perfeito' }
+    return (
+      <PerfectScreen
+        total={stats.current.total}
+        onNext={advanceCelebracao}
+      />
+    );
+  }
+
+  if (finishedStep === "streak") {
+    // evento: celebracao_vista { tipo: 'streak' }
+    return (
+      <StreakScreen streak={studyStats.streak} onNext={advanceCelebracao} />
+    );
+  }
+
+  if (finishedStep === "placar") {
+    // evento: celebracao_vista { tipo: 'placar' }
+    const cursoId = (profile as { curso_ufu?: string } | null | undefined)?.curso_ufu;
+    const cotaId = (profile as { cota_ufu?: CotaId } | null | undefined)?.cota_ufu;
+    const curso = cursoId ? CURSOS_UFU.find((c) => c.id === cursoId) : null;
+    const corte = curso && cotaId ? curso.cortes[cotaId] ?? null : null;
+    const meta = corte !== null && corte !== undefined
+      ? Math.min(TOTAL_QUESTOES, Math.ceil(corte * 1.22))
+      : null;
+    return (
+      <PlacarScreen
+        antes={placarAntes ?? 0}
+        depois={placarDepois ?? 0}
+        corte={corte ?? 0}
+        meta={meta ?? META_TOTAL}
+        nome={(profile as { name?: string | null } | null)?.name ?? undefined}
+        onNext={advanceCelebracao}
+      />
+    );
+  }
+
+
 
   const proposta = current.payload.proposta_id
     ? PROPOSTAS_UFU.find((p) => p.id === current.payload.proposta_id)
@@ -270,6 +380,11 @@ export default function TrilhaNo() {
             style={{ width: `${progress}%` }}
           />
         </div>
+        {comboBadge !== null && (
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100 animate-pulse tabular-nums">
+            🔥 combo x{comboBadge}
+          </span>
+        )}
         <span className="text-xs text-muted-foreground tabular-nums">
           {idx + 1}/{itens.length}
         </span>
@@ -723,3 +838,173 @@ function LigarView({ payload, locked, phase, onCorrect, onWrong }: ViewProps) {
     </div>
   );
 }
+
+/* ---------- Celebração ---------- */
+
+const DIAS_STREAK = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+function TapScreen({ children, onNext }: { children: React.ReactNode; onNext: () => void }) {
+  return (
+    <div
+      onClick={onNext}
+      className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background text-foreground cursor-pointer select-none"
+    >
+      {children}
+    </div>
+  );
+}
+
+function PerfectScreen({ total, onNext }: { total: number; onNext: () => void }) {
+  useEffect(() => {
+    // Confete leve (~150 partículas) num único disparo pra não derrubar FPS
+    confetti({
+      particleCount: 150,
+      spread: 80,
+      origin: { y: 0.6 },
+      disableForReducedMotion: true,
+    });
+    if (navigator.vibrate) navigator.vibrate(50);
+  }, []);
+  return (
+    <TapScreen onNext={onNext}>
+      <Trophy className="h-16 w-16 text-amber-500 mb-4 animate-in zoom-in-50 duration-500" />
+      <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">PERFEITO</p>
+      <h1 className="text-4xl sm:text-5xl font-black text-center mb-2">
+        {total} de {total}
+      </h1>
+      <p className="text-lg text-muted-foreground text-center mb-6">na primeira tentativa</p>
+      <p className="text-xs text-muted-foreground">toque pra continuar</p>
+    </TapScreen>
+  );
+}
+
+function StreakScreen({ streak, onNext }: { streak: number; onNext: () => void }) {
+  const todayDow = new Date().getDay();
+  return (
+    <TapScreen onNext={onNext}>
+      <div className="flex items-center gap-2 mb-2 animate-in zoom-in-50 duration-500">
+        <Flame className="h-12 w-12 text-orange-500" />
+        <span className="text-6xl font-black tabular-nums">{streak}</span>
+      </div>
+      <p className="text-lg text-muted-foreground mb-8">dias seguidos</p>
+
+      <div className="flex items-center justify-between gap-1 w-full max-w-xs mb-6">
+        {DIAS_STREAK.map((letra, dow) => {
+          const isToday = dow === todayDow;
+          const isDone = dow <= todayDow; // aproximação visual
+          return (
+            <div key={dow} className="flex flex-col items-center gap-1.5 flex-1">
+              <span
+                className={cn(
+                  "text-[10px] uppercase tracking-wider",
+                  isToday ? "text-foreground font-bold" : "text-muted-foreground",
+                )}
+              >
+                {letra}
+              </span>
+              <div
+                className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center border",
+                  isDone
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-border",
+                  isToday && "animate-in zoom-in-50 duration-500",
+                )}
+              >
+                {isDone && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-xs text-muted-foreground">toque pra continuar</p>
+    </TapScreen>
+  );
+}
+
+function PlacarScreen({
+  antes,
+  depois,
+  corte,
+  meta,
+  nome,
+  onNext,
+}: {
+  antes: number;
+  depois: number;
+  corte: number;
+  meta: number;
+  nome?: string;
+  onNext: () => void;
+}) {
+  const posAntesPct = (antes / META_TOTAL) * 100;
+  const posDepoisPct = (depois / META_TOTAL) * 100;
+  const cortePct = (corte / META_TOTAL) * 100;
+  const metaPct = (meta / META_TOTAL) * 100;
+  const faltam = Math.max(0, meta - depois);
+  const areaFraca = "Matemática"; // TODO: derivar de user_topic_profile no P1
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background text-foreground">
+      <div className="w-full max-w-md space-y-6">
+        <div className="text-center space-y-1">
+          <div className="flex items-center justify-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Sua bolinha andou</p>
+          </div>
+          <p className="text-3xl sm:text-4xl font-black tabular-nums">
+            {antes} → {depois}
+            <span className="text-base font-medium text-muted-foreground"> de {meta}</span>
+          </p>
+        </div>
+
+        {/* Barra de zonas */}
+        <div className="space-y-2">
+          <div className="relative h-3 rounded-full overflow-hidden bg-muted">
+            <div
+              className="absolute inset-y-0 left-0 bg-[hsl(var(--status-unavailable)/0.18)]"
+              style={{ width: `${cortePct}%` }}
+            />
+            <div
+              className="absolute inset-y-0 bg-[hsl(var(--status-draft)/0.22)]"
+              style={{ left: `${cortePct}%`, width: `${metaPct - cortePct}%` }}
+            />
+            <div
+              className="absolute inset-y-0 bg-[hsl(var(--status-analyzed)/0.22)]"
+              style={{ left: `${metaPct}%`, width: `${100 - metaPct}%` }}
+            />
+            {/* Bolinha animada antes → depois */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-5 rounded-full bg-foreground ring-2 ring-background shadow-md transition-all duration-1000 ease-out"
+              style={{ left: `${posDepoisPct}%` }}
+            />
+            {/* Marcador antes (fantasma) */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-3 rounded-full border-2 border-foreground/40"
+              style={{ left: `${posAntesPct}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] text-muted-foreground tabular-nums">
+            <span>0</span>
+            <span>{corte} corte</span>
+            <span>{meta} meta</span>
+            <span>{META_TOTAL}</span>
+          </div>
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground">
+          {faltam > 0
+            ? <>faltam <span className="font-bold text-foreground">{faltam}</span> pra zona segura</>
+            : <span className="font-bold text-foreground">Zona segura! Segue firme.</span>}
+        </p>
+
+        <PlacarShareCard nota={depois} areaFraca={areaFraca} nome={nome} />
+
+        <Button variant="ghost" className="w-full" onClick={onNext}>
+          Voltar pro Hoje
+        </Button>
+      </div>
+    </div>
+  );
+}
+

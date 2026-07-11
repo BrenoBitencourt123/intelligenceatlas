@@ -16,6 +16,8 @@ interface Profile {
   phone: string | null;
   curso_ufu: string | null;
   cota_ufu: string | null;
+  placar_estimado: number | null;
+  placar_fonte: 'quiz' | 'autoavaliacao' | 'trilha' | 'simulado' | null;
 }
 
 interface AuthContextType {
