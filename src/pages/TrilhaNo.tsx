@@ -81,10 +81,11 @@ export default function TrilhaNo() {
   const [idx, setIdx] = useState(0);
   const [tentativas, setTentativas] = useState(1);
   const [phase, setPhase] = useState<"answer" | "wrong" | "reveal" | "correct">("answer");
-  // Sequência de celebração: wrap → result → (perfect?) → streak → (placar mudou?) → done
+  // Sequência de celebração: wrap → (coroacao se dourou) → result → (perfect?) → streak → (placar?) → done
   const [finishedStep, setFinishedStep] = useState<
-    null | "wrap" | "result" | "perfect" | "streak" | "placar"
+    null | "wrap" | "coroacao" | "result" | "perfect" | "streak" | "placar"
   >(null);
+  const [nodouradoNesta, setNodouradoNesta] = useState(false);
   const startedAt = useRef<number>(Date.now());
   const stats = useRef({ total: 0, primeira: 0 });
   const nivelAtualRef = useRef<number>(0);
