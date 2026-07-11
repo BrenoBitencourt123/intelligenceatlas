@@ -5,6 +5,19 @@
 > e o plano de 60 dias do Lovable (funil/pSEO). Nada daqui é construído
 > antes dos gatilhos da seção 8.
 
+## 0. A Lei Zero (Breno, 11/07 — acima de todas as outras)
+
+**Entre o aluno e a próxima ação, a fricção tende a zero.** Fricção tem 3
+formas mensuráveis: DECISÕES (régua: 1 entre abrir o app e o 1º exercício),
+DESCONHECIDOS (régua: zero fatos cobrados sem apresentação prévia — item
+`info` antes), e ESPERAS/CAMPOS (régua: o mínimo que funciona). Toda tela
+nova responde 3 perguntas antes de ir ao ar: o que eu faço agora está óbvio?
+por que importa está dito? o que eu ganho aparece no final?
+
+Backlog de fricção conhecido (ordem): cadastro de 5 campos → telas do
+onboarding UFU · bolinha nascendo em zero → diagnóstico alimenta o placar ·
+onboarding antigo → substituição completa (seção 3).
+
 ## 1. A tese
 
 O mercado de vestibular tem dois produtos: aula de 50 minutos (Estratégia —
