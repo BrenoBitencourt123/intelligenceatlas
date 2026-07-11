@@ -736,7 +736,7 @@ export default function RedacaoUfu() {
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="mt-8 grid gap-6 lg:grid-cols-[1fr_400px] items-start"
+              className="mt-8 max-w-2xl mx-auto space-y-6"
             >
               <div className="bg-card rounded-xl border border-border shadow-panel overflow-hidden">
                 <div className="px-5 py-4 border-b border-border flex items-center justify-between">
