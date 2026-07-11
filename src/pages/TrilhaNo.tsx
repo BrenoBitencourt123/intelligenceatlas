@@ -7,7 +7,7 @@ const supabase = supabaseTyped as unknown as {
 };
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { X, Check, Flame, Sparkles, Trophy } from "lucide-react";
+import { X, Check, Flame, Sparkles, Trophy, Snowflake } from "lucide-react";
 import { toast } from "sonner";
 import { PROPOSTAS_UFU } from "@/data/ufu/redacao";
 import { cn } from "@/lib/utils";
