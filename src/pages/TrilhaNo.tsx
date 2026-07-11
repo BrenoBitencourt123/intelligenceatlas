@@ -1137,9 +1137,10 @@ function PlacarScreen({
 
         <PlacarShareCard nota={depois} areaFraca={areaFraca} nome={nome} />
 
-        <Button variant="ghost" className="w-full" onClick={onNext}>
+        <Button variant="ghost" className="w-full" onClick={handleNext}>
           Voltar pro Hoje
         </Button>
+
       </div>
     </div>
   );
