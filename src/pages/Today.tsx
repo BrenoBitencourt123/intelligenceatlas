@@ -271,7 +271,7 @@ const Today = () => {
                 {nos.map((no, i) => {
                   const p = progressoMap[no.id];
                   const dourado = !!p?.dourado;
-                  const isCurrent = !dourado && activeNo?.id === no.id;
+                  const isCurrent = !dourado && currentByDisc[no.disciplina] === no.id;
                   const locked = !dourado && !isCurrent;
                   return (
                     <li key={no.id} className="flex flex-col items-center gap-2 text-center">
