@@ -98,8 +98,12 @@ export default function TrilhaDiagnostico() {
       await supabaseTyped
         .from("profiles")
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .update({ diagnostico_feito_at: new Date().toISOString() } as any)
+        .update({
+          diagnostico_feito_at: new Date().toISOString(),
+          diagnostico_niveis: respostasFinal,
+        } as any)
         .eq("id", user.id);
+
 
       // Placar vivo: gravar fallback autoavaliacao se ainda não tem placar (nunca nasce em zero)
       const placarAtual = (profile as { placar_estimado?: number | null } | null)?.placar_estimado ?? null;

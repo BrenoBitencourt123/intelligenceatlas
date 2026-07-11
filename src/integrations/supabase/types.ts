@@ -208,6 +208,7 @@ export type Database = {
           created_at: string
           curso_ufu: string | null
           diagnostico_feito_at: string | null
+          diagnostico_niveis: Json | null
           email: string
           enem_target_date: string | null
           flexible_quota: boolean
@@ -228,6 +229,7 @@ export type Database = {
           created_at?: string
           curso_ufu?: string | null
           diagnostico_feito_at?: string | null
+          diagnostico_niveis?: Json | null
           email: string
           enem_target_date?: string | null
           flexible_quota?: boolean
@@ -248,6 +250,7 @@ export type Database = {
           created_at?: string
           curso_ufu?: string | null
           diagnostico_feito_at?: string | null
+          diagnostico_niveis?: Json | null
           email?: string
           enem_target_date?: string | null
           flexible_quota?: boolean

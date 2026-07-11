@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchActiveDays } from '@/lib/activeDays';
+
 
 const DIAGNOSTIC_QUESTIONS_PER_AREA = 60;
 
@@ -40,29 +42,14 @@ export function useStudyStats() {
         .gte('reviewed_at', `${today}T00:00:00`)
         .lt('reviewed_at', `${today}T23:59:59`);
 
-      // Streak: dias consecutivos com qualquer atividade (sessions + essays + trilha)
-      const { data: sessions } = await supabase
-        .from('study_sessions')
-        .select('session_date')
-        .eq('user_id', user.id)
-        .eq('is_extra', false)
-        .order('session_date', { ascending: false })
-        .limit(60);
-
-      const { data: essays } = await supabase
-        .from('essays')
-        .select('created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(60);
-
-      // BUGFIX: incluir respostas da trilha (dias só na trilha também mantêm o fogo)
-      const { data: trilhaResp } = await (supabase as unknown as { from: (t: string) => any })
-        .from('trilha_respostas')
-        .select('created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(500);
+      // Streak: fonte única (activeDays.ts) — mesma definição usada pelo calendário
+      // do Today. Janela: últimos 60 dias basta pra qualquer streak realista.
+      const streakSince = new Date();
+      streakSince.setDate(streakSince.getDate() - 60);
+      const activeDays = await fetchActiveDays(user.id, {
+        sinceIso: streakSince.toISOString(),
+        limit: 500,
+      });
 
       // Freezes já usados
       const { data: freezesData } = await (supabase as unknown as { from: (t: string) => any })
@@ -70,12 +57,6 @@ export function useStudyStats() {
         .select('used_on, iso_week')
         .eq('user_id', user.id);
 
-      const activeDays = new Set<string>();
-      sessions?.forEach((s: { session_date: string }) => activeDays.add(s.session_date));
-      essays?.forEach((e: { created_at: string }) => activeDays.add(e.created_at.split('T')[0]));
-      (trilhaResp as { created_at: string }[] | null)?.forEach((r) =>
-        activeDays.add(r.created_at.split('T')[0]),
-      );
 
       const frozenWeeks = new Set<string>(
         ((freezesData as { iso_week: string }[]) ?? []).map((f) => f.iso_week),
