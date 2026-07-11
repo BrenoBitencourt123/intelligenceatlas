@@ -110,7 +110,7 @@ export default function TrilhaNo() {
         supabase.from("trilha_itens").select("id,no_id,nivel,ordem,tipo,payload").eq("no_id", noId).order("nivel").order("ordem"),
       ]);
       if (noErr || !noData) {
-        toast.error("Nó não encontrado.");
+        toast.error(VOCAB.fase.naoEncontrada);
         navigate("/hoje");
         return;
       }
