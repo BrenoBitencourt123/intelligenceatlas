@@ -226,7 +226,7 @@ export default function TrilhaNo() {
       setCombo((c) => {
         const next = c + 1;
         if (next > 0 && next % 5 === 0) {
-          // evento: celebracao_vista { tipo: 'combo', valor: next }
+          trackUfu("combo_atingido", { valor: next });
           setComboBadge(next);
           if (navigator.vibrate) navigator.vibrate(30);
           setTimeout(() => setComboBadge(null), 2000);
