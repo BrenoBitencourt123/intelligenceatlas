@@ -31,7 +31,6 @@ type TrilhaNo = {
 };
 type Progresso = { no_id: string; nivel_atual: number; dourado: boolean };
 
-const DIAS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 const isEssayDay = () => new Date().getDay() === 6; // sábado
 
 const DISC_LABEL: Record<string, string> = {
