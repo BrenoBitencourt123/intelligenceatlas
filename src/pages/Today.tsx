@@ -280,14 +280,22 @@ const Today = () => {
 
   const todayDow = new Date().getDay();
 
-  // Fogo do streak — cor por nível
-  const streakClass = stats.isLoading
-    ? 'text-muted-foreground'
-    : stats.streak >= 3
-    ? 'text-orange-500 animate-pulse'
-    : stats.streak >= 1
-    ? 'text-orange-500'
-    : 'text-muted-foreground';
+  // Recompensa da semana — aparece uma vez por dia quando hoje já foi feito.
+  // Duolingo-style: tela cheia, ~2s de dopamina, some.
+  const [showReward, setShowReward] = useState(false);
+  useEffect(() => {
+    if (stats.isLoading) return;
+    if (!weekDone.has(todayDow)) return;
+    const key = `ufu_semana_recompensa_${new Date().toISOString().slice(0, 10)}`;
+    try {
+      if (localStorage.getItem(key)) return;
+      setShowReward(true);
+      localStorage.setItem(key, '1');
+    } catch {
+      /* storage bloqueado — skip */
+    }
+  }, [stats.isLoading, weekDone, todayDow]);
+
 
   return (
     <MainLayout>
