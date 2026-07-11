@@ -187,6 +187,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/ufu/no/:noId"
+              element={
+                <ProtectedRoute>
+                  <TrilhaNo />
+                </ProtectedRoute>
+              }
+            />
             {/* UFU - corretor de redacao (produto; requer login) */}
             <Route
               path="/redacao-ufu"
