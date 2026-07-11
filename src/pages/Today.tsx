@@ -211,7 +211,10 @@ const Today = () => {
                     {placar.acertos}/{placar.meta ?? '—'}
                   </span>
                   <span className="text-muted-foreground shrink-0">·</span>
-                  <span className="text-muted-foreground truncate">{placar.zona}</span>
+                  <span className="text-muted-foreground truncate">
+                    {placar.zona}
+                    {placar.estimado && <span className="ml-1 text-[10px] opacity-60">(estimado)</span>}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   {!stats.isLoading && (
