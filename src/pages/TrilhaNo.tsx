@@ -429,7 +429,17 @@ export default function TrilhaNo() {
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border">
         <button
-          onClick={() => navigate("/hoje")}
+          onClick={() => {
+            if (sessaoIniciadaRef.current && !sessaoFinalizadaRef.current) {
+              trackUfu("trilha_sessao_abandono", {
+                no_id: noId,
+                idx,
+                total: itens.length,
+              });
+              sessaoFinalizadaRef.current = true;
+            }
+            navigate("/hoje");
+          }}
           className="p-2 -ml-2 text-muted-foreground hover:text-foreground"
           aria-label="Sair"
         >
