@@ -22,6 +22,7 @@ import { useStudyStats } from "@/hooks/useStudyStats";
 import { CURSOS_UFU, COTAS, TOTAL_QUESTOES, type CotaId } from "@/data/ufu/vestibular";
 import { PlacarShareCard } from "@/components/ufu/PlacarShareCard";
 import { trackUfu } from "@/lib/ufu/track";
+import { VOCAB } from "@/lib/vocab";
 
 
 type Opcao = { id: string; texto: string; svg?: string | null };
