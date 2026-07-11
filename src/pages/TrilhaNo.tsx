@@ -176,15 +176,52 @@ export default function TrilhaNo() {
   const handleCorrect = async () => {
     if (!user || !current) return;
     stats.current.total += 1;
-    if (tentativas === 1) stats.current.primeira += 1;
+    const acertouPrimeira = tentativas === 1;
+    if (acertouPrimeira) stats.current.primeira += 1;
     await supabase.from("trilha_respostas").insert({
       user_id: user.id,
       item_id: current.id,
-      acertou_primeira: tentativas === 1,
+      acertou_primeira: acertouPrimeira,
       tentativas,
     });
+
+    // Combo: só sobe se acertou de primeira. Vibra e mostra badge nos múltiplos de 5.
+    if (acertouPrimeira) {
+      setCombo((c) => {
+        const next = c + 1;
+        if (next > 0 && next % 5 === 0) {
+          // evento: celebracao_vista { tipo: 'combo', valor: next }
+          setComboBadge(next);
+          if (navigator.vibrate) navigator.vibrate(30);
+          setTimeout(() => setComboBadge(null), 2000);
+        }
+        return next;
+      });
+    }
+
     setPhase("correct");
     setTimeout(() => advance(), 1500);
+  };
+
+  const finalizarNo = async () => {
+    if (!user) return;
+    // Snapshot ANTES
+    const antes =
+      (profile as { placar_estimado?: number | null } | null)?.placar_estimado ?? null;
+    const fonteAtual =
+      ((profile as { placar_fonte?: PlacarFonte | null } | null)?.placar_fonte) ?? null;
+    setPlacarAntes(antes);
+
+    // Tenta recalcular via trilha (≥ 8 respostas reais)
+    const novo = await recomputePlacarTrilha(user.id);
+    if (novo !== null) {
+      const salvo = await atualizarPlacar(user.id, novo, "trilha", fonteAtual);
+      if (salvo !== null) {
+        setPlacarDepois(salvo);
+        await refreshProfile();
+      }
+    }
+    setFinishedStep("wrap");
   };
 
   const advance = async () => {
@@ -203,7 +240,7 @@ export default function TrilhaNo() {
         updated_at: new Date().toISOString(),
       });
       if (isEndOfNo) {
-        setFinished("wrap");
+        await finalizarNo();
         return;
       }
     }
@@ -213,6 +250,7 @@ export default function TrilhaNo() {
   };
 
   const handleWrong = () => {
+    setCombo(0); // errou → combo zera
     if (tentativas >= 2) {
       setPhase("reveal");
       return;
@@ -229,26 +267,43 @@ export default function TrilhaNo() {
     );
   }
 
-  if (finished === "wrap") {
+  // ============= Sequência de celebração =============
+  const perfeito = stats.current.total > 0 && stats.current.primeira === stats.current.total;
+  const placarMudou = placarDepois !== null && placarAntes !== placarDepois;
+
+  // Ordem: wrap → result → (perfect?) → streak → (placar?) → /hoje
+  const advanceCelebracao = () => {
+    if (finishedStep === "wrap") return setFinishedStep("result");
+    if (finishedStep === "result") {
+      if (perfeito) return setFinishedStep("perfect");
+      return setFinishedStep("streak");
+    }
+    if (finishedStep === "perfect") return setFinishedStep("streak");
+    if (finishedStep === "streak") {
+      if (placarMudou) return setFinishedStep("placar");
+      return navigate("/hoje");
+    }
+    if (finishedStep === "placar") return navigate("/hoje");
+  };
+
+  if (finishedStep === "wrap") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-background text-foreground">
+      <TapScreen onNext={advanceCelebracao}>
         <div className="text-6xl mb-4">🏅</div>
         <h1 className="text-3xl font-bold mb-2 text-center">Nó completo</h1>
         <p className="text-muted-foreground mb-8 text-center">{no?.titulo}</p>
-        <Button size="lg" className="w-full max-w-sm" onClick={() => setFinished("result")}>
+        <Button size="lg" className="w-full max-w-sm" onClick={advanceCelebracao}>
           VER MEU RESULTADO
         </Button>
-      </div>
+      </TapScreen>
     );
   }
 
-  if (finished === "result") {
+  if (finishedStep === "result") {
     const tempoMin = Math.max(1, Math.round((Date.now() - startedAt.current) / 60000));
     const pct = stats.current.total ? Math.round((stats.current.primeira / stats.current.total) * 100) : 0;
-    const last = itens[itens.length - 1];
-    const cta = last?.payload?.cta;
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background text-foreground">
+      <TapScreen onNext={advanceCelebracao}>
         <div className="grid grid-cols-3 gap-4 w-full max-w-md mb-8">
           <Stat label="itens" value={String(itens.length)} />
           <Stat label="1ª tentativa" value={`${pct}%`} />
@@ -257,19 +312,50 @@ export default function TrilhaNo() {
         <h2 className="text-2xl font-bold text-center mb-8 max-w-md">
           Você subiu do "quais são os gêneros" até a proposta real.
         </h2>
-        <div className="flex flex-col gap-3 w-full max-w-sm">
-          {cta && (
-            <Button size="lg" className="w-full" onClick={() => navigate(cta.href)}>
-              {cta.texto}
-            </Button>
-          )}
-          <Button variant="ghost" size="lg" className="w-full" onClick={() => navigate("/hoje")}>
-            Voltar
-          </Button>
-        </div>
-      </div>
+        <p className="text-xs text-muted-foreground">toque pra continuar</p>
+      </TapScreen>
     );
   }
+
+  if (finishedStep === "perfect") {
+    // evento: celebracao_vista { tipo: 'perfeito' }
+    return (
+      <PerfectScreen
+        total={stats.current.total}
+        onNext={advanceCelebracao}
+      />
+    );
+  }
+
+  if (finishedStep === "streak") {
+    // evento: celebracao_vista { tipo: 'streak' }
+    return (
+      <StreakScreen streak={studyStats.streak} onNext={advanceCelebracao} />
+    );
+  }
+
+  if (finishedStep === "placar") {
+    // evento: celebracao_vista { tipo: 'placar' }
+    const cursoId = (profile as { curso_ufu?: string } | null | undefined)?.curso_ufu;
+    const cotaId = (profile as { cota_ufu?: CotaId } | null | undefined)?.cota_ufu;
+    const curso = cursoId ? CURSOS_UFU.find((c) => c.id === cursoId) : null;
+    const corte = curso && cotaId ? curso.cortes[cotaId] ?? null : null;
+    const meta = corte !== null && corte !== undefined
+      ? Math.min(TOTAL_QUESTOES, Math.ceil(corte * 1.22))
+      : null;
+    return (
+      <PlacarScreen
+        antes={placarAntes ?? 0}
+        depois={placarDepois ?? 0}
+        corte={corte ?? 0}
+        meta={meta ?? META_TOTAL}
+        nome={(profile as { name?: string | null } | null)?.name ?? undefined}
+        onNext={advanceCelebracao}
+      />
+    );
+  }
+
+
 
   const proposta = current.payload.proposta_id
     ? PROPOSTAS_UFU.find((p) => p.id === current.payload.proposta_id)
