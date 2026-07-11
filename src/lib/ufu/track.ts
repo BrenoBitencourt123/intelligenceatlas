@@ -1,15 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Instrumentação de share do card — regra do projeto: medir desde o dia 1.
-// Métrica-mãe: share_rate = card_shared / calc_completed (meta ≥ 10%).
-// Sem cadastro: sessão anônima via localStorage.
+// Instrumentação de eventos UFU — regra: medir desde o dia 1.
+// Identidade: session_id (localStorage) sempre; user_id quando logado.
+// Views devem usar coalesce(user_id::text, session_id) — trocar de aparelho
+// ou limpar storage quebra a série sem o user_id.
 
 export type UfuEvent =
   | "calc_completed"
   | "card_generated"
   | "card_shared"
   | "card_downloaded"
-  // Retenção — loop Duolingo (prompt 03)
   | "trilha_sessao_inicio"
   | "trilha_sessao_fim"
   | "trilha_sessao_abandono"
@@ -35,13 +35,26 @@ function sessionId(): string {
   }
 }
 
+// Cache do user_id atual — atualizado via listener de auth.
+let currentUserId: string | null = null;
+supabase.auth.getSession().then(({ data }) => {
+  currentUserId = data.session?.user?.id ?? null;
+});
+supabase.auth.onAuthStateChange((_evt, session) => {
+  currentUserId = session?.user?.id ?? null;
+});
+
 export function trackUfu(event: UfuEvent, payload: Record<string, unknown> = {}): void {
-  // fire-and-forget; nunca quebra a UX se a tabela não existir ainda
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from("ufu_events")
-      .insert({ event, payload, session_id: sessionId() })
+      .insert({
+        event,
+        payload,
+        session_id: sessionId(),
+        user_id: currentUserId,
+      })
       .then(({ error }: { error: unknown }) => {
         if (error) console.warn("[ufu_events]", error);
       });
