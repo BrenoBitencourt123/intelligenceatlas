@@ -215,6 +215,8 @@ export type Database = {
           name: string | null
           onboarding_completed: boolean
           phone: string | null
+          placar_estimado: number | null
+          placar_fonte: string | null
           plan_started_at: string
           plan_type: string
           ufu_passe_ativo: boolean
@@ -233,6 +235,8 @@ export type Database = {
           name?: string | null
           onboarding_completed?: boolean
           phone?: string | null
+          placar_estimado?: number | null
+          placar_fonte?: string | null
           plan_started_at?: string
           plan_type?: string
           ufu_passe_ativo?: boolean
@@ -251,6 +255,8 @@ export type Database = {
           name?: string | null
           onboarding_completed?: boolean
           phone?: string | null
+          placar_estimado?: number | null
+          placar_fonte?: string | null
           plan_started_at?: string
           plan_type?: string
           ufu_passe_ativo?: boolean
