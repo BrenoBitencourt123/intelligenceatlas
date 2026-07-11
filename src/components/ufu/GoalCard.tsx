@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Target, ArrowRight, Flag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CURSOS_UFU, COTAS, TOTAL_QUESTOES, type CotaId } from '@/data/ufu/vestibular';
 import { cn } from '@/lib/utils';
+
 
 /**
  * Placar vivo (nível Duolingo): barra gráfica com avatar do aluno,
@@ -36,6 +37,15 @@ export function GoalCard() {
     const meta = corte !== null ? Math.min(TOTAL_QUESTOES, Math.ceil(corte * 1.22)) : null;
     return { curso, cota, corte, meta };
   }, [cursoId, cotaId]);
+
+  // Sem placar ainda → manda direto pro diagnóstico (fluxo Duolingo: teste antes da tela)
+  const precisaDiagnostico =
+    !!cursoId && !!cotaId && info?.corte != null && placarEstimado === null;
+  useEffect(() => {
+    if (precisaDiagnostico) navigate('/trilha/diagnostico', { replace: true });
+  }, [precisaDiagnostico, navigate]);
+  if (precisaDiagnostico) return null;
+
 
   if (!cursoId || !cotaId) {
     return (
