@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchActiveDays } from '@/lib/activeDays';
+
 
 const DIAGNOSTIC_QUESTIONS_PER_AREA = 60;
 
