@@ -22,6 +22,7 @@ import { useStudyStats } from "@/hooks/useStudyStats";
 import { CURSOS_UFU, COTAS, TOTAL_QUESTOES, type CotaId } from "@/data/ufu/vestibular";
 import { PlacarShareCard } from "@/components/ufu/PlacarShareCard";
 import { trackUfu } from "@/lib/ufu/track";
+import { VOCAB } from "@/lib/vocab";
 
 
 type Opcao = { id: string; texto: string; svg?: string | null };
@@ -80,10 +81,11 @@ export default function TrilhaNo() {
   const [idx, setIdx] = useState(0);
   const [tentativas, setTentativas] = useState(1);
   const [phase, setPhase] = useState<"answer" | "wrong" | "reveal" | "correct">("answer");
-  // Sequência de celebração: wrap → result → (perfect?) → streak → (placar mudou?) → done
+  // Sequência de celebração: wrap → (coroacao se dourou) → result → (perfect?) → streak → (placar?) → done
   const [finishedStep, setFinishedStep] = useState<
-    null | "wrap" | "result" | "perfect" | "streak" | "placar"
+    null | "wrap" | "coroacao" | "result" | "perfect" | "streak" | "placar"
   >(null);
+  const [nodouradoNesta, setNodouradoNesta] = useState(false);
   const startedAt = useRef<number>(Date.now());
   const stats = useRef({ total: 0, primeira: 0 });
   const nivelAtualRef = useRef<number>(0);
@@ -109,7 +111,7 @@ export default function TrilhaNo() {
         supabase.from("trilha_itens").select("id,no_id,nivel,ordem,tipo,payload").eq("no_id", noId).order("nivel").order("ordem"),
       ]);
       if (noErr || !noData) {
-        toast.error("Nó não encontrado.");
+        toast.error(VOCAB.fase.naoEncontrada);
         navigate("/hoje");
         return;
       }
@@ -136,14 +138,14 @@ export default function TrilhaNo() {
         );
         const falta = anterioresIds.find((id) => !douradosSet.has(id));
         if (falta) {
-          toast.error("Termine o nó anterior primeiro.");
+          toast.error(VOCAB.fase.termineAnterior);
           navigate("/hoje");
           return;
         }
       }
 
       if (itErr || !itensData?.length) {
-        toast.error("Sem itens neste nó.");
+        toast.error(VOCAB.fase.semItens);
         navigate("/hoje");
         return;
       }
@@ -278,7 +280,12 @@ export default function TrilhaNo() {
       dourado,
     });
 
+    setNodouradoNesta(dourado);
     setFinishedStep("wrap");
+    // Sinaliza pro /hoje pulsar a bolinha recém-dourada na volta.
+    if (dourado && noId) {
+      try { localStorage.setItem("ufu_no_recem_dourado", noId); } catch { /* ignore */ }
+    }
   };
 
   const advance = async () => {
@@ -328,9 +335,13 @@ export default function TrilhaNo() {
   const perfeito = stats.current.total > 0 && stats.current.primeira === stats.current.total;
   const placarMudou = placarDepois !== null && placarAntes !== placarDepois;
 
-  // Ordem: wrap → result → (perfect?) → streak → (placar?) → /hoje
+  // Ordem: wrap → (coroacao se dourou) → result → (perfect?) → streak → (placar?) → /hoje
   const advanceCelebracao = () => {
-    if (finishedStep === "wrap") return setFinishedStep("result");
+    if (finishedStep === "wrap") {
+      if (nodouradoNesta) return setFinishedStep("coroacao");
+      return setFinishedStep("result");
+    }
+    if (finishedStep === "coroacao") return setFinishedStep("result");
     if (finishedStep === "result") {
       if (perfeito) return setFinishedStep("perfect");
       return setFinishedStep("streak");
@@ -345,26 +356,30 @@ export default function TrilhaNo() {
 
   if (finishedStep === "wrap") {
     return (
-      <TapScreen onNext={advanceCelebracao}>
-        <div className="text-6xl mb-4">🏅</div>
-        <h1 className="text-3xl font-bold mb-2 text-center">Nó completo</h1>
-        <p className="text-muted-foreground mb-8 text-center">{no?.titulo}</p>
-        <Button size="lg" className="w-full max-w-sm" onClick={advanceCelebracao}>
-          VER MEU RESULTADO
-        </Button>
-      </TapScreen>
+      <WrapScreen
+        titulo={no?.titulo ?? ""}
+        onNext={advanceCelebracao}
+      />
+    );
+  }
+
+  if (finishedStep === "coroacao") {
+    return (
+      <CoroacaoScreen
+        titulo={no?.titulo ?? ""}
+        onNext={advanceCelebracao}
+      />
     );
   }
 
   if (finishedStep === "result") {
     const tempoMin = Math.max(1, Math.round((Date.now() - startedAt.current) / 60000));
-    const pct = stats.current.total ? Math.round((stats.current.primeira / stats.current.total) * 100) : 0;
+    // Só números que crescem — % de acerto vai pros eventos (métrica), não pra tela (celebração).
     return (
       <TapScreen onNext={advanceCelebracao} tela="resultado">
-
         <div className="grid grid-cols-3 gap-4 w-full max-w-md mb-8">
-          <Stat label="itens" value={String(itens.length)} />
-          <Stat label="1ª tentativa" value={`${pct}%`} />
+          <Stat label="acertos de primeira" value={String(stats.current.primeira)} />
+          <Stat label="degraus subidos" value={String(itens.length)} />
           <Stat label="tempo" value={`${tempoMin}min`} />
         </div>
         <h2 className="text-2xl font-bold text-center mb-8 max-w-md">
@@ -391,6 +406,7 @@ export default function TrilhaNo() {
       <StreakScreen
         streak={studyStats.streak}
         frozenDaysThisWeek={studyStats.frozenDaysThisWeek}
+        activeDaysThisWeek={studyStats.activeDaysThisWeek}
         onNext={advanceCelebracao}
       />
     );
@@ -973,16 +989,17 @@ function PerfectScreen({ total, onNext }: { total: number; onNext: () => void })
 function StreakScreen({
   streak,
   frozenDaysThisWeek,
+  activeDaysThisWeek,
   onNext,
 }: {
   streak: number;
   frozenDaysThisWeek: string[];
+  activeDaysThisWeek: string[];
   onNext: () => void;
 }) {
   const now = new Date();
   const todayDow = now.getDay();
   const jsDayToDate = (dow: number) => {
-    // dow: 0=domingo..6=sábado. Reconstroi a data desta semana (semana comum baseada em domingo).
     const d = new Date(now);
     d.setDate(now.getDate() - todayDow + dow);
     return d.toISOString().split("T")[0];
@@ -997,6 +1014,7 @@ function StreakScreen({
     6: "sábado",
   };
   const frozenSet = new Set(frozenDaysThisWeek);
+  const activeSet = new Set(activeDaysThisWeek);
   const freezeDow = [0, 1, 2, 3, 4, 5, 6].find((d) => frozenSet.has(jsDayToDate(d)));
 
   return (
@@ -1012,8 +1030,8 @@ function StreakScreen({
           const isToday = dow === todayDow;
           const dateStr = jsDayToDate(dow);
           const isFrozen = frozenSet.has(dateStr);
-          const isPast = dow <= todayDow;
-          const isDone = isPast && !isFrozen;
+          // Dado real: só marca dia com atividade registrada. Nunca decorativo.
+          const isDone = activeSet.has(dateStr) && !isFrozen;
           return (
             <div key={dow} className="flex flex-col items-center gap-1.5 flex-1">
               <span
@@ -1056,6 +1074,96 @@ function StreakScreen({
     </TapScreen>
   );
 }
+
+/* ---------- Wrap: medalha viva (spring + burst curto) ---------- */
+function WrapScreen({ titulo, onNext }: { titulo: string; onNext: () => void }) {
+  useEffect(() => {
+    // Burst único, curto — não é loop, é pontuação.
+    confetti({
+      particleCount: 80,
+      spread: 60,
+      startVelocity: 35,
+      origin: { y: 0.55 },
+      disableForReducedMotion: true,
+    });
+    if (navigator.vibrate) navigator.vibrate(20);
+  }, []);
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background text-foreground">
+      {/* animate-in zoom-in-50 → efeito de spring (scale 0→1) */}
+      <div className="text-7xl mb-4 animate-in zoom-in-50 duration-500 ease-out">🏅</div>
+      <h1 className="text-3xl font-bold mb-2 text-center animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-both">
+        {VOCAB.fase.completa}
+      </h1>
+      <p className="text-muted-foreground mb-8 text-center max-w-sm">{titulo}</p>
+      <Button size="lg" className="w-full max-w-sm" onClick={onNext}>
+        VER MEU RESULTADO
+      </Button>
+    </div>
+  );
+}
+
+/* ---------- Coroação: círculo cinza → dourado, o clímax do nível 5 ---------- */
+function CoroacaoScreen({ titulo, onNext }: { titulo: string; onNext: () => void }) {
+  const [dourou, setDourou] = useState(false);
+  const t0 = useRef(Date.now());
+  const disparado = useRef(false);
+
+  useEffect(() => {
+    // Delay curtinho pra criar antecipação (o "vai virar")
+    const t = setTimeout(() => {
+      setDourou(true);
+      confetti({
+        particleCount: 120,
+        spread: 90,
+        startVelocity: 40,
+        colors: ["#fbbf24", "#f59e0b", "#fde68a", "#d97706"],
+        origin: { y: 0.5 },
+        disableForReducedMotion: true,
+      });
+      if (navigator.vibrate) navigator.vibrate([30, 60, 30]);
+    }, 400);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleNext = () => {
+    if (!disparado.current) {
+      disparado.current = true;
+      const dur = Date.now() - t0.current;
+      if (dur < 500) trackUfu("celebracao_pulada", { tela: "coroacao" });
+      else trackUfu("celebracao_vista", { tela: "coroacao", duracao_ms: dur });
+    }
+    onNext();
+  };
+
+  return (
+    <div
+      onClick={handleNext}
+      className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background text-foreground cursor-pointer select-none"
+    >
+      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-6">
+        Primeira questão real vencida
+      </p>
+
+      <div
+        className={cn(
+          "w-32 h-32 rounded-full flex items-center justify-center border-4 transition-all duration-700 ease-out",
+          dourou
+            ? "bg-[hsl(var(--status-draft)/0.18)] border-[hsl(var(--status-draft))] text-[hsl(var(--status-draft))] scale-110 shadow-2xl"
+            : "bg-muted/50 border-border text-muted-foreground scale-95",
+        )}
+      >
+        {dourou ? <Check className="h-14 w-14" strokeWidth={3} /> : <Sparkles className="h-14 w-14" />}
+      </div>
+
+      <p className="mt-6 text-lg font-semibold text-center max-w-sm">{titulo}</p>
+      <p className="text-xs text-muted-foreground mt-2">{VOCAB.fase.Singular} {VOCAB.fase.doradaFem}</p>
+
+      <p className="text-xs text-muted-foreground mt-10">toque pra continuar</p>
+    </div>
+  );
+}
+
 
 function PlacarScreen({
   antes,

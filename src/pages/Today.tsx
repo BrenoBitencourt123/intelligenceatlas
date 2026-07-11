@@ -17,6 +17,7 @@ import { CURSOS_UFU, COTAS, TOTAL_QUESTOES, type CotaId } from '@/data/ufu/vesti
 import { cn } from '@/lib/utils';
 import { trackUfu } from '@/lib/ufu/track';
 import { fetchActiveDays, fetchEssayDays } from '@/lib/activeDays';
+import { VOCAB } from '@/lib/vocab';
 
 // Trilha tables not yet in generated types
 const supabase = supabaseTyped as unknown as { from: (t: string) => any };
@@ -63,12 +64,20 @@ const Today = () => {
 
   // "COMEÇAR AQUI" — mostra só na primeira visita à trilha
   const [primeiraVisitaTrilha, setPrimeiraVisitaTrilha] = useState(false);
+  // Bolinha recém-dourada faz um pulso único ao voltar — costura a memória
+  // "eu vi dourar → aqui está dourado".
+  const [nodouradoRecente, setNodouradoRecente] = useState<string | null>(null);
   useEffect(() => {
     try {
       const visto = localStorage.getItem('ufu_trilha_visto');
       if (!visto) {
         setPrimeiraVisitaTrilha(true);
         localStorage.setItem('ufu_trilha_visto', new Date().toISOString());
+      }
+      const recem = localStorage.getItem('ufu_no_recem_dourado');
+      if (recem) {
+        setNodouradoRecente(recem);
+        localStorage.removeItem('ufu_no_recem_dourado');
       }
     } catch {
       /* storage bloqueado — sem tag, sem crise */
@@ -422,7 +431,7 @@ const Today = () => {
             ) : linhas.length === 0 ? (
               <Card className="border-dashed border-border/60 bg-muted/20 shadow-none">
                 <CardContent className="p-6 text-sm text-muted-foreground text-center">
-                  Novos nós chegando em breve.
+                  {VOCAB.fase.novasEmBreve}
                 </CardContent>
               </Card>
             ) : (
@@ -452,6 +461,7 @@ const Today = () => {
                           firstVisitHint={
                             linha.status === 'atual' && primeiraVisitaTrilha
                           }
+                          pulseRecent={nodouradoRecente === linha.no.id}
                           onClick={() => {
                             if (linha.status !== 'bloqueado') navigate(`/ufu/no/${linha.no.id}`);
                           }}
@@ -485,11 +495,13 @@ function TrilhaNoDot({
   no,
   status,
   firstVisitHint,
+  pulseRecent,
   onClick,
 }: {
   no: TrilhaNo;
   status: 'dourado' | 'atual' | 'bloqueado';
   firstVisitHint: boolean;
+  pulseRecent?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -513,6 +525,7 @@ function TrilhaNoDot({
             'w-20 h-20 border-4 bg-[hsl(var(--status-draft)/0.18)] border-[hsl(var(--status-draft))] text-[hsl(var(--status-draft))] shadow-md',
           status === 'bloqueado' &&
             'w-16 h-16 border-2 border-dashed border-border bg-muted/50 text-muted-foreground/50',
+          pulseRecent && 'animate-in zoom-in-95 duration-700',
         )}
       >
         {status === 'atual' && (
