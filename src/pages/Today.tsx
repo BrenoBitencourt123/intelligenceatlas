@@ -17,6 +17,7 @@ import { CURSOS_UFU, COTAS, TOTAL_QUESTOES, type CotaId } from '@/data/ufu/vesti
 import { cn } from '@/lib/utils';
 import { trackUfu } from '@/lib/ufu/track';
 import { fetchActiveDays, fetchEssayDays } from '@/lib/activeDays';
+import { VOCAB } from '@/lib/vocab';
 
 // Trilha tables not yet in generated types
 const supabase = supabaseTyped as unknown as { from: (t: string) => any };
