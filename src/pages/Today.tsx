@@ -175,15 +175,6 @@ const Today = () => {
     })();
   }, [user]);
 
-  // Tema da semana — carrega uma vez por sessão. Fallback determinístico se
-  // a curadoria ainda não tiver populado temas_semana.
-  useEffect(() => {
-    let cancelled = false;
-    getTemaSemana().then((t) => {
-      if (!cancelled) setTema(t);
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
 
   // Cadeado linear: por disciplina, o próximo não-dourado é o "atual"; os seguintes ficam bloqueados.
   const { currentByDisc } = useMemo(() => {
