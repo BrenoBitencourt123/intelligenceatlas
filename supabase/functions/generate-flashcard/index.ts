@@ -70,7 +70,7 @@ serve(async (req) => {
 
     const correctAlt = alternatives?.find((a: { letter: string }) => a.letter === correctAnswer);
 
-    const prompt = `Você é um especialista em criar flashcards de estudo para o ENEM.
+    const prompt = `Você é um especialista em criar flashcards de estudo para vestibulares.
 
 OBJETIVO: Identifique o CONCEITO-CHAVE, FÓRMULA ou REGRA que o aluno precisa dominar para resolver questões desse tipo. Crie um flashcard que ENSINA esse conceito de forma independente.
 
@@ -84,7 +84,7 @@ REGRAS OBRIGATÓRIAS:
    - "Qual a diferença entre mitose e meiose?"
    - "O que foi a Revolução de 1930?"
 5. O VERSO deve conter a resposta objetiva: fórmula, definição, lista de características ou regra prática (máximo 4 linhas).
-6. Termine o verso com "🎯 ENEM: [dica de como esse conceito aparece na prova]".
+6. Termine o verso com "🎯 Dica: [como esse conceito costuma aparecer em provas de vestibular]".
 
 Área: ${area}
 Conceito extraído da questão (use apenas como referência para identificar o tema):
@@ -93,7 +93,7 @@ ${explanation ? `Explicação: ${explanation}` : ''}
 Tópico implícito no enunciado: ${statement.substring(0, 200)}
 
 Responda EXATAMENTE neste formato JSON:
-{"front": "pergunta sobre o conceito-chave", "back": "resposta objetiva\\n\\n🎯 ENEM: dica prática"}`;
+{"front": "pergunta sobre o conceito-chave", "back": "resposta objetiva\\n\\n🎯 Dica: dica prática"}`;
 
     const apiKey = Deno.env.get('GEMINI_API_KEY');
     if (!apiKey) {

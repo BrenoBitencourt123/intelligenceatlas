@@ -13,7 +13,13 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type DayISO = string; // "YYYY-MM-DD"
 
-const isoDay = (isoTs: string): DayISO => isoTs.split('T')[0];
+const isoDay = (isoTs: string): DayISO => {
+  const d = new Date(isoTs);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}` as DayISO;
+};
 
 interface Options {
   sinceIso?: string; // ISO timestamp — filtro inferior (inclusive)
@@ -38,10 +44,22 @@ export async function fetchActiveDays(
     return out;
   };
 
+  // session_date é coluna tipo `date` (sem hora). Comparar com timestamp ISO causa
+  // falso negativo no Postgres (ex: '2026-07-12' < '2026-07-12T03:00:00Z').
+  // Por isso extraímos apenas a parte de data do filtro antes de passar.
+  const sinceDateOnly = sinceIso?.split('T')[0];
+  const untilDateOnly = untilIso?.split('T')[0];
+  const applyDateRange = (q: any) => {
+    let out = q;
+    if (sinceDateOnly) out = out.gte('session_date', sinceDateOnly);
+    if (untilDateOnly) out = out.lt('session_date', untilDateOnly);
+    if (limit) out = out.order('session_date', { ascending: false }).limit(limit);
+    return out;
+  };
+
   const [sessionsRes, essaysRes, trilhaRes, attemptsRes] = await Promise.all([
-    applyRange(
+    applyDateRange(
       anySb.from('study_sessions').select('session_date').eq('user_id', userId).eq('is_extra', false),
-      'session_date',
     ),
     applyRange(
       anySb.from('essays').select('created_at').eq('user_id', userId),

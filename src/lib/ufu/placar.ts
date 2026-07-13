@@ -7,7 +7,7 @@ export type PlacarFonte = "quiz" | "autoavaliacao" | "trilha" | "simulado";
 
 // Fallback conservador do diagnóstico. Só pode subir a partir daí.
 export const AUTOAVALIACAO_FALLBACK: Record<string, number> = {
-  nada: 8,
+  nada: 0,
   basico: 18,
   bastante: 30,
 };
