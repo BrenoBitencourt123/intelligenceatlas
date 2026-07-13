@@ -20,11 +20,10 @@ export type TemaSemana = {
 };
 
 // Deterministic fallback so, mesmo sem curadoria, a semana já tem tema.
-function fallbackProposta(semana: string): { id: string; titulo: string; enunciado?: string } {
+function fallbackProposta(semana: string) {
   let hash = 0;
   for (const ch of semana) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-  const p = PROPOSTAS_UFU[hash % PROPOSTAS_UFU.length];
-  return { id: p.id, titulo: (p as any).tema ?? (p as any).titulo ?? p.id, enunciado: (p as any).enunciado };
+  return PROPOSTAS_UFU[hash % PROPOSTAS_UFU.length];
 }
 
 export async function getTemaSemana(when: Date = new Date()): Promise<TemaSemana> {
@@ -41,8 +40,8 @@ export async function getTemaSemana(when: Date = new Date()): Promise<TemaSemana
     return {
       semana_iso: semana,
       proposta_id: data.proposta_id,
-      titulo: data.titulo ?? (p as any)?.tema ?? (p as any)?.titulo ?? data.proposta_id,
-      enunciado: (p as any)?.enunciado,
+      titulo: data.titulo ?? p?.titulo ?? data.proposta_id,
+      enunciado: p?.enunciado,
     };
   }
   const fb = fallbackProposta(semana);
