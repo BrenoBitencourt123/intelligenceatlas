@@ -102,6 +102,15 @@ const Today = () => {
     }
   }, []);
 
+  // Interceptação: se há plano de dia em andamento, o usuário está voltando
+  // de um segmento — avança pro próximo em vez de ficar na home.
+  useEffect(() => {
+    const plano = lerPlanoDia();
+    if (plano && plano.cursor < plano.segmentos.length) {
+      navigate('/trilha/dia?advance=1', { replace: true });
+    }
+  }, [navigate]);
+
   // Gate: se não fez o diagnóstico, manda pra lá
   useEffect(() => {
     if (!user) return;
