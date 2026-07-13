@@ -22,6 +22,8 @@ import { InlineStatementRenderer } from '@/components/study/InlineStatementRende
 import QuestionContent from '@/components/study/QuestionContent';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUfuAvailability } from '@/hooks/useUfuAvailability';
+import { usePreLesson } from '@/hooks/usePreLesson';
+import { PreLessonPlayer } from '@/components/study/PreLessonPlayer';
 
 const AREA_LABELS: Record<string, string> = {
   matematica: 'Matemática',
@@ -97,6 +99,18 @@ const Objectives = () => {
   );
   const { user } = useAuth();
   const { hasUfuQuestions, isLoading: ufuLoading } = useUfuAvailability();
+
+  // Pré-aula: gera micro-itens antes de cada questão
+  const preLesson = usePreLesson();
+  const preLessonQuestionRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (state !== 'active' || !currentQuestion) return;
+    if (preLessonQuestionRef.current === currentQuestion.id) return;
+    preLessonQuestionRef.current = currentQuestion.id;
+    preLesson.reset();
+    preLesson.fetch(currentQuestion.id);
+  }, [state, currentQuestion?.id]);
+
   const [blockTransition, setBlockTransition] = useState<{
     completedBlock: number;
     correct: number;
@@ -286,6 +300,19 @@ const Objectives = () => {
           </div>
         </div>
       </MainLayout>
+    );
+  }
+
+  // ── Pré-aula (micro-itens antes da questão) ──────────────────
+  if (state === 'active' && currentQuestion && !preLesson.isComplete && preLesson.items.length > 0) {
+    return (
+      <PreLessonPlayer
+        items={preLesson.items}
+        currentIndex={preLesson.currentIndex}
+        onAdvance={preLesson.advance}
+        onComplete={preLesson.advance}
+        onSkip={preLesson.skip}
+      />
     );
   }
 
