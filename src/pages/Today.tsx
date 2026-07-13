@@ -408,12 +408,39 @@ const Today = () => {
             <GoalCard />
           )}
 
+          {/* ── Tema da semana — endowed progress: revela na segunda, orbita a semana toda ── */}
+          {tema && !missao.isBoss && (
+            <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 flex items-start gap-3">
+              <BookOpen className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Tema da semana
+                </p>
+                <p className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
+                  {tema.titulo}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Seu chefe te espera {DIAS_SEMANA[diaRedacao].long.toLowerCase()}.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* ── Card-missão (herói) ── */}
-          <Card className="border-border shadow-sm">
+          <Card
+            className={cn(
+              'border-border shadow-sm transition-colors',
+              missao.isBoss && 'border-primary/60 bg-primary/[0.03] shadow-md',
+            )}
+          >
             <CardContent className="p-6 space-y-5">
               <div className="space-y-1">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Missão de hoje · ~10 min
+                <p className={cn(
+                  'text-xs font-medium uppercase tracking-wider inline-flex items-center gap-1.5',
+                  missao.isBoss ? 'text-primary' : 'text-muted-foreground',
+                )}>
+                  {missao.isBoss && <Trophy className="h-3.5 w-3.5" />}
+                  {missao.isBoss ? 'Chefe da semana · ~30 min' : 'Missão de hoje · ~10 min'}
                 </p>
                 <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">
                   {missao.label}
@@ -421,7 +448,7 @@ const Today = () => {
                 <p className="text-sm text-muted-foreground line-clamp-2">{missao.sub}</p>
               </div>
               <Button onClick={missao.action} size="lg" className="w-full gap-2">
-                COMEÇAR
+                {missao.isBoss ? 'ENCARAR O CHEFE' : 'COMEÇAR'}
                 <ArrowRight className="h-4 w-4" />
               </Button>
               {/* Em dia de redação, mostrar rota alternativa — nunca beco sem saída. */}
