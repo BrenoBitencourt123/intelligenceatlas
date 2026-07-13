@@ -69,6 +69,7 @@ export default function Onboarding() {
           onboarding_completed: true,
           curso_ufu: cursoId,
           cota_ufu: cotaId,
+          dia_redacao: diaRedacao,
         } as any)
         .eq('id', user.id);
       if (error) throw error;
