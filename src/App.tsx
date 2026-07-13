@@ -37,6 +37,7 @@ import DiagnosticoUfu from "./pages/DiagnosticoUfu";
 import TrilhaUfu from "./pages/TrilhaUfu";
 import TrilhaNo from "./pages/TrilhaNo";
 import TrilhaDiagnostico from "./pages/TrilhaDiagnostico";
+import TrilhaDia from "./pages/TrilhaDia";
 
 const queryClient = new QueryClient();
 
@@ -201,6 +202,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <TrilhaDiagnostico />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trilha/dia"
+              element={
+                <ProtectedRoute>
+                  <TrilhaDia />
                 </ProtectedRoute>
               }
             />
