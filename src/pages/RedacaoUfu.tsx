@@ -52,7 +52,7 @@ interface VersaoEvoluida {
 }
 
 export default function RedacaoUfu() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [propostaId, setPropostaId] = useState<string>("");
   const [genreId, setGenreId] = useState<string>("");
   const [theme, setTheme] = useState("");
