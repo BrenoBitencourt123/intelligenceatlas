@@ -13,13 +13,15 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowRight, ArrowLeft, Check, GraduationCap, Users } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, GraduationCap, Users, PenLine } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CURSOS_UFU, COTAS, getCurso } from '@/data/ufu/vestibular';
+import { DIAS_SEMANA } from '@/lib/ufu/temaSemana';
 
 const STEPS = [
   { icon: GraduationCap, label: 'Curso' },
   { icon: Users, label: 'Modalidade' },
+  { icon: PenLine, label: 'Dia D' },
 ];
 
 const slideVariants = {
@@ -36,6 +38,7 @@ export default function Onboarding() {
   const [direction, setDirection] = useState(1);
   const [cursoId, setCursoId] = useState<string>('');
   const [cotaId, setCotaId] = useState<string>('');
+  const [diaRedacao, setDiaRedacao] = useState<number>(6);
   const [saving, setSaving] = useState(false);
 
   const cursosPorCampus = useMemo(() => {
@@ -66,6 +69,7 @@ export default function Onboarding() {
           onboarding_completed: true,
           curso_ufu: cursoId,
           cota_ufu: cotaId,
+          dia_redacao: diaRedacao,
         } as any)
         .eq('id', user.id);
       if (error) throw error;
@@ -273,9 +277,82 @@ export default function Onboarding() {
                   <Button
                     className="flex-1 h-12 text-base gap-2 rounded-xl"
                     disabled={!cotaId || saving}
+                    onClick={() => goTo(2)}
+                  >
+                    Continuar
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {step === 2 && (
+              <motion.div
+                key="step-dia"
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="space-y-6"
+              >
+                <div className="text-center space-y-3">
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
+                    className="text-6xl"
+                  >
+                    📝
+                  </motion.div>
+                  <h2 className="text-2xl font-bold tracking-tight">
+                    Que dia você escreve sua redação da semana?
+                  </h2>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                    Todos os treinos da semana vão orbitar o tema — nesse dia, você encara o chefe.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2">
+                  {DIAS_SEMANA.map((d) => {
+                    const selected = diaRedacao === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        onClick={() => setDiaRedacao(d.id)}
+                        className={`h-14 rounded-xl border-2 text-sm font-semibold transition-all ${
+                          selected
+                            ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                            : 'border-border hover:border-primary/40 hover:bg-muted/50'
+                        }`}
+                      >
+                        {d.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <p className="text-center text-xs text-muted-foreground">
+                  Escolhido: <span className="font-semibold text-foreground">{DIAS_SEMANA[diaRedacao].long}</span>. Dá pra trocar depois no perfil.
+                </p>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-12 rounded-xl"
+                    onClick={() => goTo(1)}
+                    disabled={saving}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Voltar
+                  </Button>
+                  <Button
+                    className="flex-1 h-12 text-base gap-2 rounded-xl"
+                    disabled={saving}
                     onClick={handleFinish}
                   >
-                    {saving ? 'Salvando...' : 'Concluir'}
+                    {saving ? 'Salvando...' : 'Vou cumprir'}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>

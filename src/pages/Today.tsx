@@ -8,7 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudyStats } from '@/hooks/useStudyStats';
 import { supabase as supabaseTyped } from '@/integrations/supabase/client';
-import { ArrowRight, ChevronDown, Check, Lock, Sparkles, Clock } from 'lucide-react';
+import { ArrowRight, ChevronDown, Check, Lock, Sparkles, Clock, Trophy, BookOpen } from 'lucide-react';
 import { InstallBanner } from '@/components/pwa/InstallBanner';
 import { NotificationBanner } from '@/components/pwa/NotificationBanner';
 import { GoalCard } from '@/components/ufu/GoalCard';
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { trackUfu } from '@/lib/ufu/track';
 import { fetchActiveDays, fetchEssayDays } from '@/lib/activeDays';
 import { VOCAB } from '@/lib/vocab';
+import { getTemaSemana, DIAS_SEMANA, type TemaSemana } from '@/lib/ufu/temaSemana';
 
 // Trilha tables not yet in generated types
 const supabase = supabaseTyped as unknown as { from: (t: string) => any };
@@ -31,8 +32,6 @@ type TrilhaNo = {
   ordem: number;
 };
 type Progresso = { no_id: string; nivel_atual: number; dourado: boolean };
-
-const isEssayDay = () => new Date().getDay() === 6; // sábado
 
 const DISC_LABEL: Record<string, string> = {
   redacao: 'Redação',
@@ -61,6 +60,11 @@ const Today = () => {
   const [weekDone, setWeekDone] = useState<Set<number>>(new Set());
   const [essayDays, setEssayDays] = useState<Set<number>>(new Set());
   const [goalOpen, setGoalOpen] = useState(false);
+  const [tema, setTema] = useState<TemaSemana | null>(null);
+
+  // Dia da redação — vem do perfil (default sábado). Substitui o hardcoded.
+  const diaRedacao = ((profile as { dia_redacao?: number } | null | undefined)?.dia_redacao ?? 6) as number;
+  const isEssayDay = () => new Date().getDay() === diaRedacao;
 
   // "COMEÇAR AQUI" — mostra só na primeira visita à trilha
   const [primeiraVisitaTrilha, setPrimeiraVisitaTrilha] = useState(false);
@@ -162,6 +166,16 @@ const Today = () => {
     })();
   }, [user]);
 
+  // Tema da semana — carrega uma vez por sessão. Fallback determinístico se
+  // a curadoria ainda não tiver populado temas_semana.
+  useEffect(() => {
+    let cancelled = false;
+    getTemaSemana().then((t) => {
+      if (!cancelled) setTema(t);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   // Cadeado linear: por disciplina, o próximo não-dourado é o "atual"; os seguintes ficam bloqueados.
   const { currentByDisc } = useMemo(() => {
     const curByDisc: Record<string, string> = {};
@@ -231,11 +245,13 @@ const Today = () => {
 
   const missao = useMemo(() => {
     if (isEssayDay()) {
+      const propostaQs = tema ? `?proposta=${encodeURIComponent(tema.proposta_id)}` : '';
       return {
-        label: 'Redação da semana',
-        sub: 'Corretor DIRPS · 5 critérios',
-        action: () => navigate('/redacao-ufu'),
+        label: tema ? `Chefe da semana: ${tema.titulo}` : 'Redação da semana',
+        sub: 'Corretor DIRPS · 5 critérios · tema já pré-selecionado',
+        action: () => navigate(`/redacao-ufu${propostaQs}`),
         isEssay: true,
+        isBoss: true,
       };
     }
     if (activeNo) {
@@ -245,6 +261,7 @@ const Today = () => {
         sub: activeNo.descricao ?? DISC_LABEL[activeNo.disciplina] ?? activeNo.disciplina,
         action: () => navigate(`/ufu/no/${activeNo.id}`),
         isEssay: false,
+        isBoss: false,
       };
     }
     return {
@@ -252,8 +269,10 @@ const Today = () => {
       sub: 'Flashcards do que você já viu',
       action: () => navigate('/flashcards'),
       isEssay: false,
+      isBoss: false,
     };
-  }, [activeNo, progressoMap, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeNo, progressoMap, navigate, tema, diaRedacao]);
 
   // Placar compacto
   const cursoId = (profile as { curso_ufu?: string } | null | undefined)?.curso_ufu;
@@ -389,12 +408,39 @@ const Today = () => {
             <GoalCard />
           )}
 
+          {/* ── Tema da semana — endowed progress: revela na segunda, orbita a semana toda ── */}
+          {tema && !missao.isBoss && (
+            <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 flex items-start gap-3">
+              <BookOpen className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Tema da semana
+                </p>
+                <p className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
+                  {tema.titulo}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Seu chefe te espera {DIAS_SEMANA[diaRedacao].long.toLowerCase()}.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* ── Card-missão (herói) ── */}
-          <Card className="border-border shadow-sm">
+          <Card
+            className={cn(
+              'border-border shadow-sm transition-colors',
+              missao.isBoss && 'border-primary/60 bg-primary/[0.03] shadow-md',
+            )}
+          >
             <CardContent className="p-6 space-y-5">
               <div className="space-y-1">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Missão de hoje · ~10 min
+                <p className={cn(
+                  'text-xs font-medium uppercase tracking-wider inline-flex items-center gap-1.5',
+                  missao.isBoss ? 'text-primary' : 'text-muted-foreground',
+                )}>
+                  {missao.isBoss && <Trophy className="h-3.5 w-3.5" />}
+                  {missao.isBoss ? 'Chefe da semana · ~30 min' : 'Missão de hoje · ~10 min'}
                 </p>
                 <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">
                   {missao.label}
@@ -402,7 +448,7 @@ const Today = () => {
                 <p className="text-sm text-muted-foreground line-clamp-2">{missao.sub}</p>
               </div>
               <Button onClick={missao.action} size="lg" className="w-full gap-2">
-                COMEÇAR
+                {missao.isBoss ? 'ENCARAR O CHEFE' : 'COMEÇAR'}
                 <ArrowRight className="h-4 w-4" />
               </Button>
               {/* Em dia de redação, mostrar rota alternativa — nunca beco sem saída. */}

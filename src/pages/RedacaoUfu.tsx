@@ -52,7 +52,7 @@ interface VersaoEvoluida {
 }
 
 export default function RedacaoUfu() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [propostaId, setPropostaId] = useState<string>("");
   const [genreId, setGenreId] = useState<string>("");
   const [theme, setTheme] = useState("");
@@ -81,6 +81,25 @@ export default function RedacaoUfu() {
         }
       }
     } catch { /* rascunho corrompido: ignora */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Boss day: /hoje envia ?proposta=<id> → já entra com a proposta da semana.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const pid = params.get("proposta");
+      if (pid && PROPOSTAS_UFU.some((p) => p.id === pid)) {
+        // só pré-seleciona se não veio de rascunho já preenchido
+        setPropostaId((current) => {
+          if (current) return current;
+          const p = PROPOSTAS_UFU.find((pp) => pp.id === pid)!;
+          setGenreId(p.generoId);
+          setTheme(p.titulo.split("—")[1]?.trim() ?? p.titulo);
+          return pid;
+        });
+      }
+    } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
@@ -207,14 +226,41 @@ export default function RedacaoUfu() {
       await refetchSaldo();
 
       if (user) {
-        await supabase.from("essays").insert({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: essayRow } = await (supabase as any).from("essays").insert({
           user_id: user.id,
           theme: theme || genero.label,
-          blocks: [{ id: "ufu_text", type: "ufu_text", text }] as never,
-          analysis: { banca: "ufu", genreId, ...data } as never,
+          blocks: [{ id: "ufu_text", type: "ufu_text", text }],
+          analysis: { banca: "ufu", genreId, ...data },
           total_score: data.totalScore,
           analyzed_at: new Date().toISOString(),
-        });
+        }).select("id").single();
+
+        // Agendar reescrita pro próximo dia de redação — critério mais fraco em % do máximo.
+        try {
+          const analise = data as AnaliseUfu;
+          const criterios = analise?.criterios ?? [];
+          if (essayRow?.id && criterios.length) {
+            const fraco = [...criterios].sort((a, b) => {
+              const ma = maxCriterio(a.id) || 1;
+              const mb = maxCriterio(b.id) || 1;
+              return a.pontos / ma - b.pontos / mb;
+            })[0];
+            // Próximo dia de redação a partir de amanhã.
+            const dia = ((profile as { dia_redacao?: number } | null | undefined)?.dia_redacao ?? 6);
+            const now = new Date();
+            const due = new Date(now);
+            due.setDate(now.getDate() + 1);
+            while (due.getDay() !== dia) due.setDate(due.getDate() + 1);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase as any).from("reescritas_agendadas").insert({
+              user_id: user.id,
+              essay_id: essayRow.id,
+              criterio_alvo: fraco?.id ?? null,
+              due_date: due.toISOString().slice(0, 10),
+            });
+          }
+        } catch { /* agendamento é bônus, não bloqueia a correção */ }
       }
     } catch (e) {
       toast({ title: "Não deu pra corrigir", description: (e as Error).message, variant: "destructive" });

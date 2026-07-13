@@ -207,6 +207,7 @@ export type Database = {
           cota_ufu: string | null
           created_at: string
           curso_ufu: string | null
+          dia_redacao: number
           diagnostico_feito_at: string | null
           diagnostico_niveis: Json | null
           email: string
@@ -228,6 +229,7 @@ export type Database = {
           cota_ufu?: string | null
           created_at?: string
           curso_ufu?: string | null
+          dia_redacao?: number
           diagnostico_feito_at?: string | null
           diagnostico_niveis?: Json | null
           email: string
@@ -249,6 +251,7 @@ export type Database = {
           cota_ufu?: string | null
           created_at?: string
           curso_ufu?: string | null
+          dia_redacao?: number
           diagnostico_feito_at?: string | null
           diagnostico_niveis?: Json | null
           email?: string
@@ -565,6 +568,44 @@ export type Database = {
         }
         Relationships: []
       }
+      reescritas_agendadas: {
+        Row: {
+          created_at: string
+          criterio_alvo: string | null
+          done_at: string | null
+          due_date: string
+          essay_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          criterio_alvo?: string | null
+          done_at?: string | null
+          due_date: string
+          essay_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          criterio_alvo?: string | null
+          done_at?: string | null
+          due_date?: string
+          essay_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reescritas_agendadas_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: false
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       streak_freezes: {
         Row: {
           created_at: string
@@ -625,6 +666,30 @@ export type Database = {
           questions_answered?: number
           session_date?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      temas_semana: {
+        Row: {
+          created_at: string
+          id: string
+          proposta_id: string
+          semana_iso: string
+          titulo: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          proposta_id: string
+          semana_iso: string
+          titulo?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          proposta_id?: string
+          semana_iso?: string
+          titulo?: string | null
         }
         Relationships: []
       }
