@@ -226,14 +226,41 @@ export default function RedacaoUfu() {
       await refetchSaldo();
 
       if (user) {
-        await supabase.from("essays").insert({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: essayRow } = await (supabase as any).from("essays").insert({
           user_id: user.id,
           theme: theme || genero.label,
-          blocks: [{ id: "ufu_text", type: "ufu_text", text }] as never,
-          analysis: { banca: "ufu", genreId, ...data } as never,
+          blocks: [{ id: "ufu_text", type: "ufu_text", text }],
+          analysis: { banca: "ufu", genreId, ...data },
           total_score: data.totalScore,
           analyzed_at: new Date().toISOString(),
-        });
+        }).select("id").single();
+
+        // Agendar reescrita pro próximo dia de redação — critério mais fraco em % do máximo.
+        try {
+          const analise = data as AnaliseUfu;
+          const criterios = analise?.criterios ?? [];
+          if (essayRow?.id && criterios.length) {
+            const fraco = [...criterios].sort((a, b) => {
+              const ma = maxCriterio(a.id) || 1;
+              const mb = maxCriterio(b.id) || 1;
+              return a.pontos / ma - b.pontos / mb;
+            })[0];
+            // Próximo dia de redação a partir de amanhã.
+            const dia = ((profile as { dia_redacao?: number } | null | undefined)?.dia_redacao ?? 6);
+            const now = new Date();
+            const due = new Date(now);
+            due.setDate(now.getDate() + 1);
+            while (due.getDay() !== dia) due.setDate(due.getDate() + 1);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase as any).from("reescritas_agendadas").insert({
+              user_id: user.id,
+              essay_id: essayRow.id,
+              criterio_alvo: fraco?.id ?? null,
+              due_date: due.toISOString().slice(0, 10),
+            });
+          }
+        } catch { /* agendamento é bônus, não bloqueia a correção */ }
       }
     } catch (e) {
       toast({ title: "Não deu pra corrigir", description: (e as Error).message, variant: "destructive" });
