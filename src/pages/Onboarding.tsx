@@ -38,6 +38,7 @@ export default function Onboarding() {
   const [direction, setDirection] = useState(1);
   const [cursoId, setCursoId] = useState<string>('');
   const [cotaId, setCotaId] = useState<string>('');
+  const [diaRedacao, setDiaRedacao] = useState<number>(6);
   const [saving, setSaving] = useState(false);
 
   const cursosPorCampus = useMemo(() => {
