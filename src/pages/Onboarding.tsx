@@ -13,13 +13,15 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowRight, ArrowLeft, Check, GraduationCap, Users } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, GraduationCap, Users, PenLine } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CURSOS_UFU, COTAS, getCurso } from '@/data/ufu/vestibular';
+import { DIAS_SEMANA } from '@/lib/ufu/temaSemana';
 
 const STEPS = [
   { icon: GraduationCap, label: 'Curso' },
   { icon: Users, label: 'Modalidade' },
+  { icon: PenLine, label: 'Dia D' },
 ];
 
 const slideVariants = {
