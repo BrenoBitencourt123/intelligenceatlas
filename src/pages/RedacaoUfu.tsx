@@ -83,6 +83,25 @@ export default function RedacaoUfu() {
     } catch { /* rascunho corrompido: ignora */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Boss day: /hoje envia ?proposta=<id> → já entra com a proposta da semana.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const pid = params.get("proposta");
+      if (pid && PROPOSTAS_UFU.some((p) => p.id === pid)) {
+        // só pré-seleciona se não veio de rascunho já preenchido
+        setPropostaId((current) => {
+          if (current) return current;
+          const p = PROPOSTAS_UFU.find((pp) => pp.id === pid)!;
+          setGenreId(p.generoId);
+          setTheme(p.titulo.split("—")[1]?.trim() ?? p.titulo);
+          return pid;
+        });
+      }
+    } catch { /* noop */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     const id = setTimeout(() => {
       try {
