@@ -62,11 +62,9 @@ const Today = () => {
   const [weekDone, setWeekDone] = useState<Set<number>>(new Set());
   const [essayDays, setEssayDays] = useState<Set<number>>(new Set());
   const [goalOpen, setGoalOpen] = useState(false);
-  const [tema, setTema] = useState<TemaSemana | null>(null);
 
-  // Dia da redação — vem do perfil (default sábado). Substitui o hardcoded.
+  // Dia da redação — vem do perfil (default sábado).
   const diaRedacao = ((profile as { dia_redacao?: number } | null | undefined)?.dia_redacao ?? 6) as number;
-  const isEssayDay = () => new Date().getDay() === diaRedacao;
 
   // "COMEÇAR AQUI" — mostra só na primeira visita à trilha
   const [primeiraVisitaTrilha, setPrimeiraVisitaTrilha] = useState(false);
