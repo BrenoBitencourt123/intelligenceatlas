@@ -243,36 +243,6 @@ const Today = () => {
     return out;
   }, [nos, progressoMap, currentByDisc, activeNo]);
 
-  const missao = useMemo(() => {
-    if (isEssayDay()) {
-      const propostaQs = tema ? `?proposta=${encodeURIComponent(tema.proposta_id)}` : '';
-      return {
-        label: tema ? `Chefe da semana: ${tema.titulo}` : 'Redação da semana',
-        sub: 'Corretor DIRPS · 5 critérios · tema já pré-selecionado',
-        action: () => navigate(`/redacao-ufu${propostaQs}`),
-        isEssay: true,
-        isBoss: true,
-      };
-    }
-    if (activeNo) {
-      const inProgress = (progressoMap[activeNo.id]?.nivel_atual ?? 0) > 0;
-      return {
-        label: `${inProgress ? 'Continuar' : 'Começar'}: ${activeNo.titulo}`,
-        sub: activeNo.descricao ?? DISC_LABEL[activeNo.disciplina] ?? activeNo.disciplina,
-        action: () => navigate(`/ufu/no/${activeNo.id}`),
-        isEssay: false,
-        isBoss: false,
-      };
-    }
-    return {
-      label: 'Revisão livre',
-      sub: 'Flashcards do que você já viu',
-      action: () => navigate('/flashcards'),
-      isEssay: false,
-      isBoss: false,
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeNo, progressoMap, navigate, tema, diaRedacao]);
 
   // Placar compacto
   const cursoId = (profile as { curso_ufu?: string } | null | undefined)?.curso_ufu;
