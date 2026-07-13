@@ -8,7 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudyStats } from '@/hooks/useStudyStats';
 import { supabase as supabaseTyped } from '@/integrations/supabase/client';
-import { ArrowRight, ChevronDown, Check, Lock, Sparkles, Clock } from 'lucide-react';
+import { ArrowRight, ChevronDown, Check, Lock, Sparkles, Clock, Trophy, BookOpen } from 'lucide-react';
 import { InstallBanner } from '@/components/pwa/InstallBanner';
 import { NotificationBanner } from '@/components/pwa/NotificationBanner';
 import { GoalCard } from '@/components/ufu/GoalCard';
