@@ -19,6 +19,8 @@ import { trackUfu } from '@/lib/ufu/track';
 import { fetchActiveDays, fetchEssayDays } from '@/lib/activeDays';
 import { VOCAB } from '@/lib/vocab';
 import { getTemaSemana, DIAS_SEMANA, type TemaSemana } from '@/lib/ufu/temaSemana';
+import { DailyMissionCard } from '@/components/ufu/DailyMissionCard';
+import { lerPlanoDia } from '@/lib/ufu/composerDia';
 
 // Trilha tables not yet in generated types
 const supabase = supabaseTyped as unknown as { from: (t: string) => any };
