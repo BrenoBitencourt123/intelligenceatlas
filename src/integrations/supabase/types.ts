@@ -440,6 +440,35 @@ export type Database = {
           },
         ]
       }
+      question_pre_lesson: {
+        Row: {
+          generated_at: string | null
+          id: string
+          items: Json
+          question_id: string
+        }
+        Insert: {
+          generated_at?: string | null
+          id?: string
+          items: Json
+          question_id: string
+        }
+        Update: {
+          generated_at?: string | null
+          id?: string
+          items?: Json
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_pre_lesson_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       questions: {
         Row: {
           alternatives: Json
